@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZLon | Business Opportunities</title>
+    <style>
+        html { scroll-behavior: smooth; }
+        :root { --brand-dark: #0a0a0a; --bg-light: #fafafa; --border-color: #eaeaea; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0; background-color: var(--bg-light); color: var(--brand-dark);
+        }
+
+        /* Clean Header with Back Button */
+        header {
+            position: fixed; top: 0; width: 100%; height: 70px;
+            padding: 0 5%; box-sizing: border-box;
+            display: flex; align-items: center; justify-content: space-between;
+            z-index: 100; background: rgba(250, 250, 250, 0.9); backdrop-filter: blur(5px);
+            border-bottom: 1px solid #eaeaea;
+        }
+        .back-btn { text-decoration: none; color: var(--brand-dark); font-weight: bold; font-size: 16px; }
+        .logo { font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+
+        /* Full Screen Sections */
+        .screen {
+            min-height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        h1 { font-size: 56px; line-height: 1.1; letter-spacing: -1.5px; max-width: 800px; margin-bottom: 20px;}
+        p.subtitle { font-size: 20px; color: #555; max-width: 600px; }
+
+        /* Types of Models Grid */
+        .model-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+            max-width: 1000px; width: 100%; margin-top: 40px; text-align: left;
+        }
+        .model-card {
+            padding: 50px; border-radius: 12px;
+            border: 2px solid #eaeaea; background: white;
+        }
+        .model-card.ppp { background: var(--brand-dark); color: white; border: none; }
+        .model-card h2 { font-size: 32px; margin-top: 0; }
+        .model-card p { font-size: 16px; line-height: 1.6; color: #666; }
+        .model-card.ppp p { color: #ccc; }
+
+        .drag-down {
+            margin-top: 60px; display: inline-flex; flex-direction: column; align-items: center;
+            text-decoration: none; color: var(--brand-dark); font-weight: bold;
+        }
+        .arrow-down { margin-top: 5px; animation: bounce 2s infinite; font-size: 20px;}
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(10px); } }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 40px; }
+            .model-grid { grid-template-columns: 1fr; gap: 20px; }
+            .model-card { padding: 30px; }
+        }
+
+        /* Salon View Container */
+        .salon-view {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: var(--bg-light); z-index: 150; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .salon-view.active { transform: translateY(0); }
+        
+        /* Salon View Header */
+        .sv-header {
+            display: flex; align-items: center; padding: 20px 5%;
+            background: white; border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; z-index: 10;
+        }
+        .sv-close { font-size: 24px; font-weight: bold; cursor: pointer; margin-right: 20px; color: var(--brand-dark); }
+        .sv-title { font-size: 20px; font-weight: 800; margin: 0; }
+
+        /* Search Bar Area */
+        .sv-search-area { padding: 20px 5%; background: white; border-bottom: 1px solid var(--border-color); }
+        .sv-search-input {
+            width: 100%; padding: 12px 15px; border: 1px solid #ccc; border-radius: 8px;
+            font-size: 16px; box-sizing: border-box; background: #f9f9f9;
+        }
+
+        /* Salon List Area */
+        .sv-list { padding: 20px 5%; overflow-y: auto; flex-grow: 1; padding-bottom: 100px; }
+        
+        /* Individual Salon Card */
+        .salon-card {
+            background: white; border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .salon-info h3 { margin: 0 0 5px 0; font-size: 18px; color: var(--brand-dark); }
+        .salon-info p { margin: 0; font-size: 13px; color: #666; }
+        .salon-badge {
+            display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 10px;
+            font-weight: bold; margin-bottom: 8px; text-transform: uppercase;
+        }
+        .badge-standard { background: #eee; color: #555; }
+        .badge-premium { background: var(--brand-dark); color: white; }
+        
+        .book-btn {
+            background: #25D366; color: white; text-decoration: none; padding: 10px 20px;
+            border-radius: 6px; font-weight: bold; font-size: 14px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <button class="menu-toggle" onclick="toggleMenu()" aria-label="Open menu">☰</button>
+        <a href="index.html" class="back-btn">← Back</a>
+        <div class="logo">ZLon. Business</div>
+        <div style="width: 50px;"></div>
+    </header>
+
+    <aside class="sidebar" id="sidebarMenu" aria-label="Sidebar navigation">
+        <button class="close-btn" onclick="toggleMenu()" aria-label="Close menu">×</button>
+        <nav>
+            <a href="#b1" onclick="toggleMenu()">Home</a>
+            <a href="#b2" onclick="toggleMenu()">Models</a>
+            <a href="#" onclick="openSalonView('standard'); toggleMenu(); return false;">Salon</a>
+            <a href="#" onclick="openSalonView('premium'); toggleMenu(); return false;">ZLon Premium</a>
+            <a href="#" onclick="openModal('complaintModal'); toggleMenu(); return false;">Complaints</a>
+            <a href="#" onclick="openModal('feedbackModal'); toggleMenu(); return false;">Feedback</a>
+        </nav>
+    </aside>
+
+    <section class="screen" id="b1">
+        <h1>About Our Business Opportunities</h1>
+        <p class="subtitle">Join the queue management revolution. Whether you run a single chair barbershop or a premium franchise, we have a digital model for you.</p>
+        
+        <a href="#b2" class="drag-down">Drag Down <span class="arrow-down">↓</span></a>
+    </section>
+
+    <section class="screen" id="b2">
+        <h1 style="font-size: 40px; margin-bottom: 0;">Types of Models</h1>
+        
+        <div class="model-grid">
+            <div class="model-card">
+                <h2>Standard Platform</h2>
+                <p>Designed for independent shops and local barbers. A zero-cost, ultra-simple WhatsApp integration to manage your daily walk-ins without any technical skills required.</p>
+                <ul style="color: #666; padding-left: 20px; line-height: 1.8;">
+                    <li>100% Free Lifetime Access</li>
+                    <li>Simple 'Accept/Busy' controls</li>
+                    <li>No app download required for you</li>
+                </ul>
+            </div>
+
+            <div class="model-card ppp">
+                <h2>Premium Partner Program</h2>
+                <p>An elite tier engineered for high-volume salons and premium parlors. Gain maximum digital visibility in your local pincode and access deep operational analytics.</p>
+                <ul style="color: #ccc; padding-left: 20px; line-height: 1.8;">
+                    <li>Top-tier search placement</li>
+                    <li>Customer retention analytics</li>
+                    <li>Official Verification Badge</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <div class="salon-view" id="salonView">
+        <div class="sv-header">
+            <div class="sv-close" onclick="closeSalonView()">✕</div>
+            <h2 class="sv-title" id="svTitle">Available Salons</h2>
+        </div>
+        <div class="sv-search-area">
+            <input type="text" class="sv-search-input" placeholder="Enter Pincode or Locality..." id="searchInput" onkeyup="filterSalons()">
+        </div>
+        <div class="sv-list" id="salonListContainer"></div>
+    </div>
+
+    <div class="modal-backdrop" id="complaintModal" role="dialog" aria-modal="true" aria-labelledby="complaintTitle">
+        <div class="modal">
+            <h3 id="complaintTitle">Complaints</h3>
+            <p>Please share your issue with us and our support team will follow up within 24 hours.</p>
+            <button type="button" onclick="closeModal('complaintModal')">Close</button>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+        <div class="modal">
+            <h3 id="feedbackTitle">Feedback</h3>
+            <p>We appreciate your feedback! Tell us what can be improved and what you love.</p>
+            <button type="button" onclick="closeModal('feedbackModal')">Close</button>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            var menu = document.getElementById('sidebarMenu');
+            menu.classList.toggle('open');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('open');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+        }
+
+        window.onclick = function(event) {
+            var backdrops = document.querySelectorAll('.modal-backdrop.open');
+            backdrops.forEach(function(backdrop) {
+                if (event.target === backdrop) {
+                    backdrop.classList.remove('open');
+                }
+            });
+        };
+    </script>
+<style>
+        /* Modal Container */
+        .app-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200;
+            justify-content: center; align-items: flex-end; /* Aligns to bottom for mobile feel */
+        }
+        .app-modal {
+            background: white; width: 100%; max-width: 600px; 
+            border-radius: 20px 20px 0 0; padding: 30px; box-sizing: border-box;
+            transform: translateY(100%); transition: transform 0.3s ease-out;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .app-modal.slide-up { transform: translateY(0); }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eaeaea; padding-bottom: 15px; margin-bottom: 20px; }
+        .modal-header h2 { margin: 0; font-size: 24px; color: var(--brand-dark); }
+        .close-app-modal { font-size: 28px; cursor: pointer; font-weight: bold; color: #999; }
+
+        /* Form Elements */
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px; }
+        .form-control { 
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; 
+            font-size: 16px; box-sizing: border-box; font-family: inherit;
+        }
+        textarea.form-control { resize: vertical; min-height: 100px; }
+        
+        .submit-btn {
+            width: 100%; background: var(--brand-dark); color: white; border: none;
+            padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold;
+            cursor: pointer; margin-top: 10px; transition: background 0.2s;
+        }
+        .submit-btn:hover { background: #333; }
+    </style>
+
+    <div class="app-modal-overlay" id="complaintModal">
+        <div class="app-modal" id="complaintModalContent">
+            <div class="modal-header">
+                <h2>File a Grievance</h2>
+                <span class="close-app-modal" onclick="closeModal('complaintModal')">&times;</span>
+            </div>
+            <form onsubmit="submitForm(event, 'complaintModal')">
+                <div class="form-group">
+                    <label>Grievance Category</label>
+                    <select class="form-control" required>
+                        <option value="">Select an issue type...</option>
+                        <option value="booking">Booking / Token Issue</option>
+                        <option value="service">Salon Service Quality</option>
+                        <option value="payment">Payment / Refund Issue</option>
+                        <option value="platform">App / Platform Bug</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" class="form-control" placeholder="Brief summary of the issue" required>
+                </div>
+                <div class="form-group">
+                    <label>Detailed Incident Report</label>
+                    <textarea class="form-control" placeholder="Please provide specific details regarding your complaint so our resolution team can assist you." required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit Grievance</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-modal-overlay" id="feedbackModal">
+        <div class="app-modal" id="feedbackModalContent">
+            <div class="modal-header">
+                <h2>Your Feedback</h2>
+                <span class="close-app-modal" onclick="closeModal('feedbackModal')">&times;</span>
+            </div>
+            <form onsubmit="submitForm(event, 'feedbackModal')">
+                <div class="form-group" style="text-align: center; margin-bottom: 20px;">
+                    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">How was your experience with ZLon?</p>
+                    <select class="form-control" style="text-align: center; font-size: 20px;" required>
+                        <option value="">Rate Us</option>
+                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                        <option value="4">⭐⭐⭐⭐ Good</option>
+                        <option value="3">⭐⭐⭐ Average</option>
+                        <option value="2">⭐⭐ Poor</option>
+                        <option value="1">⭐ Terrible</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>What can we improve?</label>
+                    <textarea class="form-control" placeholder="Tell us what you loved or what needs work..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Send Feedback</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(modalId) {
+            const overlay = document.getElementById(modalId);
+            const content = document.getElementById(modalId + 'Content');
+            overlay.style.display = 'flex';
+            // Slight delay to allow CSS transition to trigger
+            setTimeout(() => { content.classList.add('slide-up'); }, 10);
+        }
+
+        function closeModal(modalId) {
+            const overlay = document.getElementById(modalId);
+            const content = document.getElementById(modalId + 'Content');
+            content.classList.remove('slide-up');
+            // Wait for slide animation to finish before hiding overlay
+            setTimeout(() => { overlay.style.display = 'none'; }, 300);
+        }
+
+        function submitForm(event, modalId) {
+            event.preventDefault(); // Prevents page reload
+            alert("Success! Your submission has been securely recorded in our system.");
+            closeModal(modalId);
+            event.target.reset(); // Clears the form
+        }
+
+        // Salon view actions
+        const dbSalons = [
+            { id: 1, name: "Star Barbershop", location: "Main Market, Sector 4", type: "standard", waitTime: "10 mins", price: "₹150", waNumber: "91XXXXXXXXXX" },
+            { id: 2, name: "The Grooming Lounge", location: "High Street Mall", type: "premium", waitTime: "No Wait", price: "₹450", waNumber: "91XXXXXXXXXX" },
+            { id: 3, name: "City Looks Parlor", location: "Near Metro Station", type: "standard", waitTime: "25 mins", price: "₹200", waNumber: "91XXXXXXXXXX" },
+            { id: 4, name: "Elite Cuts Studio", location: "Downtown Plaza", type: "premium", waitTime: "5 mins", price: "₹600", waNumber: "91XXXXXXXXXX" },
+            { id: 5, name: "Raju Hair Dresser", location: "Gali No. 2", type: "standard", waitTime: "15 mins", price: "₹100", waNumber: "91XXXXXXXXXX" }
+        ];
+
+        let currentViewType = 'standard';
+
+        function openSalonView(type) {
+            currentViewType = type;
+            const view = document.getElementById('salonView');
+            const title = document.getElementById('svTitle');
+            const searchInput = document.getElementById('searchInput');
+
+            title.innerText = type === 'premium' ? 'ZLon Premium Partners' : 'Local Salons';
+            searchInput.value = '';
+
+            view.style.display = 'flex';
+            setTimeout(() => { view.classList.add('active'); }, 10);
+
+            renderSalons('');
+        }
+
+        function closeSalonView() {
+            const view = document.getElementById('salonView');
+            view.classList.remove('active');
+            setTimeout(() => { view.style.display = 'none'; }, 400);
+        }
+
+        function renderSalons(searchTerm) {
+            const container = document.getElementById('salonListContainer');
+            container.innerHTML = '';
+
+            const filteredSalons = dbSalons.filter(salon => {
+                const matchesType = salon.type === currentViewType;
+                const matchesSearch = salon.location.toLowerCase().includes(searchTerm.toLowerCase()) || salon.name.toLowerCase().includes(searchTerm.toLowerCase());
+                return matchesType && matchesSearch;
+            });
+
+            if (filteredSalons.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#999; margin-top:40px;">No salons found in this area.</p>';
+                return;
+            }
+
+            filteredSalons.forEach(salon => {
+                const badgeClass = salon.type === 'premium' ? 'badge-premium' : 'badge-standard';
+                const badgeText = salon.type === 'premium' ? 'ZLon Premium' : 'ZLon Standard';
+                const waLink = `https://wa.me/${salon.waNumber}?text=Hi,%20I%20want%20to%20book%20a%20slot%20at%20${encodeURIComponent(salon.name)}`;
+
+                const cardHTML = `
+                    <div class="salon-card">
+                        <div class="salon-info">
+                            <span class="salon-badge ${badgeClass}">${badgeText}</span>
+                            <h3>${salon.name}</h3>
+                            <p>📍 ${salon.location}</p>
+                            <p style="margin-top: 5px;"><strong>Wait:</strong> ${salon.waitTime} • <strong>Starts at:</strong> ${salon.price}</p>
+                        </div>
+                        <a href="${waLink}" class="book-btn" target="_blank">Book<br>Now</a>
+                    </div>
+                `;
+
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        function filterSalons() {
+            const term = document.getElementById('searchInput').value;
+            renderSalons(term);
+        }
+    </script>
+</body>
+</html>

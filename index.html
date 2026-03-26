@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZLon | Smart Salon Booking</title>
+    <style>
+        /* ======================================= */
+        /* 1. BASE STYLES & MAIN LAYOUT            */
+        /* ======================================= */
+        html { scroll-behavior: smooth; }
+        :root { --brand-dark: #0f172a; --bg-light: #f8fafc; --accent: #25D366; --gold: #d4af37; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background-color: var(--bg-light); color: var(--brand-dark); overflow-x: hidden; }
+
+        /* The "Invisible" Border Header */
+        header { 
+            position: fixed; top: 0; width: 100%; height: 80px; padding: 0 5%; box-sizing: border-box; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 100; 
+            background: rgba(248, 250, 252, 0.9); backdrop-filter: blur(10px); 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.03); 
+            border-bottom: 1px solid rgba(0,0,0,0.02);
+        }
+        
+        .hamburger { display: flex; flex-direction: column; gap: 6px; cursor: pointer; z-index: 101; transition: transform 0.4s ease; }
+        .hamburger.active { transform: rotate(90deg); }
+        .bar { width: 32px; height: 3px; background-color: var(--brand-dark); border-radius: 2px; }
+
+        /* MASSIVE TEXT LOGO */
+        .logo { 
+            font-size: 42px; /* Scaled up to fit perfectly */
+            font-weight: 900; 
+            letter-spacing: -2px; 
+            position: absolute; left: 50%; transform: translateX(-50%); 
+            z-index: 101; color: var(--brand-dark); margin: 0;
+        }
+        
+        select.lang-toggle { padding: 6px 12px; border-radius: 6px; border: 2px solid var(--brand-dark); background: white; font-weight: bold; cursor: pointer; font-size: 14px; z-index: 101; }
+
+        /* ======================================= */
+        /* 2. FLOATING BACKGROUND (Persistent)     */
+        /* ======================================= */
+        .fixed-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; overflow: hidden; }
+        .bg-icon { position: absolute; fill: none; stroke-width: 1.5; opacity: 0.05; animation: floatObj 8s ease-in-out infinite; }
+        .bg-icon.gold { stroke: var(--gold); }
+        .bg-icon.dark { stroke: var(--brand-dark); }
+        
+        @keyframes floatObj { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-30px) rotate(15deg); } }
+
+        /* Screen Layout */
+        .screen { min-height: 100vh; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; z-index: 10; }
+        h1 { font-size: 56px; line-height: 1.1; letter-spacing: -1.5px; z-index: 10; max-width: 800px; }
+        
+        .drag-down { position: absolute; bottom: 40px; display: inline-flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--brand-dark); font-weight: bold; font-size: 16px; z-index: 10; opacity: 0.7;}
+        .arrow-down { margin-top: 5px; animation: bounce 2s infinite; font-size: 20px;}
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(10px); } }
+
+        /* Big WhatsApp CTA */
+        .massive-wa-btn { display: inline-flex; align-items: center; justify-content: center; background-color: var(--accent); color: white; padding: 20px 50px; font-size: 24px; font-weight: 800; text-decoration: none; border-radius: 50px; box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3); transition: transform 0.2s, box-shadow 0.2s; margin-top: 20px; border: 2px solid #1da851;}
+        .massive-wa-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 35px rgba(37, 211, 102, 0.4); }
+
+        /* Professional Footer */
+        footer { width: 100%; background-color: var(--brand-dark); color: white; padding: 60px 5% 30px; box-sizing: border-box; z-index: 10; position: relative; text-align: left;}
+        .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 40px;}
+        .footer-col h3 { font-size: 20px; margin-top: 0; color: var(--gold); }
+        .footer-col a { display: block; color: #cbd5e1; text-decoration: none; margin-bottom: 10px; font-size: 15px; cursor: pointer; transition: color 0.2s;}
+        .footer-col a:hover { color: white; }
+        .footer-bottom { text-align: center; padding-top: 20px; color: #64748b; font-size: 14px; }
+
+        /* Sidebar & Overlays */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 98; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .overlay.active { opacity: 1; pointer-events: all; }
+        .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100vh; background: white; z-index: 99; transition: left 0.4s ease; box-shadow: 5px 0 25px rgba(0,0,0,0.1); padding-top: 100px; box-sizing: border-box; }
+        .sidebar.active { left: 0; }
+        .sidebar a { display: block; padding: 18px 30px; font-size: 18px; font-weight: 700; color: var(--brand-dark); text-decoration: none; border-bottom: 1px solid var(--border-color); cursor: pointer;}
+        .sidebar a:hover { background: var(--bg-light); color: var(--accent); }
+
+        /* Slide-up Modals & Salon View */
+        .app-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; justify-content: center; align-items: flex-end; }
+        .app-modal { background: white; width: 100%; max-width: 600px; border-radius: 20px 20px 0 0; padding: 30px; box-sizing: border-box; transform: translateY(100%); transition: transform 0.3s ease-out; max-height: 90vh; overflow-y: auto; text-align: left; }
+        .app-modal.slide-up { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eaeaea; padding-bottom: 15px; margin-bottom: 20px; }
+        .close-app-modal { font-size: 28px; cursor: pointer; font-weight: bold; color: #999; }
+        .form-group { margin-bottom: 15px; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; font-family: inherit; }
+        .submit-btn { width: 100%; background: var(--brand-dark); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        .salon-view { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-light); z-index: 150; flex-direction: column; transform: translateY(100%); transition: transform 0.4s; }
+        .salon-view.active { transform: translateY(0); }
+        .sv-header { display: flex; align-items: center; padding: 20px 5%; background: white; border-bottom: 1px solid var(--border-color); }
+        .sv-close { font-size: 24px; font-weight: bold; cursor: pointer; margin-right: 20px; }
+        .sv-search-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .sv-list { padding: 20px 5%; overflow-y: auto; flex-grow: 1; text-align: left; }
+        .salon-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .book-btn { background: var(--accent); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; }
+
+        @media (max-width: 768px) { h1 { font-size: 40px; } .massive-wa-btn { padding: 15px 30px; font-size: 20px;} .logo { font-size: 32px; } }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="fixed-bg">
+        <svg class="bg-icon dark" style="top:10%; left:5%; width:120px; animation-delay: 0s;" viewBox="0 0 24 24"><path d="M4 6h16v4H4zM6 10v4M10 10v4M14 10v4M18 10v4"/></svg>
+        <svg class="bg-icon gold" style="top:25%; right:8%; width:150px; animation-delay: 1s;" viewBox="0 0 24 24"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 16l7-12M15.5 16l-7-12"/></svg>
+        <svg class="bg-icon dark" style="top:45%; left:15%; width:90px; animation-delay: 2.5s;" viewBox="0 0 24 24"><path d="M7 3h10v4H7zM9 7v10c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2V7H9zM11 19v2h2v-2h-2z"/></svg>
+        <svg class="bg-icon gold" style="top:60%; right:15%; width:110px; animation-delay: 0.5s;" viewBox="0 0 24 24"><path d="M4 6h16v4H4zM6 10v4M10 10v4M14 10v4M18 10v4"/></svg>
+        <svg class="bg-icon dark" style="bottom:15%; left:8%; width:160px; animation-delay: 3s;" viewBox="0 0 24 24"><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 16l7-12M15.5 16l-7-12"/></svg>
+        <svg class="bg-icon gold" style="bottom:5%; right:25%; width:100px; animation-delay: 1.5s;" viewBox="0 0 24 24"><path d="M7 3h10v4H7zM9 7v10c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2V7H9zM11 19v2h2v-2h-2z"/></svg>
+    </div>
+
+    <header>
+        <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+        
+        <div class="logo">ZLon.</div>
+        
+        <select class="lang-toggle" id="langSwitch" onchange="toggleLanguage()">
+            <option value="en">EN</option>
+            <option value="hin">HIN</option>
+        </select>
+    </header>
+
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="sidebar" id="sidebar">
+        <a onclick="openSalonView('standard'); toggleMenu();">Local Salons</a>
+        <a onclick="openSalonView('premium'); toggleMenu();">ZLon Premium</a>
+        <a onclick="openAppModal('complaintModal'); toggleMenu();">Complaints</a>
+        <a onclick="openAppModal('feedbackModal'); toggleMenu();">Feedback</a>
+        <a href="business.html" style="color: #0056b3;">For Business →</a>
+    </div>
+
+    <section class="screen" id="s1">
+        <h1 id="text-q1" data-en="Frustrated because of rush in the Salon?" data-hin="Salon ke rush se pareshan ho?">Frustrated because of rush in the Salon?</h1>
+        <a href="#s2" class="drag-down">Scroll Down <span class="arrow-down">↓</span></a>
+    </section>
+
+    <section class="screen" id="s2">
+        <h1 id="text-q2" data-en="Don't Worry. ZLon is here." data-hin="Fikar Not. ZLon aa gaya hai.">Don't Worry.<br>ZLon is here.</h1>
+        <a href="#s3" class="drag-down">Scroll Down <span class="arrow-down">↓</span></a>
+    </section>
+
+    <section class="screen" id="s3">
+        <h1 id="text-q3" data-en="Ready to skip the line?" data-hin="Line skip karne ke liye tayyar?">Ready to skip the line?</h1>
+        <a onclick="openSalonView('standard')" class="massive-wa-btn" id="text-btn" data-en="Book on WhatsApp" data-hin="WhatsApp Par Book Karein" style="cursor: pointer;">
+            <svg style="width:28px; height:28px; fill:white; margin-right:12px;" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            Book on WhatsApp
+        </a>
+    </section>
+
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h3 style="font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 10px;">ZLon.</h3>
+                <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">Intelligent queue management. Skip the waiting room and book your local salon instantly via WhatsApp.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Company</h3>
+                <a onclick="openAppModal('aboutModal')">What is ZLon?</a>
+                <a href="business.html">Business Partners</a>
+                <a onclick="openAppModal('feedbackModal')">Give Feedback</a>
+            </div>
+            <div class="footer-col">
+                <h3>Legal & Policies</h3>
+                <a onclick="openAppModal('legalModal')">Terms of Service</a>
+                <a onclick="openAppModal('legalModal')">Privacy Policy</a>
+                <a onclick="openAppModal('complaintModal')">File a Grievance</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 ZLon Technologies. All rights reserved. Built for India.
+        </div>
+    </footer>
+
+
+    <div class="salon-view" id="salonView">
+        <div class="sv-header"><div class="sv-close" onclick="closeSalonView()">✕</div><h2 id="svTitle" style="margin: 0; font-size: 20px;">Available Salons</h2></div>
+        <div style="padding: 20px 5%; background: white; border-bottom: 1px solid var(--border-color);"><input type="text" class="sv-search-input" placeholder="Enter Pincode or Locality..." id="searchInput" onkeyup="filterSalons()"></div>
+        <div class="sv-list" id="salonListContainer"></div>
+    </div>
+
+    <div class="app-modal-overlay" id="complaintModal"><div class="app-modal" id="complaintModalContent"><div class="modal-header"><h2>File a Grievance</h2><span class="close-app-modal" onclick="closeAppModal('complaintModal')">&times;</span></div><form onsubmit="submitForm(event, 'complaintModal')"><div class="form-group"><label>Category</label><select class="form-control" required><option value="">Select issue...</option><option value="booking">Booking Issue</option></select></div><div class="form-group"><label>Details</label><textarea class="form-control" required placeholder="Explain your issue..."></textarea></div><button type="submit" class="submit-btn">Submit</button></form></div></div>
+    
+    <div class="app-modal-overlay" id="feedbackModal"><div class="app-modal" id="feedbackModalContent"><div class="modal-header"><h2>Your Feedback</h2><span class="close-app-modal" onclick="closeAppModal('feedbackModal')">&times;</span></div><form onsubmit="submitForm(event, 'feedbackModal')"><div class="form-group"><label>Rating</label><select class="form-control" required><option value="">Rate Us</option><option value="5">⭐⭐⭐⭐⭐ Excellent</option></select></div><div class="form-group"><label>Suggestions</label><textarea class="form-control" placeholder="What can we improve?"></textarea></div><button type="submit" class="submit-btn">Send</button></form></div></div>
+
+    <div class="app-modal-overlay" id="legalModal"><div class="app-modal" id="legalModalContent"><div class="modal-header"><h2>Legal & Policies</h2><span class="close-app-modal" onclick="closeAppModal('legalModal')">&times;</span></div><div style="line-height: 1.6; color: #555;"><h3 style="color: #0a0a0a;">Terms of Service</h3><p>ZLon connects users with local salons but does not provide the grooming services directly. All bookings are subject to the individual salon's hours.</p><h3 style="color: #0a0a0a;">Privacy Policy</h3><p>ZLon only collects your WhatsApp number and basic location (Pincode) to facilitate bookings. We do not sell your data.</p></div></div></div>
+
+    <div class="app-modal-overlay" id="aboutModal">
+        <div class="app-modal" id="aboutModalContent">
+            <div class="modal-header"><h2>What is ZLon?</h2><span class="close-app-modal" onclick="closeAppModal('aboutModal')">&times;</span></div>
+            <div style="line-height: 1.6; color: #555; text-align: center;">
+                <h2 style="font-size: 36px; font-weight: 900; letter-spacing: -2px; color: var(--brand-dark); margin: 0 0 10px 0;">ZLon.</h2>
+                <h3 style="color: #0a0a0a; margin-top: 0;">Smart Salon Booking</h3>
+                <p>Zero wait times. Zero hassle. Join the queue before you even leave your house.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createClient } = supabase;
+        const supabaseUrl = 'https://eplbnqgncxarpotwilai.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbGJucWduY3hhcnBvdHdpbGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzYzNzEsImV4cCI6MjA5MDExMjM3MX0.CFxHAJo-GhhL-3x2aZeukmeMzL8pKjnoPA8fdFUIzYg';
+        const _supabase = createClient(supabaseUrl, supabaseKey);
+        let dbSalons = [];
+
+        async function loadSalonsFromCloud() {
+            const { data, error } = await _supabase.from('salons').select('*');
+            if (data) { dbSalons = data; console.log("Live Salons Loaded!"); }
+        }
+        loadSalonsFromCloud();
+
+        function toggleMenu() { document.getElementById("hamburger").classList.toggle("active"); document.getElementById("sidebar").classList.toggle("active"); document.getElementById("overlay").classList.toggle("active"); }
+        function toggleLanguage() { const lang = document.getElementById("langSwitch").value; const elements = ["text-q1", "text-q2", "text-q3", "text-btn"]; elements.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = el.getAttribute("data-" + lang); }); }
+        
+        function openAppModal(modalId) { const overlay = document.getElementById(modalId); const content = document.getElementById(modalId + 'Content'); overlay.style.display = 'flex'; setTimeout(() => { content.classList.add('slide-up'); }, 10); }
+        function closeAppModal(modalId) { const overlay = document.getElementById(modalId); const content = document.getElementById(modalId + 'Content'); content.classList.remove('slide-up'); setTimeout(() => { overlay.style.display = 'none'; }, 300); }
+        function submitForm(event, modalId) { event.preventDefault(); alert("Success! Your submission has been securely recorded."); closeAppModal(modalId); event.target.reset(); }
+
+        let currentViewType = 'standard';
+        function openSalonView(type) { currentViewType = type; const view = document.getElementById('salonView'); document.getElementById('svTitle').innerText = type === 'premium' ? 'ZLon Premium Partners' : 'Local Salons'; document.getElementById('searchInput').value = ''; view.style.display = 'flex'; setTimeout(() => { view.classList.add('active'); }, 10); renderSalons(''); }
+        function closeSalonView() { const view = document.getElementById('salonView'); view.classList.remove('active'); setTimeout(() => { view.style.display = 'none'; }, 400); }
+
+        function renderSalons(searchTerm) {
+            const container = document.getElementById('salonListContainer');
+            container.innerHTML = ''; 
+            const filteredSalons = dbSalons.filter(salon => { return salon.type === currentViewType && (salon.location.toLowerCase().includes(searchTerm.toLowerCase()) || salon.name.toLowerCase().includes(searchTerm.toLowerCase())); });
+            if (filteredSalons.length === 0) { container.innerHTML = '<p style="text-align:center; color:#999; margin-top:40px;">No salons found in this area.</p>'; return; }
+            filteredSalons.forEach(salon => {
+                const badgeClass = salon.type === 'premium' ? 'badge-premium' : 'badge-standard';
+                const badgeText = salon.type === 'premium' ? 'ZLon Premium' : 'ZLon Standard';
+                const waLink = `https://wa.me/${salon.waNumber}?text=Hi,%20I%20want%20to%20book%20a%20slot%20at%20${encodeURIComponent(salon.name)}`;
+                container.innerHTML += `<div class="salon-card"><div class="salon-info"><span style="display:inline-block; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:bold; margin-bottom:8px; text-transform:uppercase; background:${salon.type==='premium'?'#0f172a':'#eee'}; color:${salon.type==='premium'?'white':'#555'};">${badgeText}</span><h3 style="margin:0 0 5px 0; font-size:18px;">${salon.name}</h3><p style="margin:0; font-size:13px; color:#666;">📍 ${salon.location}</p><p style="margin-top: 5px; margin-bottom:0; font-size:13px; color:#666;"><strong>Wait:</strong> ${salon.waitTime} • <strong>Starts at:</strong> ${salon.price}</p></div><a href="${waLink}" class="book-btn" style="background:#25D366; color:white; text-decoration:none; padding:10px 20px; border-radius:6px; font-weight:bold; text-align:center;" target="_blank">Book<br>Now</a></div>`;
+            });
+        }
+        function filterSalons() { renderSalons(document.getElementById('searchInput').value); }
+    </script>
+</body>
+</html>
