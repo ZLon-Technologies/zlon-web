@@ -3,15 +3,33 @@
   "outputDirectory": "dist",
   "redirects": [
     {
-      "source": "/",
+      "source": "/business.html",
       "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
-      "destination": "/dashboard.html",
+      "destination": "/login.html",
       "permanent": false
     },
     {
-      "source": "/index.html",
+      "source": "/dashboard.html",
       "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
-      "destination": "/dashboard.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/manifest.json",
+      "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
+      "destination": "/business-manifest.json",
+      "permanent": false
+    },
+    {
+      "source": "/business.html",
+      "has": [{ "type": "host", "value": "zlon.in" }],
+      "destination": "https://mybusiness.zlon.in/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/business.html",
+      "has": [{ "type": "host", "value": "www.zlon.in" }],
+      "destination": "https://mybusiness.zlon.in/login.html",
       "permanent": false
     },
     {

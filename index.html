@@ -111,19 +111,7 @@
         .overlay.active { opacity: 1; pointer-events: all; }
         .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100vh; background: white; z-index: 99; transition: left 0.4s ease; box-shadow: 5px 0 25px rgba(0,0,0,0.1); padding-top: 100px; box-sizing: border-box; }
         .sidebar.active { left: 0; }
-        .sidebar a,
-        .sidebar button { display: block; width: 100%; padding: 18px 30px; font-size: 18px; font-weight: 700; color: var(--brand-dark); text-align: left; text-decoration: none; border: 0; border-bottom: 1px solid #eee; background: transparent; cursor: pointer;}
-        .sidebar button[hidden] { display: none; }
-
-        .bottom-nav { display: none; }
-        .bottom-nav button {
-            min-width: 0;
-            border: 0;
-            background: transparent;
-            color: #fff;
-            font-size: 12px;
-            font-weight: 900;
-        }
+        .sidebar a { display: block; padding: 18px 30px; font-size: 18px; font-weight: 700; color: var(--brand-dark); text-decoration: none; border-bottom: 1px solid #eee; cursor: pointer;}
 
         /* Salon View & Modals - KEPT AS PER ORIGINAL */
         .app-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); z-index: 200; justify-content: center; align-items: center; }
@@ -155,29 +143,7 @@
         .support-actions { display: grid; gap: 12px; }
         .support-link { display: block; text-align: center; background: #000; color: #fff; text-decoration: none; padding: 16px; border-radius: 8px; font-weight: 900; }
 
-        @media (max-width: 768px) {
-            body { padding-bottom: 72px; }
-            h1 { font-size: 42px; }
-            .logo { font-size: 30px; }
-            .footer-grid { gap: 40px; }
-            .bottom-nav {
-                position: fixed;
-                left: 12px;
-                right: 12px;
-                bottom: 12px;
-                min-height: 58px;
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: 4px;
-                align-items: center;
-                z-index: 130;
-                padding: 8px;
-                border: 1px solid rgba(212, 175, 55, 0.34);
-                border-radius: 8px;
-                background: #0a0a0a;
-                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
-            }
-        }
+        @media (max-width: 768px) { h1 { font-size: 42px; } .logo { font-size: 30px; } .footer-grid { gap: 40px; } }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
@@ -220,18 +186,12 @@
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     <div class="sidebar" id="sidebar">
-        <a onclick="openSalonView('standard'); toggleMenu();">Search Salons</a>
-        <a onclick="openFavoritesView(); toggleMenu();">Saved Salons</a>
-        <a onclick="openBookingsView(); toggleMenu();">History</a>
-        <a onclick="openSupportView(); toggleMenu();">Support</a>
-        <button type="button" data-install-app onclick="toggleMenu();" hidden>Install App</button>
+        <a onclick="openSalonView('standard'); toggleMenu();">Local Salons</a>
+        <a onclick="openSalonView('premium'); toggleMenu();">ZLon Premium</a>
+        <a onclick="openBookingsView(); toggleMenu();">My Bookings</a>
+        <a onclick="openFavoritesView(); toggleMenu();">Saved / Favorites</a>
+        <a onclick="openSupportView(); toggleMenu();">ZLon Support</a>
     </div>
-
-    <nav class="bottom-nav" aria-label="Customer quick actions">
-        <button type="button" onclick="openSalonView('standard')">Search</button>
-        <button type="button" onclick="openFavoritesView()">Favorites</button>
-        <button type="button" onclick="openBookingsView()">My Bookings</button>
-    </nav>
 
     <section class="screen" id="s1">
         <h1 id="text-q1" data-en="Frustrated because of rush in the Salon?" data-hin="Salon ke rush se pareshan ho?">Frustrated because of rush in the Salon?</h1>
@@ -263,7 +223,7 @@
             <div class="footer-col">
                 <h4>Company</h4>
                 <a onclick="openAppModal('aboutModal')">What is ZLon?</a>
-                <a href="business.html">Business Partners</a>
+                <a href="https://mybusiness.zlon.in/login.html">Business Partners</a>
                 <a onclick="openAppModal('feedbackModal')">Give Feedback</a>
             </div>
             <div class="footer-col">
@@ -303,7 +263,7 @@
 
     <div class="app-modal-overlay" id="favoritesModal"><div class="app-modal" id="favoritesModalContent"><div class="modal-header"><h2>Saved Salons</h2><span class="close-app-modal" onclick="closeAppModal('favoritesModal')">&times;</span></div><p style="color:#64748b; line-height:1.6;">Your quick re-booking list stays on this device.</p><div class="modal-list" id="favoriteResults"></div></div></div>
 
-    <div class="app-modal-overlay" id="supportModal"><div class="app-modal" id="supportModalContent"><div class="modal-header"><h2>ZLon Support</h2><span class="close-app-modal" onclick="closeAppModal('supportModal')">&times;</span></div><div class="support-actions"><a class="support-link" href="mailto:support@zlon.in">Email Support</a><button type="button" class="submit-btn" onclick="closeAppModal('supportModal'); openAppModal('complaintModal');">File a Grievance</button><a class="support-link" href="business.html" style="background:#fff; color:#000; border:1px solid #eee;">For Business</a></div></div></div>
+    <div class="app-modal-overlay" id="supportModal"><div class="app-modal" id="supportModalContent"><div class="modal-header"><h2>ZLon Support</h2><span class="close-app-modal" onclick="closeAppModal('supportModal')">&times;</span></div><div class="support-actions"><a class="support-link" href="mailto:support@zlon.in">Email Support</a><button type="button" class="submit-btn" onclick="closeAppModal('supportModal'); openAppModal('complaintModal');">File a Grievance</button><a class="support-link" href="https://mybusiness.zlon.in/login.html" style="background:#fff; color:#000; border:1px solid #eee;">For Business</a></div></div></div>
 
     <script>
         let _supabase = null;
@@ -317,17 +277,34 @@
         let salonMap = null;
         let userMarker = null;
         let salonMarkers = [];
+        const portalState = {
+            session: null,
+            userType: 'customer',
+            salon: null,
+            queue: [],
+            statusId: 'available',
+            queueChannel: null
+        };
 
         const FAVORITES_KEY = 'zlon.favorite.salons';
+        const DARK_MAP_STYLES = [
+            { elementType: 'geometry', stylers: [{ color: '#111827' }] },
+            { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+            { elementType: 'labels.text.stroke', stylers: [{ color: '#0f172a' }] },
+            { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#1f2937' }] },
+            { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#172033' }] },
+            { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#152238' }] },
+            { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1f2937' }] },
+            { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#0f172a' }] },
+            { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2b3648' }] },
+            { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#1f2937' }] },
+            { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#020617' }] }
+        ];
 
         try {
             _supabase = window.ZLon.getSupabaseClient();
         } catch (error) {
             console.warn(error.message);
-        }
-
-        if (_supabase && window.ZLon.authRoutes) {
-            window.ZLon.authRoutes.redirectOwnersFromPublic(_supabase);
         }
 
         async function loadSalonsFromCloud() {
@@ -341,14 +318,405 @@
                 dbSalons = data;
                 console.log("Live Salons Loaded!");
                 if (isSalonViewOpen()) {
-                    currentSalonResults = decorateAndSortSalons(getSalonsByType(currentViewType), currentUserLocation);
-                    currentSalonResultsReady = true;
-                    renderSalons(document.getElementById('searchInput').value);
-                    renderSalonMap(currentSalonResults);
+                    if (isOwnerMode()) {
+                        renderOwnerPortal(document.getElementById('searchInput').value);
+                    } else {
+                        currentSalonResults = decorateAndSortSalons(getSalonsByType(currentViewType), currentUserLocation);
+                        currentSalonResultsReady = true;
+                        renderSalons(document.getElementById('searchInput').value);
+                        renderSalonMap(currentSalonResults);
+                    }
                 }
             }
         }
         loadSalonsFromCloud();
+
+        function isBusinessHost() {
+            return window.ZLon.authRoutes && window.ZLon.authRoutes.isBusinessPortalHost
+                ? window.ZLon.authRoutes.isBusinessPortalHost()
+                : window.location.hostname === 'mybusiness.zlon.in';
+        }
+
+        function isOwnerMode() {
+            return portalState.userType === 'owner';
+        }
+
+        function isMissingColumn(error, columnName) {
+            return Boolean(error && error.message && error.message.toLowerCase().includes(columnName.toLowerCase()));
+        }
+
+        function getOwnerStatusMeta(statusId) {
+            return statusId === 'busy'
+                ? { label: 'Busy', helper: '15 Mins', waitTime: '15 Mins' }
+                : { label: 'Available', helper: 'No Wait', waitTime: 'No Wait' };
+        }
+
+        function getQueueStatus(person) {
+            return String(person.status || 'waiting').toLowerCase();
+        }
+
+        function getQueueName(person) {
+            return person.name || person.customer_name || person.customer || 'Customer';
+        }
+
+        function getQueuePhone(person) {
+            return person.phone || person.whatsapp || person.mobile || '';
+        }
+
+        function normalizeQueuePhone(phone) {
+            const digits = String(phone || '').replace(/\D/g, '');
+            if (digits.length === 10) return `91${digits}`;
+            return digits;
+        }
+
+        function isToday(value) {
+            if (!value) return false;
+            const date = new Date(value);
+            const today = new Date();
+            return date.getFullYear() === today.getFullYear() &&
+                date.getMonth() === today.getMonth() &&
+                date.getDate() === today.getDate();
+        }
+
+        function formatQueueTime(value) {
+            if (!value) return 'just now';
+            return new Intl.DateTimeFormat('en-IN', {
+                hour: 'numeric',
+                minute: '2-digit'
+            }).format(new Date(value));
+        }
+
+        function minutesWaiting(value) {
+            if (!value) return 0;
+            return Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+        }
+
+        function ownerStatusFromSalon(salon) {
+            const rawStatus = `${salon.queue_status || ''} ${salon.waitTime || salon.wait_time || ''}`.toLowerCase();
+            if (rawStatus.includes('busy') || rawStatus.includes('15') || rawStatus.includes('packed') || rawStatus.includes('30')) {
+                return 'busy';
+            }
+            return 'available';
+        }
+
+        function getWaitingOwnerQueue() {
+            return portalState.queue.filter((person) => getQueueStatus(person) === 'waiting');
+        }
+
+        async function findOwnerSalon(user) {
+            if (!_supabase || !user || !user.id) {
+                return { salon: null, message: 'Owner session is not ready.' };
+            }
+
+            const owned = await _supabase
+                .from('salons')
+                .select('*')
+                .eq('owner_id', user.id)
+                .limit(1);
+
+            if (!owned.error && owned.data && owned.data.length) {
+                return { salon: owned.data[0] };
+            }
+
+            for (const column of ['owner_email', 'email']) {
+                const matched = await _supabase
+                    .from('salons')
+                    .select('*')
+                    .ilike(column, user.email)
+                    .limit(1);
+
+                if (matched.error || !matched.data || !matched.data.length) {
+                    continue;
+                }
+
+                const salon = matched.data[0];
+                const claimed = await _supabase
+                    .from('salons')
+                    .update({ owner_id: user.id })
+                    .eq('id', salon.id)
+                    .select('*')
+                    .limit(1);
+
+                if (claimed.error || !claimed.data || !claimed.data.length) {
+                    return {
+                        salon: null,
+                        message: claimed.error ? claimed.error.message : 'The salon row was found, but owner_id could not be attached.'
+                    };
+                }
+
+                return { salon: claimed.data[0] };
+            }
+
+            return {
+                salon: null,
+                message: 'Add this owner email to salons.owner_email to load dashboard data.'
+            };
+        }
+
+        async function selectOwnerQueue(filterBySalon = true) {
+            let query = _supabase
+                .from('queue')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (filterBySalon && portalState.salon && portalState.salon.id) {
+                query = query.eq('salon_id', portalState.salon.id);
+            }
+
+            return query;
+        }
+
+        async function fetchOwnerQueue() {
+            if (!_supabase || !portalState.salon) {
+                renderOwnerPortal(document.getElementById('searchInput').value);
+                return;
+            }
+
+            let result = await selectOwnerQueue(true);
+            if (result.error && isMissingColumn(result.error, 'salon_id')) {
+                result = await selectOwnerQueue(false);
+            }
+
+            if (result.error) {
+                setGeoStatus(`Queue blocked: ${result.error.message}`);
+                return;
+            }
+
+            portalState.queue = Array.isArray(result.data) ? result.data : [];
+            renderOwnerPortal(document.getElementById('searchInput').value);
+        }
+
+        function subscribeOwnerQueue() {
+            if (!_supabase || !portalState.salon || portalState.queueChannel) return;
+
+            const channelConfig = { event: '*', schema: 'public', table: 'queue' };
+            if (portalState.salon.id) {
+                channelConfig.filter = `salon_id=eq.${portalState.salon.id}`;
+            }
+
+            portalState.queueChannel = _supabase
+                .channel(`zlon-index-owner-queue-${portalState.salon.id}`)
+                .on('postgres_changes', channelConfig, fetchOwnerQueue)
+                .subscribe();
+        }
+
+        async function updateOwnerQueueStatus(customerId, status) {
+            if (!_supabase || !portalState.salon) return;
+
+            let result = await _supabase
+                .from('queue')
+                .update({ status })
+                .eq('id', customerId)
+                .eq('salon_id', portalState.salon.id);
+
+            if (result.error && isMissingColumn(result.error, 'salon_id')) {
+                result = await _supabase
+                    .from('queue')
+                    .update({ status })
+                    .eq('id', customerId);
+            }
+
+            if (result.error) {
+                setGeoStatus(`Could not update queue: ${result.error.message}`);
+                return;
+            }
+
+            setGeoStatus(status === 'served' ? 'Marked served.' : 'Marked no-show.');
+            fetchOwnerQueue();
+        }
+
+        async function addOwnerWalkIn(form) {
+            if (!_supabase || !portalState.salon) {
+                setGeoStatus('Link a salon before adding walk-ins.');
+                return;
+            }
+
+            const payload = {
+                name: form.elements.customer_name.value.trim(),
+                phone: form.elements.customer_phone.value.trim(),
+                status: 'waiting',
+                salon_id: portalState.salon.id
+            };
+
+            if (!payload.name || !payload.phone) {
+                setGeoStatus('Enter name and WhatsApp number.');
+                return;
+            }
+
+            let result = await _supabase.from('queue').insert([payload]);
+            if (result.error && isMissingColumn(result.error, 'salon_id')) {
+                delete payload.salon_id;
+                result = await _supabase.from('queue').insert([payload]);
+            }
+
+            if (result.error) {
+                setGeoStatus(`Could not add walk-in: ${result.error.message}`);
+                return;
+            }
+
+            form.reset();
+            setGeoStatus('Walk-in added to the live queue.');
+            fetchOwnerQueue();
+        }
+
+        async function updateOwnerSalonStatus(statusId) {
+            if (!_supabase || !portalState.salon) return;
+
+            const statusMeta = getOwnerStatusMeta(statusId);
+            let result = await _supabase
+                .from('salons')
+                .update({ waitTime: statusMeta.waitTime, queue_status: statusId })
+                .eq('id', portalState.salon.id)
+                .eq('owner_id', portalState.session.user.id)
+                .select('*')
+                .limit(1);
+
+            if (result.error && isMissingColumn(result.error, 'queue_status')) {
+                result = await _supabase
+                    .from('salons')
+                    .update({ waitTime: statusMeta.waitTime })
+                    .eq('id', portalState.salon.id)
+                    .eq('owner_id', portalState.session.user.id)
+                    .select('*')
+                    .limit(1);
+            }
+
+            if (result.error || !result.data || !result.data.length) {
+                setGeoStatus(result.error ? `Could not update wait status: ${result.error.message}` : 'No linked salon row was updated.');
+                return;
+            }
+
+            portalState.salon = result.data[0];
+            portalState.statusId = statusId;
+            renderOwnerPortal(document.getElementById('searchInput').value);
+        }
+
+        function createOwnerActionButton(label, attrs, isPrimary) {
+            const className = isPrimary ? 'book-btn' : 'favorite-btn';
+            return `<button type="button" class="${className}" ${attrs}>${label}</button>`;
+        }
+
+        function renderOwnerPortal(searchTerm = '') {
+            const container = document.getElementById('salonListContainer');
+            const query = String(searchTerm || '').trim().toLowerCase();
+
+            if (!portalState.salon) {
+                document.getElementById('salonListHeading').innerText = 'Owner Access';
+                container.innerHTML = `<div class="modal-card">Owner login is active, but no salon is linked yet. Add this email to <strong>owner_email</strong> in Supabase, then reload.</div>`;
+                return;
+            }
+
+            const waiting = getWaitingOwnerQueue().filter((person) => {
+                if (!query) return true;
+                return [getQueueName(person), getQueuePhone(person), person.status]
+                    .join(' ')
+                    .toLowerCase()
+                    .includes(query);
+            });
+            const next = waiting[0];
+            const servedToday = portalState.queue.filter((person) => getQueueStatus(person) === 'served' && isToday(person.created_at)).length;
+            const statusMeta = getOwnerStatusMeta(portalState.statusId);
+
+            document.getElementById('salonListHeading').innerText = 'Owner Queue';
+            setGeoStatus(`${statusMeta.label} • ${waiting.length} waiting • ${servedToday} served today`);
+
+            const summaryCard = `
+                <div class="salon-card">
+                    <div>
+                        <h3>${escapeHtml(getSalonName(portalState.salon))}</h3>
+                        <p>Live Status: ${escapeHtml(statusMeta.label)} ${escapeHtml(statusMeta.helper)}</p>
+                        <p>Next Up: ${escapeHtml(next ? getQueueName(next) : 'Clear')}</p>
+                        <p>Served Today: ${escapeHtml(servedToday)}</p>
+                    </div>
+                    <div class="card-actions">
+                        ${createOwnerActionButton('Available', 'data-owner-status="available"', portalState.statusId === 'available')}
+                        ${createOwnerActionButton('Busy 15m', 'data-owner-status="busy"', portalState.statusId === 'busy')}
+                    </div>
+                </div>
+            `;
+
+            const addCard = `
+                <div class="salon-card">
+                    <div style="width:100%">
+                        <h3>Add Walk-In</h3>
+                        <form data-owner-form="walk-in">
+                            <input class="form-control" name="customer_name" autocomplete="name" placeholder="Customer Name" required>
+                            <input class="form-control" name="customer_phone" inputmode="tel" autocomplete="tel" placeholder="WhatsApp Number" required>
+                            <button type="submit" class="submit-btn">Add to Queue</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+
+            const queueCards = waiting.length
+                ? waiting.map((person, index) => {
+                    const phone = getQueuePhone(person);
+                    const normalizedPhone = normalizeQueuePhone(phone);
+                    const waited = minutesWaiting(person.created_at);
+                    const waitText = waited ? `${waited} min waiting` : 'New arrival';
+                    const waText = encodeURIComponent(`Hi ${getQueueName(person)}, your ZLon slot is almost ready.`);
+                    const waLink = normalizedPhone ? `https://wa.me/${normalizedPhone}?text=${waText}` : '#';
+
+                    return `
+                        <div class="salon-card">
+                            <div>
+                                <h3>${escapeHtml(`${index + 1}. ${getQueueName(person)}`)}</h3>
+                                <p>${escapeHtml(phone || 'No phone')}</p>
+                                <p>${escapeHtml(waitText)} • Added ${escapeHtml(formatQueueTime(person.created_at))}</p>
+                            </div>
+                            <div class="card-actions">
+                                ${createOwnerActionButton('Serve', `data-owner-action="served" data-owner-id="${escapeHtml(person.id)}"`, true)}
+                                ${createOwnerActionButton('No Show', `data-owner-action="no_show" data-owner-id="${escapeHtml(person.id)}"`, false)}
+                                ${normalizedPhone ? `<a class="favorite-btn" href="${waLink}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('')
+                : '<div class="modal-card">No one is waiting right now.</div>';
+
+            container.innerHTML = `${summaryCard}${addCard}${queueCards}`;
+        }
+
+        function openOwnerPortal() {
+            const searchInput = document.getElementById('searchInput');
+            const view = document.getElementById('salonView');
+
+            searchInput.value = '';
+            searchInput.placeholder = 'Search appointments or phone number...';
+            document.getElementById('svTitle').innerText = portalState.salon ? `${getSalonName(portalState.salon)} Dashboard` : 'Owner Dashboard';
+            document.getElementById('mapShell').hidden = true;
+            view.style.display = 'flex';
+            setTimeout(() => { view.classList.add('active'); }, 10);
+            renderOwnerPortal('');
+        }
+
+        async function initPortalExperience() {
+            if (!_supabase || !window.ZLon.authRoutes) return;
+
+            if (!isBusinessHost()) {
+                window.ZLon.authRoutes.redirectOwnersFromPublic(_supabase);
+                return;
+            }
+
+            const session = await window.ZLon.authRoutes.getSession(_supabase);
+            if (!session) return;
+
+            portalState.session = session;
+            portalState.userType = await window.ZLon.authRoutes.resolveUserType(_supabase, session);
+            if (!isOwnerMode()) return;
+
+            const linked = await findOwnerSalon(session.user);
+            portalState.salon = linked.salon;
+            if (portalState.salon) {
+                portalState.statusId = ownerStatusFromSalon(portalState.salon);
+                await fetchOwnerQueue();
+                subscribeOwnerQueue();
+            } else {
+                setGeoStatus(linked.message);
+            }
+
+            openOwnerPortal();
+        }
 
         function toggleMenu() { document.getElementById("hamburger").classList.toggle("active"); document.getElementById("sidebar").classList.toggle("active"); document.getElementById("overlay").classList.toggle("active"); }
         function toggleLanguage() { const lang = document.getElementById("langSwitch").value; const elements = ["text-q1", "text-q2", "text-q3", "text-btn"]; elements.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = el.getAttribute("data-" + lang); }); }
@@ -358,6 +726,11 @@
         function submitForm(event, modalId) { event.preventDefault(); alert("Success! Recorded."); closeAppModal(modalId); }
 
         function openSalonView(type) {
+            if (isOwnerMode()) {
+                openOwnerPortal();
+                return;
+            }
+
             currentViewType = type;
             currentUserLocation = null;
             currentSalonResults = getSalonsByType(type);
@@ -455,6 +828,8 @@
         }
 
         async function runGeoSalonSearch(type) {
+            if (isOwnerMode()) return;
+
             const token = ++salonSearchToken;
             const radiusLabel = getRadiusLabel(type);
 
@@ -623,11 +998,13 @@
                         zoom: 13,
                         disableDefaultUI: true,
                         zoomControl: true,
-                        fullscreenControl: true
+                        fullscreenControl: true,
+                        styles: DARK_MAP_STYLES
                     });
                 } else {
                     salonMap.setCenter(currentUserLocation);
                     salonMap.setZoom(13);
+                    salonMap.setOptions({ styles: DARK_MAP_STYLES });
                 }
 
                 clearMapMarkers();
@@ -701,7 +1078,13 @@
             container.innerHTML = filteredSalons.map(createSalonCard).join('');
         }
 
-        function filterSalons() { renderSalons(document.getElementById('searchInput').value); }
+        function filterSalons() {
+            if (isOwnerMode()) {
+                renderOwnerPortal(document.getElementById('searchInput').value);
+                return;
+            }
+            renderSalons(document.getElementById('searchInput').value);
+        }
 
         function createSalonCard(salon) {
             const salonKey = getSalonKey(salon);
@@ -780,6 +1163,10 @@
         }
 
         function openFavoritesView() {
+            if (isOwnerMode()) {
+                openOwnerPortal();
+                return;
+            }
             openAppModal('favoritesModal');
             renderFavorites();
         }
@@ -800,6 +1187,10 @@
         }
 
         function openBookingsView() {
+            if (isOwnerMode()) {
+                openOwnerPortal();
+                return;
+            }
             openAppModal('bookingsModal');
             document.getElementById('bookingResults').innerHTML = '<div class="modal-card">Enter your WhatsApp number to check booking history.</div>';
         }
@@ -889,12 +1280,39 @@
         }
 
         document.getElementById('salonListContainer').addEventListener('click', (event) => {
+            const ownerStatusButton = event.target.closest('[data-owner-status]');
+            if (ownerStatusButton) {
+                event.preventDefault();
+                updateOwnerSalonStatus(ownerStatusButton.getAttribute('data-owner-status'));
+                return;
+            }
+
+            const ownerActionButton = event.target.closest('[data-owner-action]');
+            if (ownerActionButton) {
+                event.preventDefault();
+                updateOwnerQueueStatus(
+                    ownerActionButton.getAttribute('data-owner-id'),
+                    ownerActionButton.getAttribute('data-owner-action')
+                );
+                return;
+            }
+
             const button = event.target.closest('[data-favorite-id]');
             if (!button) return;
 
             event.preventDefault();
             toggleFavorite(button.getAttribute('data-favorite-id'));
         });
+
+        document.getElementById('salonListContainer').addEventListener('submit', (event) => {
+            const form = event.target.closest('[data-owner-form]');
+            if (!form) return;
+
+            event.preventDefault();
+            addOwnerWalkIn(form);
+        });
+
+        initPortalExperience();
     </script>
 </body>
 </html>

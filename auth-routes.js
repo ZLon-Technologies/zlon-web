@@ -28,7 +28,7 @@
 
     function portalUrl() {
         if (isLocalOrigin()) {
-            return new URL('dashboard.html', window.location.href).href;
+            return new URL('index.html', window.location.href).href;
         }
 
         return hostUrl(BUSINESS_HOST, '/');
@@ -174,7 +174,7 @@
         if (!session) return;
 
         const userType = await resolveUserType(db, session);
-        if (userType === 'owner') {
+        if (userType === 'owner' && !isBusinessPortalHost()) {
             window.location.replace(portalUrl());
         }
     }
@@ -182,6 +182,7 @@
     namespace.authRoutes = {
         getSession,
         homeUrl,
+        isBusinessPortalHost,
         loginUrl,
         portalUrl,
         redirectOwnersFromPublic,
