@@ -1,6 +1,14 @@
 #!/bin/sh
 set -eu
 
+if [ -f .env ]; then
+    . ./.env
+fi
+
+if [ -f .env.local ]; then
+    . ./.env.local
+fi
+
 : "${ZLON_SUPABASE_URL:?Missing ZLON_SUPABASE_URL}"
 : "${ZLON_SUPABASE_ANON_KEY:?Missing ZLON_SUPABASE_ANON_KEY}"
 
