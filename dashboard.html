@@ -104,7 +104,8 @@
         }
 
         .ghost-link,
-        .refresh-btn {
+        .refresh-btn,
+        .logout-btn {
             min-height: 40px;
             display: inline-flex;
             align-items: center;
@@ -116,6 +117,12 @@
             padding: 0 14px;
             font-size: 14px;
             font-weight: 700;
+        }
+
+        .logout-btn {
+            background: var(--brand-dark);
+            border-color: var(--brand-dark);
+            color: #fff;
         }
 
         main {
@@ -176,6 +183,10 @@
             background: #2b2111;
         }
 
+        .mode-box.packed {
+            background: #1f2937;
+        }
+
         .mode-label {
             display: block;
             margin-bottom: 10px;
@@ -194,13 +205,55 @@
             letter-spacing: -0.7px;
         }
 
-        .mode-toggle {
+        .status-options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .status-option {
             width: 100%;
-            min-height: 44px;
+            min-height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
             border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            text-align: left;
+        }
+
+        .status-option strong,
+        .status-option small {
+            display: block;
+        }
+
+        .status-option strong {
+            font-size: 17px;
+            letter-spacing: -0.3px;
+        }
+
+        .status-option small {
+            margin-top: 4px;
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .status-option.active {
             background: #fff;
             color: var(--brand-dark);
-            font-weight: 900;
+        }
+
+        .status-option.active small {
+            color: var(--muted);
+        }
+
+        .status-option:disabled {
+            cursor: not-allowed;
+            opacity: 0.62;
         }
 
         .metrics {
@@ -539,7 +592,8 @@
             }
 
             .ghost-link,
-            .refresh-btn {
+            .refresh-btn,
+            .logout-btn {
                 flex: 1;
             }
 
@@ -581,6 +635,7 @@
             <div class="topbar-actions">
                 <a class="ghost-link" href="business.html">Business</a>
                 <button class="refresh-btn" id="refreshBtn" type="button">Refresh</button>
+                <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
             </div>
         </header>
 
@@ -588,14 +643,27 @@
             <section class="command-panel" aria-labelledby="dashboardTitle">
                 <div>
                     <p class="eyebrow">Live Shop Floor</p>
-                    <h1 id="dashboardTitle">Fast queue, calm shop.</h1>
-                    <p class="lede" id="dashboardLede">Keep every walk-in moving with a clean waiting list, WhatsApp handoff, and one-tap customer flow.</p>
+                    <h1 id="dashboardTitle">Checking secure access.</h1>
+                    <p class="lede" id="dashboardLede">Only the linked salon owner can update this shop's live wait status.</p>
                 </div>
 
                 <div class="mode-box" id="modeBox">
-                    <span class="mode-label">Booking Mode</span>
-                    <span class="mode-state" id="modeState">Accepting</span>
-                    <button class="mode-toggle" id="modeToggle" type="button">Set Busy</button>
+                    <span class="mode-label">Live Wait Status</span>
+                    <span class="mode-state" id="modeState">Loading...</span>
+                    <div class="status-options" aria-label="Update live wait status">
+                        <button class="status-option" type="button" data-status="available">
+                            <span><strong>Available</strong><small>No Wait</small></span>
+                            <span>0m</span>
+                        </button>
+                        <button class="status-option" type="button" data-status="busy">
+                            <span><strong>Busy</strong><small>15 Mins</small></span>
+                            <span>15m</span>
+                        </button>
+                        <button class="status-option" type="button" data-status="packed">
+                            <span><strong>Packed</strong><small>30+ Mins</small></span>
+                            <span>30+</span>
+                        </button>
+                    </div>
                 </div>
             </section>
 
@@ -680,23 +748,30 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbGJucWduY3hhcnBvdHdpbGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzYzNzEsImV4cCI6MjA5MDExMjM3MX0.CFxHAJo-GhhL-3x2aZeukmeMzL8pKjnoPA8fdFUIzYg';
 
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const params = new URLSearchParams(window.location.search);
-        const salonId = params.get('salon_id') || params.get('salon');
-        const salonName = params.get('name') || 'Owner console';
-        const modeStorageKey = salonId ? `zlon-mode-${salonId}` : 'zlon-mode';
+        const WAIT_STATUSES = {
+            available: { label: 'Available', helper: 'No Wait', waitTime: 'No Wait', estimate: '0m' },
+            busy: { label: 'Busy', helper: '15 Mins', waitTime: '15 Mins', estimate: '15m' },
+            packed: { label: 'Packed', helper: '30+ Mins', waitTime: '30+ Mins', estimate: '30+' }
+        };
 
         const state = {
             queue: [],
-            mode: localStorage.getItem(modeStorageKey) || 'accepting',
-            toastTimer: null
+            session: null,
+            salon: null,
+            statusId: 'available',
+            toastTimer: null,
+            queueChannel: null
         };
 
         const els = {
+            dashboardTitle: document.getElementById('dashboardTitle'),
+            dashboardLede: document.getElementById('dashboardLede'),
             salonIdentity: document.getElementById('salonIdentity'),
             modeBox: document.getElementById('modeBox'),
             modeState: document.getElementById('modeState'),
-            modeToggle: document.getElementById('modeToggle'),
+            statusButtons: Array.from(document.querySelectorAll('.status-option')),
             refreshBtn: document.getElementById('refreshBtn'),
+            logoutBtn: document.getElementById('logoutBtn'),
             waitingCount: document.getElementById('waitingCount'),
             nextCustomer: document.getElementById('nextCustomer'),
             waitEstimate: document.getElementById('waitEstimate'),
@@ -712,12 +787,6 @@
             toast: document.getElementById('toast')
         };
 
-        els.salonIdentity.textContent = salonName;
-        if (salonId) {
-            els.opsNote.textContent = `Salon filter active: ${salonId}`;
-            els.bookingLink.href = `index.html?salon_id=${encodeURIComponent(salonId)}#s3`;
-        }
-
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, (char) => ({
                 '&': '&amp;',
@@ -726,6 +795,10 @@
                 '"': '&quot;',
                 "'": '&#039;'
             })[char]);
+        }
+
+        function isMissingColumn(error, columnName) {
+            return Boolean(error && error.message && error.message.toLowerCase().includes(columnName.toLowerCase()));
         }
 
         function getStatus(person) {
@@ -768,6 +841,13 @@
             return Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
         }
 
+        function statusFromSalon(salon) {
+            const rawStatus = `${salon.queue_status || ''} ${salon.waitTime || salon.wait_time || ''}`.toLowerCase();
+            if (rawStatus.includes('packed') || rawStatus.includes('30')) return 'packed';
+            if (rawStatus.includes('busy') || rawStatus.includes('15')) return 'busy';
+            return 'available';
+        }
+
         function getWaitingQueue() {
             return state.queue.filter((person) => getStatus(person) === 'waiting');
         }
@@ -782,26 +862,39 @@
         }
 
         function renderMode() {
-            const busy = state.mode === 'busy';
-            els.modeBox.classList.toggle('busy', busy);
-            els.modeState.textContent = busy ? 'Busy' : 'Accepting';
-            els.modeToggle.textContent = busy ? 'Start Accepting' : 'Set Busy';
-            els.addWalkInBtn.disabled = busy;
+            const option = WAIT_STATUSES[state.statusId] || WAIT_STATUSES.available;
+            els.modeBox.classList.remove('busy', 'packed');
+            if (state.statusId !== 'available') {
+                els.modeBox.classList.add(state.statusId);
+            }
+            els.modeState.textContent = `${option.label} - ${option.helper}`;
+            els.statusButtons.forEach((button) => {
+                const active = button.dataset.status === state.statusId;
+                button.classList.toggle('active', active);
+                button.disabled = !state.salon;
+            });
+            els.addWalkInBtn.disabled = !state.salon;
         }
 
         function renderMetrics() {
             const waiting = getWaitingQueue();
             const served = state.queue.filter((person) => getStatus(person) === 'served' && isToday(person.created_at));
             const next = waiting[0];
+            const option = WAIT_STATUSES[state.statusId] || WAIT_STATUSES.available;
 
             els.waitingCount.textContent = waiting.length;
             els.nextCustomer.textContent = next ? getName(next).split(' ')[0] : 'Clear';
-            els.waitEstimate.textContent = waiting.length ? `${waiting.length * 15}m` : '0m';
+            els.waitEstimate.textContent = option.estimate;
             els.servedToday.textContent = served.length;
         }
 
         function renderQueue() {
             const waiting = getWaitingQueue();
+
+            if (!state.salon) {
+                els.queueList.innerHTML = '<div class="queue-empty">Connect this login to a salon row before managing the live queue.</div>';
+                return;
+            }
 
             if (!waiting.length) {
                 els.queueList.innerHTML = '<div class="queue-empty">No one is waiting. Good problem to have.</div>';
@@ -825,7 +918,7 @@
                         <div class="queue-position">${index + 1}</div>
                         <div>
                             <p class="customer-name">${name}</p>
-                            <p class="customer-meta">${phone || 'No phone'} · ${waitText} · Added ${formatTime(person.created_at)}</p>
+                            <p class="customer-meta">${phone || 'No phone'} - ${waitText} - Added ${formatTime(person.created_at)}</p>
                         </div>
                         <div class="row-actions">
                             <button class="action-btn primary" type="button" data-action="served" data-id="${escapeHtml(person.id)}">Serve</button>
@@ -844,42 +937,144 @@
             els.lastUpdated.textContent = `Updated ${formatTime(new Date().toISOString())}`;
         }
 
+        function renderLinkedSalon() {
+            const salonName = state.salon.name || 'Salon Partner';
+            state.statusId = statusFromSalon(state.salon);
+            els.salonIdentity.textContent = salonName;
+            els.dashboardTitle.textContent = `Welcome, ${salonName}.`;
+            els.dashboardLede.textContent = 'Update your live wait status and manage the queue from one secure owner console.';
+            els.opsNote.textContent = `Linked salon ID: ${state.salon.id}`;
+            els.bookingLink.href = `index.html?salon_id=${encodeURIComponent(state.salon.id)}#s3`;
+            render();
+        }
+
+        function renderUnlinked(message) {
+            state.salon = null;
+            state.queue = [];
+            els.salonIdentity.textContent = state.session ? state.session.user.email : 'Owner console';
+            els.dashboardTitle.textContent = 'No salon linked yet.';
+            els.dashboardLede.textContent = message || 'Add this login email to owner_email in the salons table, then reload the dashboard.';
+            els.opsNote.textContent = 'Supabase needs salons.owner_id and salons.owner_email to link owners securely.';
+            els.lastUpdated.textContent = 'Link required';
+            render();
+        }
+
         function renderError(error) {
             els.queueList.innerHTML = `<div class="queue-error">Supabase blocked this dashboard request: ${escapeHtml(error.message)}</div>`;
             els.lastUpdated.textContent = 'Needs attention';
             showToast('Queue could not be loaded. Check Supabase RLS and table columns.');
         }
 
-        async function fetchQueue() {
-            els.lastUpdated.textContent = 'Refreshing...';
+        async function findLinkedSalon(user) {
+            const owned = await db
+                .from('salons')
+                .select('*')
+                .eq('owner_id', user.id)
+                .limit(1);
 
+            if (!owned.error && owned.data && owned.data.length) {
+                return { salon: owned.data[0] };
+            }
+
+            for (const column of ['owner_email', 'email']) {
+                const matched = await db
+                    .from('salons')
+                    .select('*')
+                    .ilike(column, user.email)
+                    .limit(1);
+
+                if (matched.error || !matched.data || !matched.data.length) {
+                    continue;
+                }
+
+                const salon = matched.data[0];
+                const claimed = await db
+                    .from('salons')
+                    .update({ owner_id: user.id })
+                    .eq('id', salon.id)
+                    .select('*')
+                    .limit(1);
+
+                if (claimed.error || !claimed.data || !claimed.data.length) {
+                    return {
+                        salon: null,
+                        message: claimed.error ? claimed.error.message : 'The salon row was found, but owner_id could not be attached.'
+                    };
+                }
+
+                return { salon: claimed.data[0] };
+            }
+
+            return {
+                salon: null,
+                message: 'No salon row matched this login email. Add it to salons.owner_email and reload.'
+            };
+        }
+
+        async function guardSession() {
+            const { data, error } = await db.auth.getSession();
+            if (error || !data.session) {
+                window.location.replace('index.html');
+                return null;
+            }
+            state.session = data.session;
+            return data.session;
+        }
+
+        async function selectQueue(filterBySalon = true) {
             let query = db
                 .from('queue')
                 .select('*')
                 .order('created_at', { ascending: true });
 
-            if (salonId) {
-                query = query.eq('salon_id', salonId);
+            if (filterBySalon && state.salon && state.salon.id) {
+                query = query.eq('salon_id', state.salon.id);
             }
 
-            const { data, error } = await query;
-            if (error) {
-                renderError(error);
+            return query;
+        }
+
+        async function fetchQueue() {
+            if (!state.salon) {
+                render();
                 return;
             }
 
-            state.queue = Array.isArray(data) ? data : [];
+            els.lastUpdated.textContent = 'Refreshing...';
+
+            let result = await selectQueue(true);
+            if (result.error && isMissingColumn(result.error, 'salon_id')) {
+                result = await selectQueue(false);
+            }
+
+            if (result.error) {
+                renderError(result.error);
+                return;
+            }
+
+            state.queue = Array.isArray(result.data) ? result.data : [];
             render();
         }
 
         async function updateQueueStatus(customerId, status) {
-            const { error } = await db
+            if (!state.salon) return;
+
+            let query = db
                 .from('queue')
                 .update({ status })
-                .eq('id', customerId);
+                .eq('id', customerId)
+                .eq('salon_id', state.salon.id);
 
-            if (error) {
-                showToast(`Could not update queue: ${error.message}`);
+            let result = await query;
+            if (result.error && isMissingColumn(result.error, 'salon_id')) {
+                result = await db
+                    .from('queue')
+                    .update({ status })
+                    .eq('id', customerId);
+            }
+
+            if (result.error) {
+                showToast(`Could not update queue: ${result.error.message}`);
                 return;
             }
 
@@ -889,33 +1084,34 @@
 
         async function addWalkIn(event) {
             event.preventDefault();
-            if (state.mode === 'busy') {
-                showToast('Shop is set to busy. Start accepting before adding walk-ins.');
+            if (!state.salon) {
+                showToast('Link a salon before adding walk-ins.');
                 return;
             }
 
             const payload = {
                 name: els.customerName.value.trim(),
                 phone: els.customerPhone.value.trim(),
-                status: 'waiting'
+                status: 'waiting',
+                salon_id: state.salon.id
             };
-
-            if (salonId) {
-                payload.salon_id = salonId;
-            }
 
             if (!payload.name || !payload.phone) return;
 
             els.addWalkInBtn.disabled = true;
             els.addWalkInBtn.textContent = 'Adding...';
 
-            const { error } = await db.from('queue').insert([payload]);
+            let result = await db.from('queue').insert([payload]);
+            if (result.error && isMissingColumn(result.error, 'salon_id')) {
+                delete payload.salon_id;
+                result = await db.from('queue').insert([payload]);
+            }
 
-            els.addWalkInBtn.disabled = state.mode === 'busy';
+            els.addWalkInBtn.disabled = false;
             els.addWalkInBtn.textContent = 'Add to Queue';
 
-            if (error) {
-                showToast(`Could not add walk-in: ${error.message}`);
+            if (result.error) {
+                showToast(`Could not add walk-in: ${result.error.message}`);
                 return;
             }
 
@@ -924,48 +1120,97 @@
             fetchQueue();
         }
 
-        async function syncSalonMode() {
-            if (!salonId) return;
+        async function updateSalonWaitStatus(statusId) {
+            if (!state.salon || !WAIT_STATUSES[statusId]) return;
 
-            const waiting = getWaitingQueue();
-            const waitTime = state.mode === 'busy' ? 'Busy' : `${waiting.length * 15} min`;
-            const { error } = await db
+            const option = WAIT_STATUSES[statusId];
+            els.statusButtons.forEach((button) => { button.disabled = true; });
+
+            let result = await db
                 .from('salons')
-                .update({ queue_status: state.mode, waitTime })
-                .eq('id', salonId);
+                .update({ waitTime: option.waitTime, queue_status: statusId })
+                .eq('id', state.salon.id)
+                .eq('owner_id', state.session.user.id)
+                .select('*')
+                .limit(1);
 
-            if (error) {
-                showToast('Mode saved on this device. Add queue_status to salons for cloud sync.');
+            if (result.error && isMissingColumn(result.error, 'queue_status')) {
+                result = await db
+                    .from('salons')
+                    .update({ waitTime: option.waitTime })
+                    .eq('id', state.salon.id)
+                    .eq('owner_id', state.session.user.id)
+                    .select('*')
+                    .limit(1);
             }
+
+            if (result.error || !result.data || !result.data.length) {
+                showToast(result.error ? `Could not update wait status: ${result.error.message}` : 'No linked salon row was updated. Check owner_id and RLS.');
+                renderMode();
+                return;
+            }
+
+            state.salon = result.data[0];
+            state.statusId = statusId;
+            render();
+            showToast(`Live wait status updated to ${option.label}.`);
         }
 
-        function toggleMode() {
-            state.mode = state.mode === 'busy' ? 'accepting' : 'busy';
-            localStorage.setItem(modeStorageKey, state.mode);
+        function subscribeQueue() {
+            if (!state.salon) return;
+
+            const channelConfig = { event: '*', schema: 'public', table: 'queue' };
+            if (state.salon.id) {
+                channelConfig.filter = `salon_id=eq.${state.salon.id}`;
+            }
+
+            state.queueChannel = db
+                .channel(`zlon-dashboard-queue-${state.salon.id}`)
+                .on('postgres_changes', channelConfig, fetchQueue)
+                .subscribe();
+        }
+
+        async function logout() {
+            await db.auth.signOut();
+            window.location.replace('index.html');
+        }
+
+        async function initDashboard() {
             renderMode();
-            syncSalonMode();
+            const session = await guardSession();
+            if (!session) return;
+
+            const linked = await findLinkedSalon(session.user);
+            if (!linked.salon) {
+                renderUnlinked(linked.message);
+                return;
+            }
+
+            state.salon = linked.salon;
+            renderLinkedSalon();
+            subscribeQueue();
+            fetchQueue();
         }
 
-        els.modeToggle.addEventListener('click', toggleMode);
         els.refreshBtn.addEventListener('click', fetchQueue);
+        els.logoutBtn.addEventListener('click', logout);
         els.walkInForm.addEventListener('submit', addWalkIn);
         els.queueList.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action]');
             if (!button) return;
             updateQueueStatus(button.dataset.id, button.dataset.action);
         });
+        els.statusButtons.forEach((button) => {
+            button.addEventListener('click', () => updateSalonWaitStatus(button.dataset.status));
+        });
 
-        const channelConfig = { event: '*', schema: 'public', table: 'queue' };
-        if (salonId) {
-            channelConfig.filter = `salon_id=eq.${salonId}`;
-        }
+        db.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT' || !session) {
+                window.location.replace('index.html');
+            }
+        });
 
-        db.channel('zlon-dashboard-queue')
-            .on('postgres_changes', channelConfig, fetchQueue)
-            .subscribe();
-
-        renderMode();
-        fetchQueue();
+        initDashboard();
     </script>
 </body>
 </html>
