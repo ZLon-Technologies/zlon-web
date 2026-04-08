@@ -135,8 +135,20 @@
         .sv-close { font-size: 24px; font-weight: bold; cursor: pointer; margin-right: 20px; }
         .sv-search-input { width: 100%; padding: 15px; border: 1px solid #eee; border-radius: 12px; font-size: 16px; box-sizing: border-box; }
         .sv-list { padding: 20px 5%; overflow-y: auto; flex-grow: 1; text-align: left; }
+        .sv-geo-status { margin-top: 12px; color: #64748b; font-size: 14px; font-weight: 700; }
+        .sv-map-shell { padding: 16px 5% 0; background: white; border-bottom: 1px solid #eee; }
+        .sv-map-shell[hidden] { display: none; }
+        .sv-map { width: 100%; height: 260px; border-radius: 8px; overflow: hidden; background: #e2e8f0; }
+        .sv-list-heading { padding: 18px 5% 0; font-size: 12px; font-weight: 900; letter-spacing: 1.6px; color: #94a3b8; text-transform: uppercase; }
         .salon-card { background: white; border: 1px solid #eee; border-radius: 16px; padding: 25px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
         .book-btn { background: var(--accent); color: white; text-decoration: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; }
+        .card-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .favorite-btn { border: 1px solid #e2e8f0; background: white; color: var(--brand-dark); padding: 12px 16px; border-radius: 8px; font-weight: 900; cursor: pointer; }
+        .favorite-btn.active { background: #000; color: #fff; border-color: #000; }
+        .modal-list { display: grid; gap: 12px; margin-top: 16px; }
+        .modal-card { border: 1px solid #eee; border-radius: 12px; padding: 16px; background: #fafafa; }
+        .support-actions { display: grid; gap: 12px; }
+        .support-link { display: block; text-align: center; background: #000; color: #fff; text-decoration: none; padding: 16px; border-radius: 8px; font-weight: 900; }
 
         @media (max-width: 768px) { h1 { font-size: 42px; } .logo { font-size: 30px; } .footer-grid { gap: 40px; } }
     </style>
@@ -188,9 +200,9 @@
     <div class="sidebar" id="sidebar">
         <a onclick="openSalonView('standard'); toggleMenu();">Local Salons</a>
         <a onclick="openSalonView('premium'); toggleMenu();">ZLon Premium</a>
-        <a onclick="openAppModal('complaintModal'); toggleMenu();">Complaints</a>
-        <a onclick="openAppModal('feedbackModal'); toggleMenu();">Feedback</a>
-        <a href="business.html" style="color: #0056b3;">For Business →</a>
+        <a onclick="openBookingsView(); toggleMenu();">My Bookings</a>
+        <a onclick="openFavoritesView(); toggleMenu();">Saved / Favorites</a>
+        <a onclick="openSupportView(); toggleMenu();">ZLon Support</a>
     </div>
 
     <section class="screen" id="s1">
@@ -240,7 +252,14 @@
 
     <div class="salon-view" id="salonView">
         <div class="sv-header"><div class="sv-close" onclick="closeSalonView()">✕</div><h2 id="svTitle" style="margin: 0; font-size: 20px;">Available Salons</h2></div>
-        <div style="padding: 20px 5%; background: white; border-bottom: 1px solid #eee;"><input type="text" class="sv-search-input" placeholder="Enter Pincode or Locality..." id="searchInput" onkeyup="filterSalons()"></div>
+        <div style="padding: 20px 5%; background: white; border-bottom: 1px solid #eee;">
+            <input type="text" class="sv-search-input" placeholder="Enter City, Area, or Pincode..." id="searchInput" onkeyup="filterSalons()">
+            <div class="sv-geo-status" id="geoStatus">Choose a salon view to find shops near you.</div>
+        </div>
+        <div class="sv-map-shell" id="mapShell" hidden>
+            <div class="sv-map" id="salonMap" aria-label="Salon map"></div>
+        </div>
+        <div class="sv-list-heading" id="salonListHeading">Nearest to You</div>
         <div class="sv-list" id="salonListContainer"></div>
     </div>
 
@@ -252,9 +271,26 @@
 
     <div class="app-modal-overlay" id="aboutModal"><div class="app-modal" id="aboutModalContent"><div class="modal-header"><h2>About ZLon</h2><span class="close-app-modal" onclick="closeAppModal('aboutModal')">&times;</span></div><p>ZLon is a real-time queuing platform that allows you to join a salon line from your phone.</p></div></div>
 
+    <div class="app-modal-overlay" id="bookingsModal"><div class="app-modal" id="bookingsModalContent"><div class="modal-header"><h2>My Bookings</h2><span class="close-app-modal" onclick="closeAppModal('bookingsModal')">&times;</span></div><p style="color:#64748b; line-height:1.6;">Enter your WhatsApp number to check active and past appointments.</p><form onsubmit="loadBookingsForPhone(event)"><input class="form-control" id="bookingPhoneInput" inputmode="tel" placeholder="WhatsApp number" required><button type="submit" class="submit-btn">Find Bookings</button></form><div class="modal-list" id="bookingResults"></div></div></div>
+
+    <div class="app-modal-overlay" id="favoritesModal"><div class="app-modal" id="favoritesModalContent"><div class="modal-header"><h2>Saved Salons</h2><span class="close-app-modal" onclick="closeAppModal('favoritesModal')">&times;</span></div><p style="color:#64748b; line-height:1.6;">Your quick re-booking list stays on this device.</p><div class="modal-list" id="favoriteResults"></div></div></div>
+
+    <div class="app-modal-overlay" id="supportModal"><div class="app-modal" id="supportModalContent"><div class="modal-header"><h2>ZLon Support</h2><span class="close-app-modal" onclick="closeAppModal('supportModal')">&times;</span></div><div class="support-actions"><a class="support-link" href="mailto:support@zlon.in">Email Support</a><button type="button" class="submit-btn" onclick="closeAppModal('supportModal'); openAppModal('complaintModal');">File a Grievance</button><a class="support-link" href="business.html" style="background:#fff; color:#000; border:1px solid #eee;">For Business</a></div></div></div>
+
     <script>
         let _supabase = null;
         let dbSalons = [];
+        let currentViewType = 'standard';
+        let currentSalonResults = [];
+        let currentSalonResultsReady = false;
+        let currentUserLocation = null;
+        let salonSearchToken = 0;
+        let googleMapsPromise = null;
+        let salonMap = null;
+        let userMarker = null;
+        let salonMarkers = [];
+
+        const FAVORITES_KEY = 'zlon.favorite.salons';
 
         try {
             _supabase = window.ZLon.getSupabaseClient();
@@ -265,32 +301,568 @@
         async function loadSalonsFromCloud() {
             if (!_supabase) return;
             const { data, error } = await _supabase.from('salons').select('*');
-            if (data) { dbSalons = data; console.log("Live Salons Loaded!"); }
+            if (error) {
+                console.warn(error.message);
+                return;
+            }
+            if (data) {
+                dbSalons = data;
+                console.log("Live Salons Loaded!");
+                if (isSalonViewOpen()) {
+                    currentSalonResults = decorateAndSortSalons(getSalonsByType(currentViewType), currentUserLocation);
+                    currentSalonResultsReady = true;
+                    renderSalons(document.getElementById('searchInput').value);
+                    renderSalonMap(currentSalonResults);
+                }
+            }
         }
         loadSalonsFromCloud();
 
         function toggleMenu() { document.getElementById("hamburger").classList.toggle("active"); document.getElementById("sidebar").classList.toggle("active"); document.getElementById("overlay").classList.toggle("active"); }
         function toggleLanguage() { const lang = document.getElementById("langSwitch").value; const elements = ["text-q1", "text-q2", "text-q3", "text-btn"]; elements.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = el.getAttribute("data-" + lang); }); }
-        
-        function openAppModal(modalId) { const overlay = document.getElementById(modalId); overlay.style.display = 'flex'; }
-        function closeAppModal(modalId) { const overlay = document.getElementById(modalId); overlay.style.display = 'none'; }
+
+        function openAppModal(modalId) { const overlay = document.getElementById(modalId); if (overlay) overlay.style.display = 'flex'; }
+        function closeAppModal(modalId) { const overlay = document.getElementById(modalId); if (overlay) overlay.style.display = 'none'; }
         function submitForm(event, modalId) { event.preventDefault(); alert("Success! Recorded."); closeAppModal(modalId); }
 
-        let currentViewType = 'standard';
-        function openSalonView(type) { currentViewType = type; const view = document.getElementById('salonView'); document.getElementById('svTitle').innerText = type === 'premium' ? 'ZLon Premium Partners' : 'Local Salons'; view.style.display = 'flex'; setTimeout(() => { view.classList.add('active'); }, 10); renderSalons(''); }
+        function openSalonView(type) {
+            currentViewType = type;
+            currentUserLocation = null;
+            currentSalonResults = getSalonsByType(type);
+            currentSalonResultsReady = true;
+
+            const searchInput = document.getElementById('searchInput');
+            const view = document.getElementById('salonView');
+            searchInput.value = '';
+            searchInput.placeholder = 'Enter City, Area, or Pincode...';
+            document.getElementById('svTitle').innerText = type === 'premium' ? 'ZLon Premium Partners' : 'Local Salons';
+            document.getElementById('salonListHeading').innerText = 'Nearest to You';
+            document.getElementById('mapShell').hidden = true;
+            view.style.display = 'flex';
+            setTimeout(() => { view.classList.add('active'); }, 10);
+            renderSalons('');
+            runGeoSalonSearch(type);
+        }
+
         function closeSalonView() { const view = document.getElementById('salonView'); view.classList.remove('active'); setTimeout(() => { view.style.display = 'none'; }, 400); }
+
+        function isSalonViewOpen() {
+            return document.getElementById('salonView').classList.contains('active');
+        }
+
+        function getRadiusMeters(type) {
+            return type === 'premium' ? 10000 : 5000;
+        }
+
+        function getRadiusLabel(type) {
+            return type === 'premium' ? '10 km' : '5 km';
+        }
+
+        function setGeoStatus(message) {
+            document.getElementById('geoStatus').textContent = message;
+        }
+
+        function getGoogleMapsApiKey() {
+            const config = window.ZLon && window.ZLon.supabaseConfig ? window.ZLon.supabaseConfig : {};
+            return config.googleMapsApiKey || '';
+        }
+
+        function loadGoogleMaps() {
+            if (window.google && window.google.maps) {
+                return Promise.resolve(window.google.maps);
+            }
+
+            if (googleMapsPromise) {
+                return googleMapsPromise;
+            }
+
+            const apiKey = getGoogleMapsApiKey();
+            if (!apiKey) {
+                return Promise.reject(new Error('Google Maps key is not configured.'));
+            }
+
+            googleMapsPromise = new Promise((resolve, reject) => {
+                const callbackName = `zlonGoogleMapsReady${Date.now()}`;
+                const script = document.createElement('script');
+
+                window[callbackName] = () => {
+                    delete window[callbackName];
+                    resolve(window.google.maps);
+                };
+
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&callback=${callbackName}&v=weekly&region=IN`;
+                script.async = true;
+                script.onerror = () => {
+                    delete window[callbackName];
+                    googleMapsPromise = null;
+                    reject(new Error('Google Maps failed to load.'));
+                };
+
+                document.head.appendChild(script);
+            });
+
+            return googleMapsPromise;
+        }
+
+        function requestUserLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Location is not available on this browser.'));
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => resolve({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    }),
+                    reject,
+                    { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 }
+                );
+            });
+        }
+
+        async function runGeoSalonSearch(type) {
+            const token = ++salonSearchToken;
+            const radiusLabel = getRadiusLabel(type);
+
+            setGeoStatus(`Finding salons near you within ${radiusLabel}...`);
+
+            try {
+                const userLocation = await requestUserLocation();
+                if (token !== salonSearchToken) return;
+
+                currentUserLocation = userLocation;
+                currentSalonResults = await fetchNearbySalons(userLocation, type);
+                currentSalonResultsReady = true;
+                if (token !== salonSearchToken) return;
+
+                renderSalons('');
+                const mapLoaded = await renderSalonMap(currentSalonResults);
+                if (!mapLoaded && getGoogleMapsApiKey()) {
+                    setGeoStatus('Map could not load. Nearest salons are listed below.');
+                    return;
+                }
+                setGeoStatus(currentSalonResults.length
+                    ? `Showing nearest salons within ${radiusLabel}.`
+                    : `No mapped salons found within ${radiusLabel}. Search by area or pincode below.`);
+            } catch (error) {
+                if (token !== salonSearchToken) return;
+                useManualSalonFallback('Location permission was blocked. Search by city, area, or pincode.');
+            }
+        }
+
+        async function fetchNearbySalons(userLocation, type) {
+            const radiusMeters = getRadiusMeters(type);
+
+            if (_supabase) {
+                const { data, error } = await _supabase.rpc('nearby_salons', {
+                    user_lat: userLocation.lat,
+                    user_lng: userLocation.lng,
+                    radius_m: radiusMeters,
+                    salon_type: type
+                });
+
+                if (!error && Array.isArray(data) && data.length) {
+                    return data
+                        .map(normalizeRpcSalon)
+                        .filter(Boolean)
+                        .sort(compareSalonDistance);
+                }
+
+                if (error) {
+                    console.warn('nearby_salons RPC fallback:', error.message);
+                }
+            }
+
+            return decorateAndSortSalons(getSalonsByType(type), userLocation, radiusMeters);
+        }
+
+        function normalizeRpcSalon(row) {
+            if (!row) return null;
+            if (row.salon && typeof row.salon === 'object') {
+                return Object.assign({}, row.salon, { distance_m: row.distance_m || row.salon.distance_m });
+            }
+            if (row.result && typeof row.result === 'object') {
+                return Object.assign({}, row.result, { distance_m: row.distance_m || row.result.distance_m });
+            }
+            return row;
+        }
+
+        function useManualSalonFallback(message) {
+            currentUserLocation = null;
+            document.getElementById('mapShell').hidden = true;
+            currentSalonResults = getSalonsByType(currentViewType);
+            currentSalonResultsReady = true;
+            document.getElementById('salonListHeading').innerText = 'Available Salons';
+            setGeoStatus(message);
+            renderSalons(document.getElementById('searchInput').value);
+        }
+
+        function getSalonsByType(type) {
+            return dbSalons.filter((salon) => getSalonType(salon) === type);
+        }
+
+        function getSalonType(salon) {
+            return String(salon.type || salon.tier || 'standard').toLowerCase();
+        }
+
+        function getSalonKey(salon) {
+            return String(salon.id || salon.salon_id || `${salon.name || 'salon'}-${salon.location || salon.city || ''}`);
+        }
+
+        function getSalonName(salon) {
+            return salon.name || salon.salon_name || salon.shop_name || 'ZLon Salon';
+        }
+
+        function getSalonLocationText(salon) {
+            return salon.location || salon.area || salon.city || salon.pincode || 'Location updating';
+        }
+
+        function getSalonWaitTime(salon) {
+            return salon.waitTime || salon.wait_time || salon.wait_time_label || 'Checking';
+        }
+
+        function getSalonLatLng(salon) {
+            const lat = Number(salon.latitude !== undefined ? salon.latitude : salon.lat);
+            const lng = Number(salon.longitude !== undefined ? salon.longitude : (salon.lng !== undefined ? salon.lng : salon.lon));
+
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                return null;
+            }
+
+            return { lat, lng };
+        }
+
+        function decorateAndSortSalons(salons, userLocation, radiusMeters) {
+            const decorated = salons.map((salon) => {
+                const salonLocation = getSalonLatLng(salon);
+                if (!userLocation || !salonLocation) return salon;
+                return Object.assign({}, salon, {
+                    distance_m: Math.round(distanceBetweenMeters(userLocation, salonLocation))
+                });
+            });
+
+            const withDistance = decorated.filter((salon) => Number.isFinite(Number(salon.distance_m)));
+            const withoutDistance = decorated.filter((salon) => !Number.isFinite(Number(salon.distance_m)));
+            const nearby = radiusMeters
+                ? withDistance.filter((salon) => Number(salon.distance_m) <= radiusMeters)
+                : withDistance;
+
+            return nearby.sort(compareSalonDistance).concat(withoutDistance);
+        }
+
+        function compareSalonDistance(a, b) {
+            const aDistance = Number.isFinite(Number(a.distance_m)) ? Number(a.distance_m) : Number.MAX_SAFE_INTEGER;
+            const bDistance = Number.isFinite(Number(b.distance_m)) ? Number(b.distance_m) : Number.MAX_SAFE_INTEGER;
+            return aDistance - bDistance;
+        }
+
+        function distanceBetweenMeters(from, to) {
+            const earthRadius = 6371000;
+            const dLat = toRadians(to.lat - from.lat);
+            const dLng = toRadians(to.lng - from.lng);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function toRadians(degrees) {
+            return degrees * Math.PI / 180;
+        }
+
+        async function renderSalonMap(salons) {
+            const mapShell = document.getElementById('mapShell');
+            const mapElement = document.getElementById('salonMap');
+
+            if (!currentUserLocation || !getGoogleMapsApiKey()) {
+                mapShell.hidden = true;
+                return false;
+            }
+
+            try {
+                const maps = await loadGoogleMaps();
+                mapShell.hidden = false;
+
+                if (!salonMap) {
+                    salonMap = new maps.Map(mapElement, {
+                        center: currentUserLocation,
+                        zoom: 13,
+                        disableDefaultUI: true,
+                        zoomControl: true,
+                        fullscreenControl: true
+                    });
+                } else {
+                    salonMap.setCenter(currentUserLocation);
+                    salonMap.setZoom(13);
+                }
+
+                clearMapMarkers();
+
+                const bounds = new maps.LatLngBounds();
+                userMarker = new maps.Marker({
+                    position: currentUserLocation,
+                    map: salonMap,
+                    title: 'You are here'
+                });
+                bounds.extend(currentUserLocation);
+
+                salons.forEach((salon) => {
+                    const position = getSalonLatLng(salon);
+                    if (!position) return;
+                    const marker = new maps.Marker({
+                        position,
+                        map: salonMap,
+                        title: getSalonName(salon)
+                    });
+                    salonMarkers.push(marker);
+                    bounds.extend(position);
+                });
+
+                if (salonMarkers.length) {
+                    salonMap.fitBounds(bounds);
+                }
+
+                return true;
+            } catch (error) {
+                console.warn(error.message);
+                mapShell.hidden = true;
+                setGeoStatus('Map could not load. Nearest salons are listed below.');
+                return false;
+            }
+        }
+
+        function clearMapMarkers() {
+            if (userMarker) {
+                userMarker.setMap(null);
+                userMarker = null;
+            }
+
+            salonMarkers.forEach((marker) => marker.setMap(null));
+            salonMarkers = [];
+        }
 
         function renderSalons(searchTerm) {
             const container = document.getElementById('salonListContainer');
-            container.innerHTML = ''; 
-            const filteredSalons = dbSalons.filter(salon => { return salon.type === currentViewType && (salon.location.toLowerCase().includes(searchTerm.toLowerCase()) || salon.name.toLowerCase().includes(searchTerm.toLowerCase())); });
-            if (filteredSalons.length === 0) { container.innerHTML = '<p style="text-align:center; color:#999; margin-top:40px;">No salons found.</p>'; return; }
-            filteredSalons.forEach(salon => {
-                const waLink = `https://wa.me/${salon.waNumber}?text=Hi,%20I%20want%20to%20book%20a%20slot%20at%20${encodeURIComponent(salon.name)}`;
-                container.innerHTML += `<div class="salon-card"><div><h3>${salon.name}</h3><p>📍 ${salon.location}</p><p>Wait: ${salon.waitTime}</p></div><a href="${waLink}" class="book-btn" target="_blank">Book Now</a></div>`;
+            const normalizedSearch = String(searchTerm || '').trim().toLowerCase();
+            const source = currentSalonResultsReady ? currentSalonResults : getSalonsByType(currentViewType);
+            const filteredSalons = source.filter((salon) => {
+                const haystack = [
+                    getSalonName(salon),
+                    getSalonLocationText(salon),
+                    salon.city,
+                    salon.area,
+                    salon.pincode,
+                    salon.pin_code
+                ].join(' ').toLowerCase();
+                return getSalonType(salon) === currentViewType && haystack.includes(normalizedSearch);
             });
+
+            document.getElementById('salonListHeading').innerText = currentUserLocation && !normalizedSearch ? 'Nearest to You' : 'Available Salons';
+
+            if (filteredSalons.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#999; margin-top:40px;">No salons found. Try searching your city, area, or pincode.</p>';
+                return;
+            }
+
+            container.innerHTML = filteredSalons.map(createSalonCard).join('');
         }
+
         function filterSalons() { renderSalons(document.getElementById('searchInput').value); }
+
+        function createSalonCard(salon) {
+            const salonKey = getSalonKey(salon);
+            const waLink = buildWhatsAppLink(salon);
+            const distance = Number(salon.distance_m);
+            const distanceLine = Number.isFinite(distance) ? `<p>Distance: ${escapeHtml(formatDistance(distance))}</p>` : '';
+            const favoriteClass = isFavorite(salonKey) ? 'favorite-btn active' : 'favorite-btn';
+            const favoriteText = isFavorite(salonKey) ? 'Saved' : 'Save';
+            const premiumLine = getSalonType(salon) === 'premium' ? '<p>Premium Partner</p>' : '';
+
+            return `<div class="salon-card"><div><h3>${escapeHtml(getSalonName(salon))}</h3><p>Location: ${escapeHtml(getSalonLocationText(salon))}</p><p>Wait: ${escapeHtml(getSalonWaitTime(salon))}</p>${distanceLine}${premiumLine}</div><div class="card-actions"><button type="button" class="${favoriteClass}" data-favorite-id="${escapeHtml(salonKey)}">${favoriteText}</button><a href="${waLink}" class="book-btn" target="_blank" rel="noopener">Book Now</a></div></div>`;
+        }
+
+        function buildWhatsAppLink(salon) {
+            const phone = String(salon.waNumber || salon.whatsapp || salon.phone || salon.phone_number || '').replace(/\D/g, '');
+            const message = `Hi, I want to book a slot at ${getSalonName(salon)}`;
+            return phone
+                ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+                : `mailto:support@zlon.in?subject=${encodeURIComponent('Booking request')}&body=${encodeURIComponent(message)}`;
+        }
+
+        function formatDistance(distanceMeters) {
+            if (distanceMeters >= 1000) {
+                return `${(distanceMeters / 1000).toFixed(1)} km`;
+            }
+            return `${Math.round(distanceMeters)} m`;
+        }
+
+        function escapeHtml(value) {
+            const element = document.createElement('div');
+            element.textContent = value === undefined || value === null ? '' : String(value);
+            return element.innerHTML;
+        }
+
+        function getFavorites() {
+            try {
+                return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function setFavorites(favorites) {
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+        }
+
+        function isFavorite(salonKey) {
+            return getFavorites().some((favorite) => favorite.id === salonKey);
+        }
+
+        function toggleFavorite(salonKey) {
+            const favorites = getFavorites();
+            const existingIndex = favorites.findIndex((favorite) => favorite.id === salonKey);
+
+            if (existingIndex >= 0) {
+                favorites.splice(existingIndex, 1);
+            } else {
+                const salon = currentSalonResults.concat(dbSalons).find((item) => getSalonKey(item) === salonKey);
+                if (salon) {
+                    favorites.push({
+                        id: salonKey,
+                        name: getSalonName(salon),
+                        location: getSalonLocationText(salon),
+                        type: getSalonType(salon),
+                        waitTime: getSalonWaitTime(salon),
+                        waNumber: salon.waNumber || salon.whatsapp || salon.phone || salon.phone_number || ''
+                    });
+                }
+            }
+
+            setFavorites(favorites);
+            renderSalons(document.getElementById('searchInput').value);
+            if (document.getElementById('favoritesModal').style.display === 'flex') {
+                renderFavorites();
+            }
+        }
+
+        function openFavoritesView() {
+            openAppModal('favoritesModal');
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            const container = document.getElementById('favoriteResults');
+            const favorites = getFavorites();
+
+            if (!favorites.length) {
+                container.innerHTML = '<div class="modal-card">No saved salons yet. Tap Save on any salon card to add it here.</div>';
+                return;
+            }
+
+            container.innerHTML = favorites.map((salon) => {
+                const link = buildWhatsAppLink(salon);
+                return `<div class="modal-card"><h3>${escapeHtml(salon.name)}</h3><p>${escapeHtml(salon.location)}</p><p>Wait: ${escapeHtml(salon.waitTime)}</p><a class="book-btn" href="${link}" target="_blank" rel="noopener">Book Again</a></div>`;
+            }).join('');
+        }
+
+        function openBookingsView() {
+            openAppModal('bookingsModal');
+            document.getElementById('bookingResults').innerHTML = '<div class="modal-card">Enter your WhatsApp number to check booking history.</div>';
+        }
+
+        async function loadBookingsForPhone(event) {
+            event.preventDefault();
+
+            const container = document.getElementById('bookingResults');
+            const rawPhone = document.getElementById('bookingPhoneInput').value.trim();
+            const phone = rawPhone.replace(/\D/g, '');
+
+            if (!_supabase) {
+                container.innerHTML = '<div class="modal-card">Bookings are not connected yet. Please email support@zlon.in.</div>';
+                return;
+            }
+
+            if (!phone) {
+                container.innerHTML = '<div class="modal-card">Enter a valid WhatsApp number.</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="modal-card">Checking bookings...</div>';
+
+            const nationalPhone = phone.length > 10 ? phone.slice(-10) : phone;
+            const variants = Array.from(new Set([phone, nationalPhone, `91${nationalPhone}`, `+91${nationalPhone}`]));
+            const filters = variants
+                .flatMap((value) => [`phone.eq.${value}`, `customer_phone.eq.${value}`, `wa_number.eq.${value}`])
+                .join(',');
+
+            const { data, error } = await _supabase
+                .from('bookings')
+                .select('*')
+                .or(filters)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.warn(error.message);
+                container.innerHTML = '<div class="modal-card">Booking history is being activated. For now, email support@zlon.in.</div>';
+                return;
+            }
+
+            renderBookings(data || []);
+        }
+
+        function renderBookings(bookings) {
+            const container = document.getElementById('bookingResults');
+
+            if (!bookings.length) {
+                container.innerHTML = '<div class="modal-card">No bookings found for this number yet.</div>';
+                return;
+            }
+
+            const now = new Date();
+            const active = bookings.filter((booking) => isActiveBooking(booking, now));
+            const past = bookings.filter((booking) => !isActiveBooking(booking, now));
+
+            container.innerHTML = `<h3>Active</h3>${renderBookingGroup(active)}<h3>Past</h3>${renderBookingGroup(past)}`;
+        }
+
+        function isActiveBooking(booking, now) {
+            const status = String(booking.status || '').toLowerCase();
+            if (['completed', 'cancelled', 'canceled', 'no_show'].includes(status)) return false;
+
+            const time = getBookingTime(booking);
+            return !time || time >= now;
+        }
+
+        function getBookingTime(booking) {
+            const raw = booking.appointment_time || booking.slot_time || booking.scheduled_at || booking.booking_time || booking.created_at;
+            const time = raw ? new Date(raw) : null;
+            return time && !Number.isNaN(time.getTime()) ? time : null;
+        }
+
+        function renderBookingGroup(bookings) {
+            if (!bookings.length) return '<div class="modal-card">Nothing here yet.</div>';
+
+            return bookings.map((booking) => {
+                const time = getBookingTime(booking);
+                const salonName = booking.salon_name || booking.shop_name || booking.salon || 'ZLon Salon';
+                const status = booking.status || 'Booked';
+                return `<div class="modal-card"><h3>${escapeHtml(salonName)}</h3><p>Status: ${escapeHtml(status)}</p><p>${escapeHtml(time ? time.toLocaleString() : 'Time will be confirmed on WhatsApp')}</p></div>`;
+            }).join('');
+        }
+
+        function openSupportView() {
+            openAppModal('supportModal');
+        }
+
+        document.getElementById('salonListContainer').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-favorite-id]');
+            if (!button) return;
+
+            event.preventDefault();
+            toggleFavorite(button.getAttribute('data-favorite-id'));
+        });
     </script>
 </body>
 </html>
