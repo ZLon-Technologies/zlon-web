@@ -18,8 +18,12 @@ escape_js_string() {
 
 supabase_url=$(escape_js_string "$ZLON_SUPABASE_URL")
 supabase_anon_key=$(escape_js_string "$ZLON_SUPABASE_ANON_KEY")
+config_output=${ZLON_CONFIG_OUTPUT:-supabase-config.js}
+config_dir=$(dirname "$config_output")
 
-cat > supabase-config.js <<EOF
+mkdir -p "$config_dir"
+
+cat > "$config_output" <<EOF
 window.ZLon = window.ZLon || {};
 window.ZLon.supabaseConfig = {
     url: "${supabase_url}",

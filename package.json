@@ -3,6 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "sh ./scripts/write-supabase-config.sh"
+    "build": "sh ./scripts/build-site.sh"
   }
 }
