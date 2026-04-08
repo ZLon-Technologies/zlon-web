@@ -3,7 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZLon | Smart Salon Booking</title>
+    
+    <title>ZLon | Skip the Queue - Book Salons via WhatsApp</title>
+    <meta name="description" content="ZLon is India's premier real-time queue management system for salons. Join the waitlist from home and skip the rush at your local barbershop.">
+    <meta name="keywords" content="ZLon, Salon Booking Jabalpur, WhatsApp Barber, Queue Management India">
+    
+    <link rel="shortcut icon" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#ffffff">
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ZLon",
+      "url": "https://zlon.in",
+      "logo": "https://zlon.in/favicon.png",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "support@zlon.in",
+        "contactType": "customer support"
+      }
+    }
+    </script>
     <style>
         /* ======================================= */
         /* 1. BASE STYLES & MAIN LAYOUT            */
@@ -112,7 +137,8 @@
 <body>
 
     <div class="fixed-bg">
-        <svg class="comb-watermark" viewBox="0 0 200 50">
+        <svg class="comb-watermark" viewBox="0 0 200 50" aria-hidden="true" role="presentation">
+            <title>Barber Comb Icon</title>
             <rect x="0" y="10" width="180" height="5" rx="2"/> 
             <g transform="translate(5, 15)">
                 <rect x="0" y="0" width="2" height="25" rx="1"/><rect x="10" y="0" width="2" height="25" rx="1"/>
@@ -129,7 +155,7 @@
     </div>
 
     <header>
-        <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+        <div class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Open Navigation Menu" role="button">
             <div class="bar"></div><div class="bar"></div><div class="bar"></div>
         </div>
         <div class="logo">ZLon.</div>

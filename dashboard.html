@@ -4,91 +4,968 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZLon | Barber Dashboard</title>
+    <meta name="description" content="ZLon dashboard for salon owners to manage live queues, walk-ins, and WhatsApp customer flow.">
+    <link rel="shortcut icon" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#0a0a0a">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        h1 { margin-top: 0; color: #111; }
-        .queue-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
-        .customer-name { font-size: 18px; font-weight: bold; }
-        .next-btn { background-color: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .next-btn:hover { background-color: #059669; }
+        :root {
+            --brand-dark: #0a0a0a;
+            --ink: #111827;
+            --muted: #6b7280;
+            --line: #e5e7eb;
+            --paper: #ffffff;
+            --wash: #f4f4f5;
+            --success: #12a150;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--wash);
+            color: var(--ink);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+            cursor: pointer;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .shell {
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .topbar {
+            max-width: 1180px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--brand-dark);
+            color: #fff;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .brand-title {
+            margin: 0;
+            font-size: 20px;
+            line-height: 1;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-subtitle {
+            display: block;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ghost-link,
+        .refresh-btn {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--ink);
+            padding: 0 14px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        main {
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        .command-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 24px;
+            align-items: center;
+            padding: 34px;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+
+        .eyebrow {
+            margin: 0 0 10px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        h1,
+        h2,
+        p {
+            margin-top: 0;
+        }
+
+        h1 {
+            margin-bottom: 12px;
+            font-size: clamp(34px, 6vw, 64px);
+            line-height: 0.95;
+            letter-spacing: -2.6px;
+        }
+
+        .lede {
+            max-width: 660px;
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        .mode-box {
+            min-width: 260px;
+            padding: 22px;
+            border-radius: 8px;
+            color: #fff;
+            background: var(--brand-dark);
+        }
+
+        .mode-box.busy {
+            background: #2b2111;
+        }
+
+        .mode-label {
+            display: block;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .mode-state {
+            display: block;
+            margin-bottom: 18px;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.7px;
+        }
+
+        .mode-toggle {
+            width: 100%;
+            min-height: 44px;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--brand-dark);
+            font-weight: 900;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 16px 0;
+        }
+
+        .metric {
+            min-height: 128px;
+            padding: 22px;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+
+        .metric span {
+            display: block;
+            margin-bottom: 18px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .metric strong {
+            display: block;
+            color: var(--brand-dark);
+            font-size: 34px;
+            line-height: 1;
+            letter-spacing: -1.2px;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
+            gap: 16px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+
+        .panel-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 24px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .panel-heading h2 {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: -0.8px;
+        }
+
+        .last-updated {
+            color: var(--muted);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .queue-list {
+            min-height: 280px;
+        }
+
+        .queue-empty,
+        .queue-error {
+            padding: 50px 24px;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .queue-error {
+            color: var(--danger);
+        }
+
+        .queue-row {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 18px;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .queue-row:last-child {
+            border-bottom: 0;
+        }
+
+        .queue-position {
+            width: 40px;
+            height: 40px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            background: var(--brand-dark);
+            color: #fff;
+            font-weight: 900;
+        }
+
+        .queue-row.is-next .queue-position {
+            background: var(--success);
+        }
+
+        .customer-name {
+            margin: 0 0 6px;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.3px;
+        }
+
+        .customer-meta {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .row-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn,
+        .wa-btn {
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 13px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .action-btn.primary {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .action-btn.secondary {
+            background: #f3f4f6;
+            color: var(--ink);
+        }
+
+        .wa-btn {
+            background: #25d366;
+            color: #fff;
+        }
+
+        .wa-btn.is-disabled {
+            background: #d1d5db;
+            color: #6b7280;
+            pointer-events: none;
+        }
+
+        .side-panel {
+            padding: 24px;
+        }
+
+        .side-panel h2 {
+            margin-bottom: 18px;
+            font-size: 24px;
+            letter-spacing: -0.7px;
+        }
+
+        .walk-in-form {
+            display: grid;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: grid;
+            gap: 8px;
+            color: var(--ink);
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        input {
+            width: 100%;
+            min-height: 46px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fafafa;
+            color: var(--ink);
+            padding: 0 14px;
+        }
+
+        input:focus {
+            outline: 2px solid rgba(17, 24, 39, 0.12);
+            background: #fff;
+        }
+
+        .submit-btn,
+        .wide-link {
+            width: 100%;
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: 900;
+        }
+
+        .submit-btn {
+            background: var(--brand-dark);
+            color: #fff;
+        }
+
+        .submit-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .quick-links {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .wide-link {
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--ink);
+        }
+
+        .ops-note {
+            margin: 0;
+            padding: 18px;
+            border-left: 4px solid var(--brand-dark);
+            background: #f8fafc;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .insights {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .insight {
+            min-height: 120px;
+            padding: 22px;
+            border-radius: 8px;
+            background: var(--brand-dark);
+            color: #fff;
+        }
+
+        .insight:nth-child(2) {
+            background: #171717;
+        }
+
+        .insight:nth-child(3) {
+            background: #242424;
+        }
+
+        .insight h3 {
+            margin: 0 0 10px;
+            font-size: 16px;
+        }
+
+        .insight p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.68);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .toast {
+            position: fixed;
+            right: 22px;
+            bottom: 22px;
+            max-width: min(420px, calc(100vw - 44px));
+            padding: 14px 16px;
+            border-radius: 8px;
+            background: var(--brand-dark);
+            color: #fff;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
+            opacity: 0;
+            transform: translateY(12px);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 980px) {
+            .command-panel,
+            .workspace,
+            .insights {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .mode-box {
+                min-width: 0;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .shell {
+                padding: 14px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .topbar-actions {
+                width: 100%;
+            }
+
+            .ghost-link,
+            .refresh-btn {
+                flex: 1;
+            }
+
+            .command-panel {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 38px;
+                letter-spacing: -1.6px;
+            }
+
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .queue-row {
+                grid-template-columns: auto minmax(0, 1fr);
+            }
+
+            .row-actions {
+                grid-column: 1 / -1;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="shell">
+        <header class="topbar">
+            <a class="brand" href="index.html" aria-label="Go to ZLon home">
+                <span class="brand-mark">Z.</span>
+                <span>
+                    <strong class="brand-title">ZLon Dashboard</strong>
+                    <span class="brand-subtitle" id="salonIdentity">Owner console</span>
+                </span>
+            </a>
+            <div class="topbar-actions">
+                <a class="ghost-link" href="business.html">Business</a>
+                <button class="refresh-btn" id="refreshBtn" type="button">Refresh</button>
+            </div>
+        </header>
 
-    <div class="container">
-        <h1>Live Queue</h1>
-        <p style="color: #666; margin-bottom: 20px;">Currently waiting: <span id="queue-count">0</span> people</p>
-        
-        <div id="queue-list">
-            <p>Loading the queue...</p>
-        </div>
+        <main>
+            <section class="command-panel" aria-labelledby="dashboardTitle">
+                <div>
+                    <p class="eyebrow">Live Shop Floor</p>
+                    <h1 id="dashboardTitle">Fast queue, calm shop.</h1>
+                    <p class="lede" id="dashboardLede">Keep every walk-in moving with a clean waiting list, WhatsApp handoff, and one-tap customer flow.</p>
+                </div>
+
+                <div class="mode-box" id="modeBox">
+                    <span class="mode-label">Booking Mode</span>
+                    <span class="mode-state" id="modeState">Accepting</span>
+                    <button class="mode-toggle" id="modeToggle" type="button">Set Busy</button>
+                </div>
+            </section>
+
+            <section class="metrics" aria-label="Queue metrics">
+                <div class="metric">
+                    <span>Waiting Now</span>
+                    <strong id="waitingCount">0</strong>
+                </div>
+                <div class="metric">
+                    <span>Next Up</span>
+                    <strong id="nextCustomer">Clear</strong>
+                </div>
+                <div class="metric">
+                    <span>Est. Wait</span>
+                    <strong id="waitEstimate">0m</strong>
+                </div>
+                <div class="metric">
+                    <span>Served Today</span>
+                    <strong id="servedToday">0</strong>
+                </div>
+            </section>
+
+            <section class="workspace">
+                <div class="panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">Queue</p>
+                            <h2>Customers Waiting</h2>
+                        </div>
+                        <span class="last-updated" id="lastUpdated">Loading...</span>
+                    </div>
+                    <div class="queue-list" id="queueList">
+                        <div class="queue-empty">Loading the queue...</div>
+                    </div>
+                </div>
+
+                <aside class="panel side-panel" aria-labelledby="walkInTitle">
+                    <p class="eyebrow">Counter</p>
+                    <h2 id="walkInTitle">Add Walk-In</h2>
+                    <form class="walk-in-form" id="walkInForm">
+                        <label>
+                            Customer Name
+                            <input id="customerName" name="customerName" autocomplete="name" placeholder="e.g. Rahul" required>
+                        </label>
+                        <label>
+                            WhatsApp Number
+                            <input id="customerPhone" name="customerPhone" inputmode="tel" autocomplete="tel" placeholder="10 digit mobile" required>
+                        </label>
+                        <button class="submit-btn" id="addWalkInBtn" type="submit">Add to Queue</button>
+                    </form>
+
+                    <div class="quick-links">
+                        <a class="wide-link" id="bookingLink" href="index.html#s3" target="_blank" rel="noreferrer">Open Booking Page</a>
+                        <a class="wide-link" href="apply.html?plan=premium">Request Premium Badge</a>
+                    </div>
+
+                    <p class="ops-note" id="opsNote">Tip: add <strong>?salon_id=YOUR_ID</strong> to this dashboard URL when your Supabase queue table is ready for salon-specific rows.</p>
+                </aside>
+            </section>
+
+            <section class="insights" aria-label="Operating notes">
+                <div class="insight">
+                    <h3>Alpha 10 Ready</h3>
+                    <p>Use this counter flow while onboarding the first Jabalpur salons in person.</p>
+                </div>
+                <div class="insight">
+                    <h3>Premium Signal</h3>
+                    <p>Premium partners can show priority placement and calmer peak-hour handling.</p>
+                </div>
+                <div class="insight">
+                    <h3>WhatsApp First</h3>
+                    <p>No app install, no training burden, no heavy handoff for the barber chair.</p>
+                </div>
+            </section>
+        </main>
     </div>
 
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
     <script>
-    // 1. Your actual ZLon Database connection
-    const SUPABASE_URL = 'https://eplbnqgncxarpotwilai.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbGJucWduY3hhcnBvdHdpbGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzYzNzEsImV4cCI6MjA5MDExMjM3MX0.CFxHAJo-GhhL-3x2aZeukmeMzL8pKjnoPA8fdFUIzYg';
-    
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_URL = 'https://eplbnqgncxarpotwilai.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbGJucWduY3hhcnBvdHdpbGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzYzNzEsImV4cCI6MjA5MDExMjM3MX0.CFxHAJo-GhhL-3x2aZeukmeMzL8pKjnoPA8fdFUIzYg';
 
-    async function fetchQueue() {
-        console.log("Fetching live queue data...");
-        
-        let { data: queue, error } = await db
-            .from('queue') 
-            .select('*')
-            .eq('status', 'waiting')
-            .order('created_at', { ascending: true });
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const params = new URLSearchParams(window.location.search);
+        const salonId = params.get('salon_id') || params.get('salon');
+        const salonName = params.get('name') || 'Owner console';
+        const modeStorageKey = salonId ? `zlon-mode-${salonId}` : 'zlon-mode';
 
-        if (error) {
-            console.error("Supabase Error:", error.message);
-            document.getElementById('queue-list').innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
-            return;
+        const state = {
+            queue: [],
+            mode: localStorage.getItem(modeStorageKey) || 'accepting',
+            toastTimer: null
+        };
+
+        const els = {
+            salonIdentity: document.getElementById('salonIdentity'),
+            modeBox: document.getElementById('modeBox'),
+            modeState: document.getElementById('modeState'),
+            modeToggle: document.getElementById('modeToggle'),
+            refreshBtn: document.getElementById('refreshBtn'),
+            waitingCount: document.getElementById('waitingCount'),
+            nextCustomer: document.getElementById('nextCustomer'),
+            waitEstimate: document.getElementById('waitEstimate'),
+            servedToday: document.getElementById('servedToday'),
+            lastUpdated: document.getElementById('lastUpdated'),
+            queueList: document.getElementById('queueList'),
+            walkInForm: document.getElementById('walkInForm'),
+            customerName: document.getElementById('customerName'),
+            customerPhone: document.getElementById('customerPhone'),
+            addWalkInBtn: document.getElementById('addWalkInBtn'),
+            bookingLink: document.getElementById('bookingLink'),
+            opsNote: document.getElementById('opsNote'),
+            toast: document.getElementById('toast')
+        };
+
+        els.salonIdentity.textContent = salonName;
+        if (salonId) {
+            els.opsNote.textContent = `Salon filter active: ${salonId}`;
+            els.bookingLink.href = `index.html?salon_id=${encodeURIComponent(salonId)}#s3`;
         }
 
-        const queueList = document.getElementById('queue-list');
-        document.getElementById('queue-count').innerText = queue.length;
-        
-        if (queue.length === 0) {
-            queueList.innerHTML = '<p style="text-align:center; color:#999;">The queue is currently empty.</p>';
-            return;
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[char]);
         }
 
-        queueList.innerHTML = ''; 
+        function getStatus(person) {
+            return String(person.status || 'waiting').toLowerCase();
+        }
 
-        queue.forEach(person => {
-            queueList.innerHTML += `
-                <div class="queue-item" id="customer-${person.id}">
-                    <div class="customer-name">${person.name} <br><span style="font-size:12px; font-weight:normal; color:#666;">${person.phone}</span></div>
-                    <button class="next-btn" onclick="serveCustomer(${person.id})">Serve Next</button>
-                </div>
-            `;
+        function getName(person) {
+            return person.name || person.customer_name || person.customer || 'Customer';
+        }
+
+        function getPhone(person) {
+            return person.phone || person.whatsapp || person.mobile || '';
+        }
+
+        function normalizePhone(phone) {
+            const digits = String(phone || '').replace(/\D/g, '');
+            if (digits.length === 10) return `91${digits}`;
+            return digits;
+        }
+
+        function isToday(value) {
+            if (!value) return false;
+            const date = new Date(value);
+            const today = new Date();
+            return date.getFullYear() === today.getFullYear() &&
+                date.getMonth() === today.getMonth() &&
+                date.getDate() === today.getDate();
+        }
+
+        function formatTime(value) {
+            if (!value) return 'just now';
+            return new Intl.DateTimeFormat('en-IN', {
+                hour: 'numeric',
+                minute: '2-digit'
+            }).format(new Date(value));
+        }
+
+        function minutesWaiting(value) {
+            if (!value) return 0;
+            return Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 60000));
+        }
+
+        function getWaitingQueue() {
+            return state.queue.filter((person) => getStatus(person) === 'waiting');
+        }
+
+        function showToast(message) {
+            els.toast.textContent = message;
+            els.toast.classList.add('show');
+            clearTimeout(state.toastTimer);
+            state.toastTimer = setTimeout(() => {
+                els.toast.classList.remove('show');
+            }, 3600);
+        }
+
+        function renderMode() {
+            const busy = state.mode === 'busy';
+            els.modeBox.classList.toggle('busy', busy);
+            els.modeState.textContent = busy ? 'Busy' : 'Accepting';
+            els.modeToggle.textContent = busy ? 'Start Accepting' : 'Set Busy';
+            els.addWalkInBtn.disabled = busy;
+        }
+
+        function renderMetrics() {
+            const waiting = getWaitingQueue();
+            const served = state.queue.filter((person) => getStatus(person) === 'served' && isToday(person.created_at));
+            const next = waiting[0];
+
+            els.waitingCount.textContent = waiting.length;
+            els.nextCustomer.textContent = next ? getName(next).split(' ')[0] : 'Clear';
+            els.waitEstimate.textContent = waiting.length ? `${waiting.length * 15}m` : '0m';
+            els.servedToday.textContent = served.length;
+        }
+
+        function renderQueue() {
+            const waiting = getWaitingQueue();
+
+            if (!waiting.length) {
+                els.queueList.innerHTML = '<div class="queue-empty">No one is waiting. Good problem to have.</div>';
+                return;
+            }
+
+            els.queueList.innerHTML = waiting.map((person, index) => {
+                const name = escapeHtml(getName(person));
+                const phone = escapeHtml(getPhone(person));
+                const normalizedPhone = normalizePhone(phone);
+                const waited = minutesWaiting(person.created_at);
+                const waitText = waited ? `${waited} min waiting` : 'New arrival';
+                const waText = encodeURIComponent(`Hi ${getName(person)}, your ZLon slot is almost ready.`);
+                const waLink = normalizedPhone ? `https://wa.me/${normalizedPhone}?text=${waText}` : '#';
+                const waControl = normalizedPhone
+                    ? `<a class="wa-btn" href="${waLink}" target="_blank" rel="noreferrer">WhatsApp</a>`
+                    : '<span class="wa-btn is-disabled" aria-disabled="true">WhatsApp</span>';
+
+                return `
+                    <div class="queue-row ${index === 0 ? 'is-next' : ''}">
+                        <div class="queue-position">${index + 1}</div>
+                        <div>
+                            <p class="customer-name">${name}</p>
+                            <p class="customer-meta">${phone || 'No phone'} · ${waitText} · Added ${formatTime(person.created_at)}</p>
+                        </div>
+                        <div class="row-actions">
+                            <button class="action-btn primary" type="button" data-action="served" data-id="${escapeHtml(person.id)}">Serve</button>
+                            <button class="action-btn secondary" type="button" data-action="no_show" data-id="${escapeHtml(person.id)}">No Show</button>
+                            ${waControl}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function render() {
+            renderMode();
+            renderMetrics();
+            renderQueue();
+            els.lastUpdated.textContent = `Updated ${formatTime(new Date().toISOString())}`;
+        }
+
+        function renderError(error) {
+            els.queueList.innerHTML = `<div class="queue-error">Supabase blocked this dashboard request: ${escapeHtml(error.message)}</div>`;
+            els.lastUpdated.textContent = 'Needs attention';
+            showToast('Queue could not be loaded. Check Supabase RLS and table columns.');
+        }
+
+        async function fetchQueue() {
+            els.lastUpdated.textContent = 'Refreshing...';
+
+            let query = db
+                .from('queue')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (salonId) {
+                query = query.eq('salon_id', salonId);
+            }
+
+            const { data, error } = await query;
+            if (error) {
+                renderError(error);
+                return;
+            }
+
+            state.queue = Array.isArray(data) ? data : [];
+            render();
+        }
+
+        async function updateQueueStatus(customerId, status) {
+            const { error } = await db
+                .from('queue')
+                .update({ status })
+                .eq('id', customerId);
+
+            if (error) {
+                showToast(`Could not update queue: ${error.message}`);
+                return;
+            }
+
+            showToast(status === 'served' ? 'Customer marked served.' : 'Customer marked no-show.');
+            fetchQueue();
+        }
+
+        async function addWalkIn(event) {
+            event.preventDefault();
+            if (state.mode === 'busy') {
+                showToast('Shop is set to busy. Start accepting before adding walk-ins.');
+                return;
+            }
+
+            const payload = {
+                name: els.customerName.value.trim(),
+                phone: els.customerPhone.value.trim(),
+                status: 'waiting'
+            };
+
+            if (salonId) {
+                payload.salon_id = salonId;
+            }
+
+            if (!payload.name || !payload.phone) return;
+
+            els.addWalkInBtn.disabled = true;
+            els.addWalkInBtn.textContent = 'Adding...';
+
+            const { error } = await db.from('queue').insert([payload]);
+
+            els.addWalkInBtn.disabled = state.mode === 'busy';
+            els.addWalkInBtn.textContent = 'Add to Queue';
+
+            if (error) {
+                showToast(`Could not add walk-in: ${error.message}`);
+                return;
+            }
+
+            els.walkInForm.reset();
+            showToast('Walk-in added to the queue.');
+            fetchQueue();
+        }
+
+        async function syncSalonMode() {
+            if (!salonId) return;
+
+            const waiting = getWaitingQueue();
+            const waitTime = state.mode === 'busy' ? 'Busy' : `${waiting.length * 15} min`;
+            const { error } = await db
+                .from('salons')
+                .update({ queue_status: state.mode, waitTime })
+                .eq('id', salonId);
+
+            if (error) {
+                showToast('Mode saved on this device. Add queue_status to salons for cloud sync.');
+            }
+        }
+
+        function toggleMode() {
+            state.mode = state.mode === 'busy' ? 'accepting' : 'busy';
+            localStorage.setItem(modeStorageKey, state.mode);
+            renderMode();
+            syncSalonMode();
+        }
+
+        els.modeToggle.addEventListener('click', toggleMode);
+        els.refreshBtn.addEventListener('click', fetchQueue);
+        els.walkInForm.addEventListener('submit', addWalkIn);
+        els.queueList.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            updateQueueStatus(button.dataset.id, button.dataset.action);
         });
-    }
 
-    async function serveCustomer(customerId) {
-        const { error } = await db
-            .from('queue')
-            .update({ status: 'served' })
-            .eq('id', customerId);
-
-        if (error) {
-            console.error("Update Error:", error.message);
-            return;
+        const channelConfig = { event: '*', schema: 'public', table: 'queue' };
+        if (salonId) {
+            channelConfig.filter = `salon_id=eq.${salonId}`;
         }
+
+        db.channel('zlon-dashboard-queue')
+            .on('postgres_changes', channelConfig, fetchQueue)
+            .subscribe();
+
+        renderMode();
         fetchQueue();
-    }
-
-    // REAL-TIME: This makes the names pop up without refreshing!
-    db.channel('custom-all-channel')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'queue' }, () => {
-          fetchQueue();
-      })
-      .subscribe();
-
-    fetchQueue();
-</script>
+    </script>
 </body>
 </html>
