@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZLon | Barber Login</title>
+    <title>ZLon | Owner Login</title>
     <meta name="description" content="Secure ZLon login for salon owners and barbers.">
     <link rel="shortcut icon" href="favicon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="manifest" href="site.webmanifest">
+    <link rel="manifest" href="business-manifest.json">
     <meta name="theme-color" content="#0a0a0a">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="supabase-client.js"></script>
+    <script src="auth-routes.js"></script>
+    <script src="pwa.js"></script>
     <style>
         :root {
             --black: #000;
@@ -290,7 +292,7 @@
 <body>
     <main class="login-shell">
         <section class="brand-panel" aria-label="ZLon owner portal">
-            <a class="brand-logo" href="index.html">ZLon.</a>
+            <a class="brand-logo" href="https://zlon.in/">ZLon.</a>
             <div class="brand-copy">
                 <p class="eyebrow">Owner Access</p>
                 <h1>Control the chair.</h1>
@@ -299,8 +301,8 @@
         </section>
 
         <section class="form-panel">
-            <a class="back-link" href="index.html">Back to ZLon</a>
-            <p class="eyebrow">Barber Login</p>
+            <a class="back-link" href="https://zlon.in/">Back to ZLon</a>
+            <p class="eyebrow">Owner Login</p>
             <h1 id="formTitle">Welcome back.</h1>
             <p class="subtitle" id="formSubtitle">Use the email assigned to your salon record.</p>
 
@@ -365,8 +367,14 @@
             setNotice(error.message, 'error');
         }
 
-        function dashboardUrl() {
-            return new URL('dashboard.html', window.location.href).href;
+        if (window.ZLon.authRoutes && window.ZLon.authRoutes.shouldUseBusinessLoginHost()) {
+            window.location.replace(window.ZLon.authRoutes.loginUrl());
+        }
+
+        function ownerPortalUrl() {
+            return window.ZLon.authRoutes
+                ? window.ZLon.authRoutes.portalUrl()
+                : new URL('portal', window.location.href).href;
         }
 
         function setNotice(message, type = '') {
@@ -500,7 +508,7 @@
 
             const options = {
                 shouldCreateUser: authMode === 'signup',
-                emailRedirectTo: dashboardUrl()
+                emailRedirectTo: ownerPortalUrl()
             };
 
             if (authMode === 'signup') {
@@ -575,7 +583,11 @@
                 return;
             }
 
-            window.location.href = 'dashboard.html';
+            if (window.ZLon.authRoutes) {
+                await window.ZLon.authRoutes.syncProfile(db, response.data.user, 'owner');
+            }
+
+            window.location.href = ownerPortalUrl();
         }
 
         async function handleAuthSubmit(event) {
@@ -598,7 +610,7 @@
         if (db) {
             db.auth.getSession().then(({ data }) => {
                 if (data.session) {
-                    window.location.href = 'dashboard.html';
+                    window.location.href = ownerPortalUrl();
                 }
             });
         }

@@ -1,15 +1,15 @@
 {
     "id": "/",
-    "name": "ZLon | The Future of Grooming",
-    "short_name": "ZLon",
-    "description": "Find nearby salons, skip the queue, and book on WhatsApp.",
+    "name": "ZLon Business",
+    "short_name": "ZLon Biz",
+    "description": "Manage salon availability, appointments, and owner operations.",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
     "orientation": "portrait",
     "theme_color": "#0a0a0a",
     "background_color": "#0a0a0a",
-    "categories": ["beauty", "lifestyle", "productivity"],
+    "categories": ["business", "productivity"],
     "icons": [
         {
             "src": "/logo-192.png",

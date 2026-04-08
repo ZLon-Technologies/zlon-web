@@ -6,7 +6,7 @@ out_dir=${ZLON_BUILD_DIR:-dist}
 rm -rf "$out_dir"
 mkdir -p "$out_dir"
 
-for asset in *.html *.png *.webmanifest *.js; do
+for asset in *.html *.png *.webmanifest *.js manifest.json business-manifest.json; do
     [ -f "$asset" ] || continue
 
     case "$asset" in

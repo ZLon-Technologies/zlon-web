@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZLon | Barber Dashboard</title>
+    <title>ZLon | Owner Portal</title>
     <meta name="description" content="ZLon dashboard for salon owners to manage live queues, walk-ins, and WhatsApp customer flow.">
     <link rel="shortcut icon" href="favicon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="manifest" href="site.webmanifest">
+    <link rel="manifest" href="business-manifest.json">
     <meta name="theme-color" content="#0a0a0a">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script src="supabase-client.js"></script>
+    <script src="auth-routes.js"></script>
+    <script src="pwa.js"></script>
     <style>
         :root {
             --brand-dark: #0a0a0a;
@@ -131,6 +133,54 @@
             color: #fff;
         }
 
+        .owner-menu-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            background: rgba(17, 24, 39, 0.46);
+            backdrop-filter: blur(6px);
+        }
+
+        .owner-menu-overlay[hidden],
+        .owner-menu[hidden] {
+            display: none;
+        }
+
+        .owner-menu {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 81;
+            width: min(340px, 88vw);
+            height: 100vh;
+            padding: 28px;
+            background: #fff;
+            border-left: 1px solid var(--line);
+            box-shadow: -24px 0 60px rgba(0, 0, 0, 0.18);
+        }
+
+        .owner-menu-heading {
+            margin-bottom: 20px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .owner-menu button {
+            width: 100%;
+            min-height: 52px;
+            margin-bottom: 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--ink);
+            font-weight: 900;
+            text-align: left;
+            padding: 0 16px;
+        }
+
         main {
             max-width: 1180px;
             margin: 0 auto;
@@ -187,10 +237,6 @@
 
         .mode-box.busy {
             background: #2b2111;
-        }
-
-        .mode-box.packed {
-            background: #1f2937;
         }
 
         .mode-label {
@@ -466,8 +512,7 @@
             background: #fff;
         }
 
-        .submit-btn,
-        .wide-link {
+        .submit-btn {
             width: 100%;
             min-height: 48px;
             display: inline-flex;
@@ -487,18 +532,6 @@
             opacity: 0.55;
         }
 
-        .quick-links {
-            display: grid;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
-
-        .wide-link {
-            border: 1px solid var(--line);
-            background: #fff;
-            color: var(--ink);
-        }
-
         .ops-note {
             margin: 0;
             padding: 18px;
@@ -507,41 +540,6 @@
             color: var(--muted);
             font-size: 14px;
             line-height: 1.6;
-        }
-
-        .insights {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 16px;
-            margin-top: 16px;
-        }
-
-        .insight {
-            min-height: 120px;
-            padding: 22px;
-            border-radius: 8px;
-            background: var(--brand-dark);
-            color: #fff;
-        }
-
-        .insight:nth-child(2) {
-            background: #171717;
-        }
-
-        .insight:nth-child(3) {
-            background: #242424;
-        }
-
-        .insight h3 {
-            margin: 0 0 10px;
-            font-size: 16px;
-        }
-
-        .insight p {
-            margin: 0;
-            color: rgba(255, 255, 255, 0.68);
-            line-height: 1.6;
-            font-size: 14px;
         }
 
         .toast {
@@ -569,8 +567,7 @@
 
         @media (max-width: 980px) {
             .command-panel,
-            .workspace,
-            .insights {
+            .workspace {
                 grid-template-columns: 1fr;
             }
 
@@ -634,12 +631,12 @@
             <a class="brand" href="index.html" aria-label="Go to ZLon home">
                 <span class="brand-mark">Z.</span>
                 <span>
-                    <strong class="brand-title">ZLon Dashboard</strong>
+                    <strong class="brand-title">ZLon Portal</strong>
                     <span class="brand-subtitle" id="salonIdentity">Owner console</span>
                 </span>
             </a>
             <div class="topbar-actions">
-                <a class="ghost-link" href="business.html">Business</a>
+                <button class="ghost-link" id="ownerMenuBtn" type="button" aria-controls="ownerMenu" aria-expanded="false">Menu</button>
                 <button class="refresh-btn" id="refreshBtn" type="button">Refresh</button>
                 <button class="logout-btn" id="logoutBtn" type="button">Logout</button>
             </div>
@@ -664,10 +661,6 @@
                         <button class="status-option" type="button" data-status="busy">
                             <span><strong>Busy</strong><small>15 Mins</small></span>
                             <span>15m</span>
-                        </button>
-                        <button class="status-option" type="button" data-status="packed">
-                            <span><strong>Packed</strong><small>30+ Mins</small></span>
-                            <span>30+</span>
                         </button>
                     </div>
                 </div>
@@ -697,7 +690,7 @@
                     <div class="panel-heading">
                         <div>
                             <p class="eyebrow">Queue</p>
-                            <h2>Customers Waiting</h2>
+                            <h2>Appointment List</h2>
                         </div>
                         <span class="last-updated" id="lastUpdated">Loading...</span>
                     </div>
@@ -708,7 +701,7 @@
 
                 <aside class="panel side-panel" aria-labelledby="walkInTitle">
                     <p class="eyebrow">Counter</p>
-                    <h2 id="walkInTitle">Add Walk-In</h2>
+                    <h2 id="walkInTitle">Add Appointment</h2>
                     <form class="walk-in-form" id="walkInForm">
                         <label>
                             Customer Name
@@ -718,34 +711,22 @@
                             WhatsApp Number
                             <input id="customerPhone" name="customerPhone" inputmode="tel" autocomplete="tel" placeholder="10 digit mobile" required>
                         </label>
-                        <button class="submit-btn" id="addWalkInBtn" type="submit">Add to Queue</button>
+                        <button class="submit-btn" id="addWalkInBtn" type="submit">Add Appointment</button>
                     </form>
-
-                    <div class="quick-links">
-                        <a class="wide-link" id="bookingLink" href="index.html#s3" target="_blank" rel="noreferrer">Open Booking Page</a>
-                        <a class="wide-link" href="apply.html?plan=premium">Request Premium Badge</a>
-                    </div>
 
                     <p class="ops-note" id="opsNote">Tip: add <strong>?salon_id=YOUR_ID</strong> to this dashboard URL when your Supabase queue table is ready for salon-specific rows.</p>
                 </aside>
             </section>
-
-            <section class="insights" aria-label="Operating notes">
-                <div class="insight">
-                    <h3>Alpha 10 Ready</h3>
-                    <p>Use this counter flow while onboarding the first Jabalpur salons in person.</p>
-                </div>
-                <div class="insight">
-                    <h3>Premium Signal</h3>
-                    <p>Premium partners can show priority placement and calmer peak-hour handling.</p>
-                </div>
-                <div class="insight">
-                    <h3>WhatsApp First</h3>
-                    <p>No app install, no training burden, no heavy handoff for the barber chair.</p>
-                </div>
-            </section>
         </main>
     </div>
+
+    <div class="owner-menu-overlay" id="ownerMenuOverlay" hidden></div>
+    <aside class="owner-menu" id="ownerMenu" aria-label="Owner menu" hidden>
+        <div class="owner-menu-heading">Owner Portal</div>
+        <button type="button" data-owner-menu="Store Settings">Store Settings</button>
+        <button type="button" data-owner-menu="Staff Management">Staff Management</button>
+        <button type="button" data-owner-menu="Earnings">Earnings</button>
+    </aside>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -754,13 +735,12 @@
         try {
             db = window.ZLon.getSupabaseClient();
         } catch (error) {
-            window.location.replace('index.html');
+            window.location.replace(window.ZLon.authRoutes ? window.ZLon.authRoutes.loginUrl() : 'login.html');
             throw error;
         }
         const WAIT_STATUSES = {
             available: { label: 'Available', helper: 'No Wait', waitTime: 'No Wait', estimate: '0m' },
-            busy: { label: 'Busy', helper: '15 Mins', waitTime: '15 Mins', estimate: '15m' },
-            packed: { label: 'Packed', helper: '30+ Mins', waitTime: '30+ Mins', estimate: '30+' }
+            busy: { label: 'Busy', helper: '15 Mins', waitTime: '15 Mins', estimate: '15m' }
         };
 
         const state = {
@@ -791,9 +771,11 @@
             customerName: document.getElementById('customerName'),
             customerPhone: document.getElementById('customerPhone'),
             addWalkInBtn: document.getElementById('addWalkInBtn'),
-            bookingLink: document.getElementById('bookingLink'),
             opsNote: document.getElementById('opsNote'),
-            toast: document.getElementById('toast')
+            toast: document.getElementById('toast'),
+            ownerMenuBtn: document.getElementById('ownerMenuBtn'),
+            ownerMenu: document.getElementById('ownerMenu'),
+            ownerMenuOverlay: document.getElementById('ownerMenuOverlay')
         };
 
         function escapeHtml(value) {
@@ -852,8 +834,7 @@
 
         function statusFromSalon(salon) {
             const rawStatus = `${salon.queue_status || ''} ${salon.waitTime || salon.wait_time || ''}`.toLowerCase();
-            if (rawStatus.includes('packed') || rawStatus.includes('30')) return 'packed';
-            if (rawStatus.includes('busy') || rawStatus.includes('15')) return 'busy';
+            if (rawStatus.includes('packed') || rawStatus.includes('busy') || rawStatus.includes('15') || rawStatus.includes('30')) return 'busy';
             return 'available';
         }
 
@@ -870,9 +851,15 @@
             }, 3600);
         }
 
+        function setOwnerMenuOpen(isOpen) {
+            els.ownerMenu.hidden = !isOpen;
+            els.ownerMenuOverlay.hidden = !isOpen;
+            els.ownerMenuBtn.setAttribute('aria-expanded', String(isOpen));
+        }
+
         function renderMode() {
             const option = WAIT_STATUSES[state.statusId] || WAIT_STATUSES.available;
-            els.modeBox.classList.remove('busy', 'packed');
+            els.modeBox.classList.remove('busy');
             if (state.statusId !== 'available') {
                 els.modeBox.classList.add(state.statusId);
             }
@@ -953,7 +940,6 @@
             els.dashboardTitle.textContent = `Welcome, ${salonName}.`;
             els.dashboardLede.textContent = 'Update your live wait status and manage the queue from one secure owner console.';
             els.opsNote.textContent = `Linked salon ID: ${state.salon.id}`;
-            els.bookingLink.href = `index.html?salon_id=${encodeURIComponent(state.salon.id)}#s3`;
             render();
         }
 
@@ -1021,9 +1007,17 @@
         }
 
         async function guardSession() {
+            if (window.ZLon.authRoutes) {
+                const route = await window.ZLon.authRoutes.requireUserType(db, ['owner']);
+                if (!route) return null;
+                state.session = route.session;
+                document.body.dataset.authReady = 'true';
+                return route.session;
+            }
+
             const { data, error } = await db.auth.getSession();
             if (error || !data.session) {
-                window.location.replace('index.html');
+                window.location.replace('login.html');
                 return null;
             }
             state.session = data.session;
@@ -1118,7 +1112,7 @@
             }
 
             els.addWalkInBtn.disabled = false;
-            els.addWalkInBtn.textContent = 'Add to Queue';
+            els.addWalkInBtn.textContent = 'Add Appointment';
 
             if (result.error) {
                 showToast(`Could not add walk-in: ${result.error.message}`);
@@ -1182,7 +1176,7 @@
 
         async function logout() {
             await db.auth.signOut();
-            window.location.replace('index.html');
+            window.location.replace(window.ZLon.authRoutes ? window.ZLon.authRoutes.loginUrl() : 'login.html');
         }
 
         async function initDashboard() {
@@ -1204,6 +1198,14 @@
 
         els.refreshBtn.addEventListener('click', fetchQueue);
         els.logoutBtn.addEventListener('click', logout);
+        els.ownerMenuBtn.addEventListener('click', () => setOwnerMenuOpen(els.ownerMenu.hidden));
+        els.ownerMenuOverlay.addEventListener('click', () => setOwnerMenuOpen(false));
+        els.ownerMenu.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-owner-menu]');
+            if (!button) return;
+            setOwnerMenuOpen(false);
+            showToast(`${button.dataset.ownerMenu} is being prepared for owner accounts.`);
+        });
         els.walkInForm.addEventListener('submit', addWalkIn);
         els.queueList.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action]');
@@ -1216,7 +1218,7 @@
 
         db.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT' || !session) {
-                window.location.replace('index.html');
+                window.location.replace(window.ZLon.authRoutes ? window.ZLon.authRoutes.loginUrl() : 'login.html');
             }
         });
 

@@ -1,4 +1,44 @@
 {
   "buildCommand": "sh ./scripts/build-site.sh",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
+      "destination": "/dashboard.html",
+      "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
+      "destination": "/dashboard.html",
+      "permanent": false
+    },
+    {
+      "source": "/login.html",
+      "has": [{ "type": "host", "value": "zlon.in" }],
+      "destination": "https://mybusiness.zlon.in/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/login.html",
+      "has": [{ "type": "host", "value": "www.zlon.in" }],
+      "destination": "https://mybusiness.zlon.in/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard.html",
+      "has": [{ "type": "host", "value": "zlon.in" }],
+      "destination": "https://mybusiness.zlon.in/",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard.html",
+      "has": [{ "type": "host", "value": "www.zlon.in" }],
+      "destination": "https://mybusiness.zlon.in/",
+      "permanent": false
+    },
+    { "source": "/portal", "destination": "https://mybusiness.zlon.in/", "permanent": false },
+    { "source": "/owner", "destination": "https://mybusiness.zlon.in/", "permanent": false }
+  ]
 }
