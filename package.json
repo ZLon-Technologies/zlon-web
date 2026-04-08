@@ -1,0 +1,8 @@
+{
+  "name": "zlon-web-main",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "sh ./scripts/write-supabase-config.sh"
+  }
+}

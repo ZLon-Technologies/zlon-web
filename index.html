@@ -141,6 +141,8 @@
         @media (max-width: 768px) { h1 { font-size: 42px; } .logo { font-size: 30px; } .footer-grid { gap: 40px; } }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-client.js"></script>
 </head>
 <body>
 
@@ -251,14 +253,17 @@
     <div class="app-modal-overlay" id="aboutModal"><div class="app-modal" id="aboutModalContent"><div class="modal-header"><h2>About ZLon</h2><span class="close-app-modal" onclick="closeAppModal('aboutModal')">&times;</span></div><p>ZLon is a real-time queuing platform that allows you to join a salon line from your phone.</p></div></div>
 
     <script>
-        // PRESERVING YOUR SUPABASE LOGIC EXACTLY
-        const { createClient } = supabase;
-        const supabaseUrl = 'https://eplbnqgncxarpotwilai.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbGJucWduY3hhcnBvdHdpbGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzYzNzEsImV4cCI6MjA5MDExMjM3MX0.CFxHAJo-GhhL-3x2aZeukmeMzL8pKjnoPA8fdFUIzYg';
-        const _supabase = createClient(supabaseUrl, supabaseKey);
+        let _supabase = null;
         let dbSalons = [];
 
+        try {
+            _supabase = window.ZLon.getSupabaseClient();
+        } catch (error) {
+            console.warn(error.message);
+        }
+
         async function loadSalonsFromCloud() {
+            if (!_supabase) return;
             const { data, error } = await _supabase.from('salons').select('*');
             if (data) { dbSalons = data; console.log("Live Salons Loaded!"); }
         }

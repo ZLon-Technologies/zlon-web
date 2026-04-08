@@ -18,7 +18,15 @@
       "logo": "https://zlon.in/favicon.png"
     }
     </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        if (window.emailjs) {
+            emailjs.init("HOTmsXLD5WPCyFKh0");
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-client.js"></script>
     <style>
         :root { --brand: #000; --bg: #fff; --muted: #666; }
         body { font-family: -apple-system, sans-serif; margin: 0; background: var(--bg); color: #000; }
@@ -156,15 +164,43 @@
         }
 
         // Supabase Logic
-        const SUPABASE_URL = 'https://eplbnqgncxarpotwilai.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbGJucWduY3hhcnBvdHdpbGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzYzNzEsImV4cCI6MjA5MDExMjM3MX0.CFxHAJo-GhhL-3x2aZeukmeMzL8pKjnoPA8fdFUIzYg';
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let db = null;
+        try {
+            db = window.ZLon.getSupabaseClient();
+        } catch (error) {
+            console.warn(error.message);
+        }
+
+        async function sendLeadNotification() {
+            if (!window.emailjs) {
+                console.error('Email notification failed...', 'EmailJS SDK unavailable');
+                return;
+            }
+
+            try {
+                const response = await emailjs.send("service_48tenxq", "template_paduv0j", {
+                    owner_name: document.getElementById('owner_name').value,
+                    shop_name: document.getElementById('salon_name').value,
+                    phone: document.getElementById('phone').value
+                });
+                console.log('Lead notification sent!', response.status, response.text);
+            } catch (error) {
+                console.error('Email notification failed...', error);
+            }
+        }
 
         document.getElementById('partnerForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             btn.innerText = "Processing...";
             btn.disabled = true;
+
+            if (!db) {
+                alert("Supabase is not configured yet.");
+                btn.innerText = "Send Application";
+                btn.disabled = false;
+                return;
+            }
             
             const submission = {
                 plan_type: plan,
@@ -188,6 +224,7 @@
                 btn.innerText = "Send Application";
                 btn.disabled = false;
             } else {
+                await sendLeadNotification();
                 alert("Success! Your application has been submitted to ZLon.");
                 window.location.href = "index.html";
             }

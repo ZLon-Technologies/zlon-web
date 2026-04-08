@@ -12,6 +12,8 @@
     <link rel="manifest" href="site.webmanifest">
     <meta name="theme-color" content="#0a0a0a">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-client.js"></script>
     <style>
         :root {
             --black: #000;
@@ -298,27 +300,38 @@
                     <input id="email" type="email" autocomplete="email" placeholder=" " required>
                     <label for="email">Email Address</label>
                 </div>
-                <div class="field">
-                    <input id="password" type="password" autocomplete="current-password" placeholder=" " minlength="6" required>
-                    <label for="password">Password</label>
+                <div class="field" id="fullNameField" hidden>
+                    <input id="fullName" type="text" autocomplete="name" placeholder=" ">
+                    <label for="fullName">Full Name</label>
                 </div>
-                <button class="submit-btn" id="submitBtn" type="submit">Log In</button>
+                <div class="field" id="shopNameField" hidden>
+                    <input id="shopName" type="text" autocomplete="organization" placeholder=" ">
+                    <label for="shopName">Shop Name</label>
+                </div>
+                <div class="field" id="otpField" hidden>
+                    <input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder=" " maxlength="6">
+                    <label for="otpCode">6-digit OTP</label>
+                </div>
+                <button class="submit-btn" id="submitBtn" type="submit">Send OTP</button>
                 <p class="notice" id="notice" role="status" aria-live="polite"></p>
             </form>
 
-            <p class="microcopy">For first-time signup, the matching salon row should include the same email in <strong>owner_email</strong>. ZLon will attach your Auth ID automatically after sign-in.</p>
+            <p class="microcopy">For first-time signup, use the same email added to <strong>owner_email</strong>. ZLon will attach your Auth ID after OTP verification.</p>
         </section>
     </main>
 
     <script>
-        const SUPABASE_URL = 'https://eplbnqgncxarpotwilai.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbGJucWduY3hhcnBvdHdpbGFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MzYzNzEsImV4cCI6MjA5MDExMjM3MX0.CFxHAJo-GhhL-3x2aZeukmeMzL8pKjnoPA8fdFUIzYg';
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let db = null;
 
         const els = {
             authForm: document.getElementById('authForm'),
             email: document.getElementById('email'),
-            password: document.getElementById('password'),
+            fullName: document.getElementById('fullName'),
+            shopName: document.getElementById('shopName'),
+            otpCode: document.getElementById('otpCode'),
+            fullNameField: document.getElementById('fullNameField'),
+            shopNameField: document.getElementById('shopNameField'),
+            otpField: document.getElementById('otpField'),
             submitBtn: document.getElementById('submitBtn'),
             notice: document.getElementById('notice'),
             formTitle: document.getElementById('formTitle'),
@@ -327,6 +340,14 @@
         };
 
         let authMode = 'login';
+        let otpStage = false;
+        let pendingEmail = '';
+
+        try {
+            db = window.ZLon.getSupabaseClient();
+        } catch (error) {
+            setNotice(error.message, 'error');
+        }
 
         function dashboardUrl() {
             return new URL('dashboard.html', window.location.href).href;
@@ -339,17 +360,40 @@
 
         function setLoading(isLoading) {
             els.submitBtn.disabled = isLoading;
-            els.submitBtn.textContent = isLoading ? 'Please wait...' : (authMode === 'login' ? 'Log In' : 'Create Account');
+            if (isLoading) {
+                els.submitBtn.textContent = 'Please wait...';
+                return;
+            }
+            els.submitBtn.textContent = otpStage ? 'Submit Code' : 'Send OTP';
+        }
+
+        function setOtpStage(isOtpStage) {
+            otpStage = isOtpStage;
+            els.otpField.hidden = !isOtpStage;
+            els.otpCode.disabled = !isOtpStage;
+            els.email.disabled = isOtpStage;
+            els.fullName.disabled = isOtpStage || authMode !== 'signup';
+            els.shopName.disabled = isOtpStage || authMode !== 'signup';
+            els.tabs.forEach((tab) => { tab.disabled = isOtpStage; });
+            if (isOtpStage) {
+                els.otpCode.focus();
+            }
+            setLoading(false);
         }
 
         function setMode(mode) {
             authMode = mode;
+            pendingEmail = '';
+            setOtpStage(false);
             els.tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
             els.formTitle.textContent = mode === 'login' ? 'Welcome back.' : 'Create owner access.';
             els.formSubtitle.textContent = mode === 'login'
-                ? 'Use the email assigned to your salon record.'
-                : 'Use the same email already added to your salon row.';
-            els.password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+                ? 'Enter your email and we will send a secure OTP.'
+                : 'Enter your owner details and we will send a secure OTP.';
+            els.fullNameField.hidden = mode !== 'signup';
+            els.shopNameField.hidden = mode !== 'signup';
+            els.fullName.disabled = mode !== 'signup';
+            els.shopName.disabled = mode !== 'signup';
             setNotice('');
             setLoading(false);
         }
@@ -404,23 +448,42 @@
             };
         }
 
-        async function handleAuthSubmit(event) {
-            event.preventDefault();
+        async function sendOtp() {
             const email = els.email.value.trim();
-            const password = els.password.value;
+            const fullName = els.fullName.value.trim();
+            const shopName = els.shopName.value.trim();
 
-            if (!email || !password) return;
+            if (!db) {
+                setNotice('Supabase is not configured yet.', 'error');
+                return;
+            }
+
+            if (!email) {
+                setNotice('Enter your email address first.', 'error');
+                return;
+            }
+
+            if (authMode === 'signup' && (!fullName || !shopName)) {
+                setNotice('Enter your full name and shop name to continue.', 'error');
+                return;
+            }
 
             setLoading(true);
             setNotice('');
 
-            const response = authMode === 'login'
-                ? await db.auth.signInWithPassword({ email, password })
-                : await db.auth.signUp({
-                    email,
-                    password,
-                    options: { emailRedirectTo: dashboardUrl() }
-                });
+            const options = {
+                shouldCreateUser: authMode === 'signup',
+                emailRedirectTo: dashboardUrl()
+            };
+
+            if (authMode === 'signup') {
+                options.data = {
+                    full_name: fullName,
+                    shop_name: shopName
+                };
+            }
+
+            const response = await db.auth.signInWithOtp({ email, options });
 
             if (response.error) {
                 setNotice(response.error.message, 'error');
@@ -428,23 +491,62 @@
                 return;
             }
 
-            if (response.data && response.data.session && response.data.user) {
-                const link = await linkSalonToOwner(response.data.user);
-                if (!link.linked) {
-                    setNotice(link.message, 'error');
-                    setLoading(false);
-                    return;
-                }
+            pendingEmail = email;
+            setOtpStage(true);
+            setNotice('OTP sent. Check your email and enter the 6-digit code.', 'success');
+        }
 
-                window.location.href = 'dashboard.html';
+        async function verifyOtp() {
+            const token = els.otpCode.value.trim();
+
+            if (!db) {
+                setNotice('Supabase is not configured yet.', 'error');
                 return;
             }
 
-            if (authMode === 'signup') {
-                setNotice('Account created. Check your email if Supabase asks for confirmation, then log in here.', 'success');
-            } else {
-                setNotice('Login succeeded, but Supabase did not return a session. Try again.', 'error');
+            if (!pendingEmail || token.length !== 6) {
+                setNotice('Enter the 6-digit OTP from your email.', 'error');
+                return;
             }
+
+            setLoading(true);
+            setNotice('');
+
+            const response = await db.auth.verifyOtp({
+                email: pendingEmail,
+                token,
+                type: 'email'
+            });
+
+            if (response.error) {
+                setNotice(response.error.message, 'error');
+                setLoading(false);
+                return;
+            }
+
+            if (!response.data || !response.data.session || !response.data.user) {
+                setNotice('OTP verified, but Supabase did not return a session. Try again.', 'error');
+                setLoading(false);
+                return;
+            }
+
+            const link = await linkSalonToOwner(response.data.user);
+            if (!link.linked) {
+                setNotice(link.message, 'error');
+                setLoading(false);
+                return;
+            }
+
+            window.location.href = 'dashboard.html';
+        }
+
+        async function handleAuthSubmit(event) {
+            event.preventDefault();
+            if (otpStage) {
+                await verifyOtp();
+                return;
+            }
+            await sendOtp();
             setLoading(false);
         }
 
@@ -454,11 +556,15 @@
 
         els.authForm.addEventListener('submit', handleAuthSubmit);
 
-        db.auth.getSession().then(({ data }) => {
-            if (data.session) {
-                window.location.href = 'dashboard.html';
-            }
-        });
+        if (db) {
+            db.auth.getSession().then(({ data }) => {
+                if (data.session) {
+                    window.location.href = 'dashboard.html';
+                }
+            });
+        }
+
+        setMode('login');
     </script>
 </body>
 </html>
