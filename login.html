@@ -327,7 +327,7 @@
                     <label for="otpCode">6-digit OTP</label>
                 </div>
                 <button class="submit-btn" id="submitBtn" type="submit">Send OTP</button>
-                <button class="secondary-btn" id="goBackBtn" type="button" hidden>Change Email</button>
+                <button class="secondary-btn" id="goBackBtn" type="button" hidden>Go Back</button>
                 <p class="notice" id="notice" role="status" aria-live="polite"></p>
             </form>
 
@@ -421,7 +421,8 @@
 
         function goBackToEmail() {
             setCodeSent(false);
-            setNotice('Update the email address and request a fresh OTP.', '');
+            els.email.value = '';
+            setNotice('Enter the correct email address and request a fresh OTP.', '');
         }
 
         async function linkSalonToOwner(user) {
