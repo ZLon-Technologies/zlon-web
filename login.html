@@ -232,6 +232,20 @@
             opacity: 0.62;
         }
 
+        .secondary-btn {
+            min-height: 48px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #fff;
+            color: var(--ink);
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .secondary-btn[hidden] {
+            display: none;
+        }
+
         .notice {
             min-height: 24px;
             margin: 4px 0 0;
@@ -313,6 +327,7 @@
                     <label for="otpCode">6-digit OTP</label>
                 </div>
                 <button class="submit-btn" id="submitBtn" type="submit">Send OTP</button>
+                <button class="secondary-btn" id="goBackBtn" type="button" hidden>Change Email</button>
                 <p class="notice" id="notice" role="status" aria-live="polite"></p>
             </form>
 
@@ -333,6 +348,7 @@
             shopNameField: document.getElementById('shopNameField'),
             otpField: document.getElementById('otpField'),
             submitBtn: document.getElementById('submitBtn'),
+            goBackBtn: document.getElementById('goBackBtn'),
             notice: document.getElementById('notice'),
             formTitle: document.getElementById('formTitle'),
             formSubtitle: document.getElementById('formSubtitle'),
@@ -340,7 +356,7 @@
         };
 
         let authMode = 'login';
-        let otpStage = false;
+        let isCodeSent = false;
         let pendingEmail = '';
 
         try {
@@ -364,19 +380,24 @@
                 els.submitBtn.textContent = 'Please wait...';
                 return;
             }
-            els.submitBtn.textContent = otpStage ? 'Submit Code' : 'Send OTP';
+            els.submitBtn.textContent = isCodeSent ? 'Submit Code' : 'Send OTP';
         }
 
-        function setOtpStage(isOtpStage) {
-            otpStage = isOtpStage;
-            els.otpField.hidden = !isOtpStage;
-            els.otpCode.disabled = !isOtpStage;
-            els.email.disabled = isOtpStage;
-            els.fullName.disabled = isOtpStage || authMode !== 'signup';
-            els.shopName.disabled = isOtpStage || authMode !== 'signup';
-            els.tabs.forEach((tab) => { tab.disabled = isOtpStage; });
-            if (isOtpStage) {
+        function setCodeSent(nextIsCodeSent) {
+            isCodeSent = nextIsCodeSent;
+            els.otpField.hidden = !nextIsCodeSent;
+            els.goBackBtn.hidden = !nextIsCodeSent;
+            els.otpCode.disabled = !nextIsCodeSent;
+            els.email.disabled = nextIsCodeSent;
+            els.fullName.disabled = nextIsCodeSent || authMode !== 'signup';
+            els.shopName.disabled = nextIsCodeSent || authMode !== 'signup';
+            els.tabs.forEach((tab) => { tab.disabled = nextIsCodeSent; });
+            if (nextIsCodeSent) {
                 els.otpCode.focus();
+            } else {
+                pendingEmail = '';
+                els.otpCode.value = '';
+                els.email.focus();
             }
             setLoading(false);
         }
@@ -384,7 +405,7 @@
         function setMode(mode) {
             authMode = mode;
             pendingEmail = '';
-            setOtpStage(false);
+            setCodeSent(false);
             els.tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
             els.formTitle.textContent = mode === 'login' ? 'Welcome back.' : 'Create owner access.';
             els.formSubtitle.textContent = mode === 'login'
@@ -396,6 +417,11 @@
             els.shopName.disabled = mode !== 'signup';
             setNotice('');
             setLoading(false);
+        }
+
+        function goBackToEmail() {
+            setCodeSent(false);
+            setNotice('Update the email address and request a fresh OTP.', '');
         }
 
         async function linkSalonToOwner(user) {
@@ -483,16 +509,22 @@
                 };
             }
 
-            const response = await db.auth.signInWithOtp({ email, options });
+            let error = null;
+            try {
+                ({ error } = await db.auth.signInWithOtp({ email, options }));
+            } catch (requestError) {
+                error = requestError;
+            }
 
-            if (response.error) {
-                setNotice(response.error.message, 'error');
+            if (error) {
+                setNotice(error.message || 'Could not send OTP. Check the email and try again.', 'error');
+                setCodeSent(false);
                 setLoading(false);
                 return;
             }
 
             pendingEmail = email;
-            setOtpStage(true);
+            setCodeSent(true);
             setNotice('OTP sent. Check your email and enter the 6-digit code.', 'success');
         }
 
@@ -512,14 +544,19 @@
             setLoading(true);
             setNotice('');
 
-            const response = await db.auth.verifyOtp({
-                email: pendingEmail,
-                token,
-                type: 'email'
-            });
+            let response = null;
+            try {
+                response = await db.auth.verifyOtp({
+                    email: pendingEmail,
+                    token,
+                    type: 'email'
+                });
+            } catch (requestError) {
+                response = { error: requestError };
+            }
 
             if (response.error) {
-                setNotice(response.error.message, 'error');
+                setNotice(response.error.message || 'OTP verification failed. Try again or change the email.', 'error');
                 setLoading(false);
                 return;
             }
@@ -542,7 +579,7 @@
 
         async function handleAuthSubmit(event) {
             event.preventDefault();
-            if (otpStage) {
+            if (isCodeSent) {
                 await verifyOtp();
                 return;
             }
@@ -555,6 +592,7 @@
         });
 
         els.authForm.addEventListener('submit', handleAuthSubmit);
+        els.goBackBtn.addEventListener('click', goBackToEmail);
 
         if (db) {
             db.auth.getSession().then(({ data }) => {
