@@ -261,7 +261,6 @@ export function OwnerApp() {
       phone: nextPhone,
       options: {
         shouldCreateUser: true,
-        redirectTo: `${window.location.origin}/auth/callback`,
         data: { user_type: 'owner' }
       }
     });
@@ -316,7 +315,6 @@ export function OwnerApp() {
       phone: pendingPhone,
       options: {
         shouldCreateUser: true,
-        redirectTo: `${window.location.origin}/auth/callback`,
         data: { user_type: 'owner' }
       }
     });
@@ -375,7 +373,7 @@ export function OwnerApp() {
       email: emailInput.trim(),
       options: {
         shouldCreateUser: false,
-        redirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: { user_type: 'owner' }
       }
     });
