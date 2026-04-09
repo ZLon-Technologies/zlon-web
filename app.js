@@ -28,12 +28,13 @@
         checkAuth();
 
         // Event listeners
-        document.getElementById('login-form').addEventListener('submit', handleLogin);
-        document.getElementById('google-login').addEventListener('click', handleGoogleLogin);
-        document.getElementById('phone-login').addEventListener('click', handlePhoneLogin);
-        document.getElementById('hamburger').addEventListener('click', toggleMenu);
-        document.getElementById('busy-toggle').addEventListener('change', handleBusyToggle);
-        document.getElementById('upload-btn').addEventListener('click', handleImageUpload);
+        document.getElementById('login-form')?.addEventListener('submit', handleLogin);
+        document.getElementById('googleAuthButton')?.addEventListener('click', handleGoogleLogin);
+        document.getElementById('appleAuthButton')?.addEventListener('click', handleAppleLogin);
+        document.getElementById('phone-login')?.addEventListener('click', handlePhoneLogin);
+        document.getElementById('hamburger')?.addEventListener('click', toggleMenu);
+        document.getElementById('busy-toggle')?.addEventListener('change', handleBusyToggle);
+        document.getElementById('upload-btn')?.addEventListener('click', handleImageUpload);
     }
 
     async function checkAuth() {
@@ -84,6 +85,14 @@
             options: { redirectTo: window.location.origin }
         });
         if (error) alert('Google login failed: ' + error.message);
+    }
+
+    async function handleAppleLogin() {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'apple',
+            options: { redirectTo: window.location.origin }
+        });
+        if (error) alert('Apple login failed: ' + error.message);
     }
 
     async function handlePhoneLogin() {
