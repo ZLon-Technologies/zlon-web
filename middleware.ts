@@ -8,7 +8,7 @@ function normalizeHostname(host = '') {
   return firstHost.split(':')[0]?.trim().toLowerCase() || '';
 }
 
-export function middleware(request: NextRequest) {
+export default function middleware(request: NextRequest) {
   try {
     const pathname = request.nextUrl?.pathname || '/';
     const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
@@ -26,5 +26,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
+  runtime: 'nodejs'
 };
