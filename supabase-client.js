@@ -2,6 +2,11 @@
     const namespace = window.ZLon = window.ZLon || {};
     let client = null;
 
+    function storageKeyForHost(hostname) {
+        const host = String(hostname || 'local').replace(/[^a-z0-9.-]/gi, '-');
+        return `zlon-auth-${host}`;
+    }
+
     namespace.getSupabaseClient = function getSupabaseClient() {
         const config = namespace.supabaseConfig || {};
 
@@ -17,7 +22,15 @@
             throw new Error('Missing Supabase config. Set ZLON_SUPABASE_URL and ZLON_SUPABASE_ANON_KEY, then run the build step.');
         }
 
-        client = window.supabase.createClient(config.url, config.anonKey);
+        client = window.supabase.createClient(config.url, config.anonKey, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                flowType: 'pkce',
+                storageKey: storageKeyForHost(window.location.hostname)
+            }
+        });
         return client;
     };
 })();

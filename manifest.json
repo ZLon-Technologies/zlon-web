@@ -1,14 +1,14 @@
 {
     "id": "/",
-    "name": "ZLon | The Future of Grooming",
+    "name": "ZLon Consumer App",
     "short_name": "ZLon",
-    "description": "Find nearby salons, skip the queue, and book on WhatsApp.",
+    "description": "Consumer booking app for nearby salon discovery, booking, wallet, and history.",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
     "orientation": "portrait",
     "theme_color": "#0a0a0a",
-    "background_color": "#0a0a0a",
+    "background_color": "#ffffff",
     "categories": ["beauty", "lifestyle", "productivity"],
     "icons": [
         {

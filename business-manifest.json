@@ -1,8 +1,8 @@
 {
     "id": "/",
-    "name": "ZLon Business",
-    "short_name": "ZLon Biz",
-    "description": "Manage salon availability, appointments, and owner operations.",
+    "name": "ZLon Owner App",
+    "short_name": "ZLon Owner",
+    "description": "Owner dashboard for queue control, business operations, and salon asset management.",
     "start_url": "/dashboard.html",
     "scope": "/",
     "display": "standalone",

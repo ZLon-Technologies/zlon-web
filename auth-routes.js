@@ -1,6 +1,7 @@
 (function () {
     const namespace = window.ZLon = window.ZLon || {};
-    const CUSTOMER_HOST = 'zlon.in';
+    const CUSTOMER_HOST = 'www.zlon.in';
+    const LEGACY_CUSTOMER_HOST = 'zlon.in';
     const BUSINESS_HOST = 'mybusiness.zlon.in';
 
     function isLocalOrigin() {
@@ -23,7 +24,15 @@
     }
 
     function isCustomerHost() {
-        return window.location.hostname === CUSTOMER_HOST || window.location.hostname === `www.${CUSTOMER_HOST}`;
+        return window.location.hostname === CUSTOMER_HOST || window.location.hostname === LEGACY_CUSTOMER_HOST;
+    }
+
+    function isCanonicalCustomerHost() {
+        return window.location.hostname === CUSTOMER_HOST;
+    }
+
+    function shouldRedirectToCanonicalCustomerHost() {
+        return !isLocalOrigin() && window.location.hostname === LEGACY_CUSTOMER_HOST;
     }
 
     function portalUrl() {
@@ -52,6 +61,14 @@
 
     function shouldUseBusinessLoginHost() {
         return isCustomerHost() && !isBusinessPortalHost();
+    }
+
+    function canonicalCustomerUrl(path) {
+        if (isLocalOrigin()) {
+            return new URL((path || '/').replace(/^\//, '') || 'index.html', window.location.href).href;
+        }
+
+        return hostUrl(CUSTOMER_HOST, path || '/');
     }
 
     function normalizeUserType(value) {
@@ -181,14 +198,18 @@
     }
 
     namespace.authRoutes = {
+        canonicalCustomerUrl,
         getSession,
         homeUrl,
+        isCanonicalCustomerHost,
         isBusinessPortalHost,
+        isCustomerHost,
         loginUrl,
         portalUrl,
         redirectOwnersFromPublic,
         requireUserType,
         resolveUserType,
+        shouldRedirectToCanonicalCustomerHost,
         shouldUseBusinessLoginHost,
         syncProfile
     };
