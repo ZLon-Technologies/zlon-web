@@ -18,17 +18,10 @@ export function middleware(request: NextRequest) {
   }
 
   const isBusinessHost = hostname === 'mybusiness.zlon.in';
-  const isConsumerHost = hostname === 'zlon.in' || hostname === 'www.zlon.in' || hostname === 'localhost' || hostname === '127.0.0.1';
 
   if (isBusinessHost && pathname === '/') {
     const url = request.nextUrl.clone();
-    url.pathname = '/owner';
-    return NextResponse.rewrite(url);
-  }
-
-  if (isConsumerHost && (pathname === '/owner' || pathname === '/business')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/business';
     return NextResponse.rewrite(url);
   }
 

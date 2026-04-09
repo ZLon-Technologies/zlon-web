@@ -26,7 +26,7 @@ export default async function AuthCallbackPage() {
     const isBusinessHost = host === 'mybusiness.zlon.in';
 
     if (isBusinessHost) {
-      redirect('/owner');
+      redirect('/business');
     } else {
       redirect('/');
     }
