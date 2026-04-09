@@ -1,41 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-const PUBLIC_FILE = /\.(.*)$/;
-const BUSINESS_HOST = 'mybusiness.zlon.in';
-
-function normalizeHostname(host = '') {
-  const firstHost = String(host || '').split(',')[0]?.trim() || '';
-  return firstHost.split(':')[0]?.trim().toLowerCase() || '';
-}
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   try {
-    const pathname = request.nextUrl?.pathname || '/';
+    const url = request.nextUrl
+    const hostname = request.headers.get('host') || ''
 
-    if (
-      pathname.startsWith('/_next') ||
-      pathname.startsWith('/api') ||
-      pathname.startsWith('/static') ||
-      pathname.startsWith('/favicon') ||
-      PUBLIC_FILE.test(pathname)
-    ) {
-      return NextResponse.next();
+    // 1. If the user is on the business subdomain, show the /owner or /business app
+    // (Make sure the folder name matches what you built, e.g., '/business' or '/owner')
+    if (hostname.includes('mybusiness.zlon.in')) {
+      return NextResponse.rewrite(new URL(`/owner${url.pathname}`, request.url))
+
     }
 
-    const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
-    const hostname = normalizeHostname(hostHeader);
+    // 2. If it's the normal www.zlon.in, just let them through normally
+    return NextResponse.next()
 
-    if (hostname === BUSINESS_HOST && pathname === '/') {
-      return NextResponse.rewrite(new URL('/business', request.url));
-    }
-
-    return NextResponse.next();
   } catch (error) {
-    console.error('Middleware failed, allowing request through.', error);
-    return NextResponse.next();
+    // If anything fails, DO NOT crash the site. Just let the user through.
+    console.error('Middleware Error:', error)
+    return NextResponse.next()
   }
 }
 
+// 3. The "Traffic Cop" rule: Ignore images, CSS, and API files so they don't break
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)']
-};
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+  ],
+}
