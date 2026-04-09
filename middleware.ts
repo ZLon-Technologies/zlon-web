@@ -25,8 +25,8 @@ export function middleware(request: NextRequest) {
     const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
     const hostname = normalizeHostname(hostHeader);
 
-    if (hostname === BUSINESS_HOST && pathname === '/business') {
-      return NextResponse.redirect(new URL('/', request.url));
+    if (hostname === BUSINESS_HOST && pathname === '/') {
+      return NextResponse.rewrite(new URL('/business', request.url));
     }
 
     return NextResponse.next();
