@@ -1,19 +1,17 @@
 #!/bin/sh
 set -eu
 
-out_dir=${ZLON_BUILD_DIR:-dist}
+if command -v npm >/dev/null 2>&1; then
+    exec npm run build
+fi
 
-rm -rf "$out_dir"
-mkdir -p "$out_dir"
+if command -v pnpm >/dev/null 2>&1; then
+    exec pnpm build
+fi
 
-for asset in *.html *.png *.webmanifest *.js manifest.json business-manifest.json; do
-    [ -f "$asset" ] || continue
+if command -v yarn >/dev/null 2>&1; then
+    exec yarn build
+fi
 
-    case "$asset" in
-        supabase-config.js) continue ;;
-    esac
-
-    cp "$asset" "$out_dir/"
-done
-
-ZLON_CONFIG_OUTPUT="$out_dir/supabase-config.js" sh ./scripts/write-supabase-config.sh
+echo "A Node.js package manager is required to build this Next.js app." >&2
+exit 1

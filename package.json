@@ -1,8 +1,16 @@
 {
   "name": "zlon-web-main",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "scripts": {
-    "build": "sh ./scripts/build-site.sh"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.1",
+    "next": "^15.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   }
 }

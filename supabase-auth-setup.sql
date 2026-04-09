@@ -7,8 +7,10 @@
 -- 3) Authentication > Providers > Email -> Enable (password sign-in)
 -- 4) Add redirect URLs:
 --    https://zlon.in/
---    https://mybusiness.zlon.in/login.html
---    https://mybusiness.zlon.in/dashboard.html
+--    https://www.zlon.in/
+--    https://mybusiness.zlon.in/
+--    http://localhost:3000/
+--    http://localhost:3000/business
 
 alter table public.salons
     add column if not exists owner_id uuid references auth.users(id) on delete set null;

@@ -1,0 +1,25 @@
+{
+  "name": "ZLon Business",
+  "short_name": "ZLon Biz",
+  "description": "ZLon owner dashboard for appointments, status control, and salon assets.",
+  "start_url": "/business",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#050505",
+  "background_color": "#050505",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
