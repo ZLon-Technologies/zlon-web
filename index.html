@@ -62,7 +62,6 @@
         }
         
         .header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; z-index: 101; }
-        .wallet-btn { width: 38px; height: 38px; border-radius: 10px; border: 2px solid var(--brand-dark); background: #fff; color: var(--brand-dark); font-weight: 900; cursor: pointer; }
         select.lang-toggle { padding: 6px 12px; border-radius: 6px; border: 2px solid var(--brand-dark); background: white; font-weight: bold; cursor: pointer; font-size: 14px; z-index: 101; }
 
         /* ======================================= */
@@ -76,6 +75,7 @@
 
         /* Screen Layout */
         .screen { min-height: 100vh; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; z-index: 10; }
+        .hidden { display: none; }
         h1 { font-size: 56px; line-height: 1.1; letter-spacing: -1.5px; z-index: 10; max-width: 800px; }
         
         .drag-down { position: absolute; bottom: 40px; display: inline-flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--brand-dark); font-weight: bold; font-size: 16px; z-index: 10; opacity: 0.5;}
@@ -84,12 +84,25 @@
 
         .massive-wa-btn { display: inline-flex; align-items: center; justify-content: center; background-color: #000; color: white; padding: 20px 50px; font-size: 22px; font-weight: 800; text-decoration: none; border-radius: 12px; transition: transform 0.2s; margin-top: 20px; }
         .massive-wa-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-        .ads-container { margin-top: 24px; width: min(88vw, 560px); border: 1px solid #111; border-radius: 12px; padding: 18px; background: #fff; color: #111; font-weight: 700; letter-spacing: 0.4px; }
 
-        .app-splash { position: fixed; inset: 0; background: #0a0a0a; display: grid; place-items: center; z-index: 9999; transition: opacity 0.35s ease; }
-        .app-splash.fade-out { opacity: 0; pointer-events: none; }
-        .splash-logo { color: #fff; font-size: 42px; font-weight: 900; letter-spacing: -2px; transform: translateY(0); transition: transform 0.55s ease; }
-        .app-splash.shift .splash-logo { transform: translateY(-90px); }
+        /* Loading animation */
+        .loading-logo { font-size: 56px; font-weight: 900; letter-spacing: -2px; color: var(--brand-dark); animation: shiftUp 1.5s ease-in-out forwards; }
+        @keyframes shiftUp { 0% { transform: translateY(0); } 100% { transform: translateY(-100px); opacity: 0; } }
+
+        /* Login screen */
+        .login-container { max-width: 400px; width: 100%; }
+        .login-form { display: flex; flex-direction: column; gap: 20px; }
+        .input-group { display: flex; flex-direction: column; text-align: left; }
+        label { font-weight: bold; margin-bottom: 5px; }
+        input { padding: 12px; border: 2px solid var(--brand-dark); border-radius: 6px; font-size: 16px; }
+        .btn { padding: 12px; background-color: var(--brand-dark); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn:hover { background-color: #333; }
+
+        /* Menu overlay */
+        #menu-overlay { position: fixed; top: 80px; left: 0; width: 100%; height: calc(100vh - 80px); background: rgba(0,0,0,0.8); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+        #menu-overlay.hidden { display: none; }
+        #menu-content { background: white; padding: 20px; border-radius: 8px; }
+        #menu-content a { display: block; padding: 10px; text-decoration: none; color: var(--brand-dark); }
 
         /* ======================================= */
         /* 3. THE MASTER BLACK FOOTER              */
@@ -159,9 +172,6 @@
     <script src="pwa.js"></script>
 </head>
 <body>
-    <div class="app-splash" id="appSplash" aria-hidden="true">
-        <div class="splash-logo">ZLon.</div>
-    </div>
 
     <div class="fixed-bg">
         <svg class="comb-watermark" viewBox="0 0 200 50" aria-hidden="true" role="presentation">
@@ -187,13 +197,21 @@
         </div>
         <div class="logo">ZLon.</div>
         <div class="header-actions">
-            <button class="wallet-btn" type="button" onclick="openWalletView()" aria-label="Wallet">₹</button>
             <select class="lang-toggle" id="langSwitch" onchange="toggleLanguage()">
                 <option value="en">English</option>
                 <option value="hin">Hindi</option>
             </select>
         </div>
     </header>
+
+    <!-- Menu overlay -->
+    <div id="menu-overlay" class="hidden">
+        <div id="menu-content">
+            <a id="menu-local-salons">Local Salons</a>
+            <a id="menu-my-bookings">My Bookings</a>
+            <a id="menu-support">Support</a>
+        </div>
+    </div>
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     <div class="sidebar" id="sidebar">
@@ -204,23 +222,67 @@
         <a onclick="openSupportView(); toggleMenu();">ZLon Support</a>
     </div>
 
-    <section class="screen" id="s1">
-        <h1 id="text-q1" data-en="Frustrated because of rush in the Salon?" data-hin="Salon ke rush se pareshan ho?">Frustrated because of rush in the Salon?</h1>
-        <a href="#s2" class="drag-down">Scroll Down <span class="arrow-down">↓</span></a>
-    </section>
+    <!-- App screens -->
+    <div id="loading-screen" class="screen">
+        <div class="loading-logo">ZLon</div>
+    </div>
 
-    <section class="screen" id="s2">
-        <h1 id="text-q2" data-en="Don't Worry. ZLon is here." data-hin="Fikar Not. ZLon aa gaya hai.">Don't Worry.<br>ZLon is here.</h1>
-        <a href="#s3" class="drag-down">Scroll Down <span class="arrow-down">↓</span></a>
-    </section>
+    <div id="login-screen" class="screen hidden">
+        <div class="login-container">
+            <h2>Login</h2>
+            <form class="login-form" id="login-form">
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn">Login</button>
+            </form>
+            <button class="btn" id="google-login">Login with Google</button>
+            <button class="btn" id="phone-login">Login with Phone</button>
+        </div>
+    </div>
 
-    <section class="screen" id="s3">
-        <h1 id="text-q3" data-en="Ready to skip the line?" data-hin="Line skip karne ke liye tayyar?">Ready to skip the line?</h1>
-        <a onclick="openSalonView('standard')" class="massive-wa-btn" id="text-btn" data-en="Book on WhatsApp" data-hin="WhatsApp Par Book Karein" style="cursor: pointer;">
-            Book on WhatsApp →
-        </a>
+    <div id="customer-home" class="screen hidden customer-home">
+        <div class="profile-section">
+            <div class="profile-icon">👤</div>
+            <div class="location">
+                <span>📍</span>
+                <span id="location-name">Your Location</span>
+            </div>
+            <a href="#" class="book-now">Book Now</a>
+        </div>
+        <div class="wallet-icon">💳 Wallet</div>
         <div class="ads-container">here will be the adds.</div>
-    </section>
+        <!-- Local Salons will be loaded here -->
+        <div id="salons-list"></div>
+    </div>
+
+    <div id="owner-dashboard" class="screen hidden owner-dashboard">
+        <h2>Owner Dashboard</h2>
+        <div class="dashboard-item">
+            <h3>Daily Appointments</h3>
+            <ul id="appointments-list"></ul>
+        </div>
+        <div class="dashboard-item">
+            <h3>Earnings</h3>
+            <p id="earnings">₹0</p>
+        </div>
+        <div class="dashboard-item">
+            <label class="toggle">
+                <input type="checkbox" id="busy-toggle">
+                Busy/Available
+            </label>
+        </div>
+        <div class="dashboard-item">
+            <h3>Upload Image</h3>
+            <input type="file" id="image-upload">
+            <button class="btn" id="upload-btn">Upload</button>
+        </div>
+    </div>
 
     <footer>
         <div class="footer-grid">
@@ -276,7 +338,6 @@
     <div class="app-modal-overlay" id="favoritesModal"><div class="app-modal" id="favoritesModalContent"><div class="modal-header"><h2>Saved Salons</h2><span class="close-app-modal" onclick="closeAppModal('favoritesModal')">&times;</span></div><p style="color:#64748b; line-height:1.6;">Your quick re-booking list stays on this device.</p><div class="modal-list" id="favoriteResults"></div></div></div>
 
     <div class="app-modal-overlay" id="supportModal"><div class="app-modal" id="supportModalContent"><div class="modal-header"><h2>ZLon Support</h2><span class="close-app-modal" onclick="closeAppModal('supportModal')">&times;</span></div><div class="support-actions"><a class="support-link" href="mailto:support@zlon.in">Email Support</a><button type="button" class="submit-btn" onclick="closeAppModal('supportModal'); openAppModal('complaintModal');">File a Grievance</button><a class="support-link" href="https://mybusiness.zlon.in/login.html" style="background:#fff; color:#000; border:1px solid #eee;">For Business</a></div></div></div>
-    <div class="app-modal-overlay" id="walletModal"><div class="app-modal" id="walletModalContent"><div class="modal-header"><h2>ZLon Wallet</h2><span class="close-app-modal" onclick="closeAppModal('walletModal')">&times;</span></div><p style="color:#64748b; line-height:1.6;">Connect Amazon Pay Wallet or use internal ZLon credits. Wallet activation appears here in the next release.</p></div></div>
 
     <script>
         let _supabase = null;
@@ -1291,16 +1352,6 @@
         function openSupportView() {
             openAppModal('supportModal');
         }
-        function openWalletView() {
-            openAppModal('walletModal');
-        }
-
-        function runSplashSequence() {
-            const splash = document.getElementById('appSplash');
-            setTimeout(() => splash.classList.add('shift'), 500);
-            setTimeout(() => splash.classList.add('fade-out'), 1050);
-            setTimeout(() => { splash.style.display = 'none'; }, 1500);
-        }
 
         document.getElementById('salonListContainer').addEventListener('click', (event) => {
             const ownerStatusButton = event.target.closest('[data-owner-status]');
@@ -1335,7 +1386,6 @@
             addOwnerWalkIn(form);
         });
 
-        runSplashSequence();
         initPortalExperience();
     </script>
 </body>

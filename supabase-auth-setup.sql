@@ -100,39 +100,6 @@ do $$
 begin
     if not exists (
         select 1
-        from pg_type
-        where typname = 'zlon_user_type'
-          and typnamespace = 'public'::regnamespace
-    ) then
-        create type public.zlon_user_type as enum ('customer', 'owner');
-    end if;
-end
-$$;
-
-do $$
-begin
-    if exists (
-        select 1
-        from information_schema.columns
-        where table_schema = 'public'
-          and table_name = 'profiles'
-          and column_name = 'user_type'
-          and udt_name <> 'zlon_user_type'
-    ) then
-        alter table public.profiles
-            alter column user_type type public.zlon_user_type
-            using case
-                when lower(coalesce(user_type, 'customer')) = 'owner' then 'owner'::public.zlon_user_type
-                else 'customer'::public.zlon_user_type
-            end;
-    end if;
-end
-$$;
-
-do $$
-begin
-    if not exists (
-        select 1
         from pg_constraint
         where conname = 'profiles_user_type_check'
           and conrelid = 'public.profiles'::regclass
@@ -221,15 +188,3 @@ end;
 $$;
 
 grant execute on function public.sync_current_user_profile(text) to authenticated;
-
--- Auth provider checklist (configure in Supabase Dashboard > Authentication > Providers):
--- 1) Phone (OTP) enabled.
--- 2) Google OAuth enabled with:
---    Site URL: https://zlon.in
---    Redirect URLs:
---      https://zlon.in
---      https://mybusiness.zlon.in
---      https://mybusiness.zlon.in/login.html
--- 3) Email provider enabled with:
---    - Email + Password signups enabled
---    - OTP / magic link enabled

@@ -683,10 +683,6 @@
                     <span>Served Today</span>
                     <strong id="servedToday">0</strong>
                 </div>
-                <div class="metric">
-                    <span>Earnings Today</span>
-                    <strong id="earningsToday">₹0</strong>
-                </div>
             </section>
 
             <section class="workspace">
@@ -719,23 +715,6 @@
                     </form>
 
                     <p class="ops-note" id="opsNote">Tip: add <strong>?salon_id=YOUR_ID</strong> to this dashboard URL when your Supabase queue table is ready for salon-specific rows.</p>
-                    <hr style="border:0;border-top:1px solid #e5e7eb;margin:22px 0;">
-                    <p class="eyebrow">Brand Assets</p>
-                    <h2 style="margin-top:0;">Upload Logo / Banner</h2>
-                    <form class="walk-in-form" id="assetUploadForm">
-                        <label>
-                            Asset Type
-                            <select id="assetType" style="width:100%;min-height:46px;border:1px solid #e5e7eb;border-radius:8px;padding:0 12px;">
-                                <option value="logo_url">Logo</option>
-                                <option value="banner_url">Banner</option>
-                            </select>
-                        </label>
-                        <label>
-                            Image File
-                            <input id="assetFile" type="file" accept="image/*" required>
-                        </label>
-                        <button class="submit-btn" id="assetUploadBtn" type="submit">Upload to salon-assets</button>
-                    </form>
                 </aside>
             </section>
         </main>
@@ -786,17 +765,12 @@
             nextCustomer: document.getElementById('nextCustomer'),
             waitEstimate: document.getElementById('waitEstimate'),
             servedToday: document.getElementById('servedToday'),
-            earningsToday: document.getElementById('earningsToday'),
             lastUpdated: document.getElementById('lastUpdated'),
             queueList: document.getElementById('queueList'),
             walkInForm: document.getElementById('walkInForm'),
             customerName: document.getElementById('customerName'),
             customerPhone: document.getElementById('customerPhone'),
             addWalkInBtn: document.getElementById('addWalkInBtn'),
-            assetUploadForm: document.getElementById('assetUploadForm'),
-            assetUploadBtn: document.getElementById('assetUploadBtn'),
-            assetFile: document.getElementById('assetFile'),
-            assetType: document.getElementById('assetType'),
             opsNote: document.getElementById('opsNote'),
             toast: document.getElementById('toast'),
             ownerMenuBtn: document.getElementById('ownerMenuBtn'),
@@ -901,7 +875,6 @@
         function renderMetrics() {
             const waiting = getWaitingQueue();
             const served = state.queue.filter((person) => getStatus(person) === 'served' && isToday(person.created_at));
-            const earnings = served.length * 250;
             const next = waiting[0];
             const option = WAIT_STATUSES[state.statusId] || WAIT_STATUSES.available;
 
@@ -909,7 +882,6 @@
             els.nextCustomer.textContent = next ? getName(next).split(' ')[0] : 'Clear';
             els.waitEstimate.textContent = option.estimate;
             els.servedToday.textContent = served.length;
-            els.earningsToday.textContent = `₹${earnings}`;
         }
 
         function renderQueue() {
@@ -1188,61 +1160,6 @@
             showToast(`Live wait status updated to ${option.label}.`);
         }
 
-        async function uploadSalonAsset(event) {
-            event.preventDefault();
-            if (!state.salon) {
-                showToast('Link a salon before uploading assets.');
-                return;
-            }
-
-            const file = els.assetFile.files && els.assetFile.files[0];
-            if (!file) {
-                showToast('Choose an image first.');
-                return;
-            }
-
-            const columnName = els.assetType.value === 'banner_url' ? 'banner_url' : 'logo_url';
-            const extension = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : 'jpg';
-            const path = `${state.salon.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
-
-            els.assetUploadBtn.disabled = true;
-            els.assetUploadBtn.textContent = 'Uploading...';
-
-            const uploadResult = await db.storage
-                .from('salon-assets')
-                .upload(path, file, { upsert: false, contentType: file.type || 'image/jpeg' });
-
-            if (uploadResult.error) {
-                showToast(`Upload failed: ${uploadResult.error.message}`);
-                els.assetUploadBtn.disabled = false;
-                els.assetUploadBtn.textContent = 'Upload to salon-assets';
-                return;
-            }
-
-            const { data: publicData } = db.storage.from('salon-assets').getPublicUrl(path);
-            const publicUrl = publicData && publicData.publicUrl ? publicData.publicUrl : '';
-
-            const update = await db
-                .from('salons')
-                .update({ [columnName]: publicUrl })
-                .eq('id', state.salon.id)
-                .eq('owner_id', state.session.user.id)
-                .select('*')
-                .limit(1);
-
-            els.assetUploadBtn.disabled = false;
-            els.assetUploadBtn.textContent = 'Upload to salon-assets';
-
-            if (update.error || !update.data || !update.data.length) {
-                showToast(update.error ? `Could not save asset URL: ${update.error.message}` : 'Upload completed but salon row not updated.');
-                return;
-            }
-
-            state.salon = update.data[0];
-            els.assetUploadForm.reset();
-            showToast(`${columnName === 'logo_url' ? 'Logo' : 'Banner'} uploaded.`);
-        }
-
         function subscribeQueue() {
             if (!state.salon) return;
 
@@ -1290,7 +1207,6 @@
             showToast(`${button.dataset.ownerMenu} is being prepared for owner accounts.`);
         });
         els.walkInForm.addEventListener('submit', addWalkIn);
-        els.assetUploadForm.addEventListener('submit', uploadSalonAsset);
         els.queueList.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action]');
             if (!button) return;

@@ -173,12 +173,6 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
         }
 
-        .auth-grid {
-            display: grid;
-            gap: 10px;
-            margin-bottom: 18px;
-        }
-
         form {
             display: grid;
             gap: 18px;
@@ -318,21 +312,9 @@
             </div>
 
             <form id="authForm">
-                <div class="auth-grid">
-                    <button class="secondary-btn" id="googleBtn" type="button">Continue with Google</button>
-                    <button class="secondary-btn" id="phoneOtpBtn" type="button">Continue with Phone OTP</button>
-                </div>
                 <div class="field">
                     <input id="email" type="email" autocomplete="email" placeholder=" " required>
                     <label for="email">Email Address</label>
-                </div>
-                <div class="field">
-                    <input id="password" type="password" autocomplete="current-password" placeholder=" " minlength="6" required>
-                    <label for="password">Password</label>
-                </div>
-                <div class="field" id="phoneField">
-                    <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder=" ">
-                    <label for="phone">Phone Number (+91...)</label>
                 </div>
                 <div class="field" id="fullNameField" hidden>
                     <input id="fullName" type="text" autocomplete="name" placeholder=" ">
@@ -346,7 +328,7 @@
                     <input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder=" " maxlength="6">
                     <label for="otpCode">6-digit OTP</label>
                 </div>
-                <button class="submit-btn" id="submitBtn" type="submit">Continue with Email</button>
+                <button class="submit-btn" id="submitBtn" type="submit">Send OTP</button>
                 <button class="secondary-btn" id="goBackBtn" type="button" hidden>Go Back</button>
                 <p class="notice" id="notice" role="status" aria-live="polite"></p>
             </form>
@@ -361,19 +343,14 @@
         const els = {
             authForm: document.getElementById('authForm'),
             email: document.getElementById('email'),
-            password: document.getElementById('password'),
-            phone: document.getElementById('phone'),
             fullName: document.getElementById('fullName'),
             shopName: document.getElementById('shopName'),
             otpCode: document.getElementById('otpCode'),
-            phoneField: document.getElementById('phoneField'),
             fullNameField: document.getElementById('fullNameField'),
             shopNameField: document.getElementById('shopNameField'),
             otpField: document.getElementById('otpField'),
             submitBtn: document.getElementById('submitBtn'),
             goBackBtn: document.getElementById('goBackBtn'),
-            googleBtn: document.getElementById('googleBtn'),
-            phoneOtpBtn: document.getElementById('phoneOtpBtn'),
             notice: document.getElementById('notice'),
             formTitle: document.getElementById('formTitle'),
             formSubtitle: document.getElementById('formSubtitle'),
@@ -382,9 +359,7 @@
 
         let authMode = 'login';
         let isCodeSent = false;
-        let pendingOtpType = 'email';
         let pendingEmail = '';
-        let pendingPhone = '';
 
         try {
             db = window.ZLon.getSupabaseClient();
@@ -413,11 +388,7 @@
                 els.submitBtn.textContent = 'Please wait...';
                 return;
             }
-            if (isCodeSent) {
-                els.submitBtn.textContent = 'Verify OTP';
-                return;
-            }
-            els.submitBtn.textContent = 'Continue with Email';
+            els.submitBtn.textContent = isCodeSent ? 'Submit Code' : 'Send OTP';
         }
 
         function setCodeSent(nextIsCodeSent) {
@@ -426,8 +397,6 @@
             els.goBackBtn.hidden = !nextIsCodeSent;
             els.otpCode.disabled = !nextIsCodeSent;
             els.email.disabled = nextIsCodeSent;
-            els.password.disabled = nextIsCodeSent;
-            els.phone.disabled = nextIsCodeSent;
             els.fullName.disabled = nextIsCodeSent || authMode !== 'signup';
             els.shopName.disabled = nextIsCodeSent || authMode !== 'signup';
             els.tabs.forEach((tab) => { tab.disabled = nextIsCodeSent; });
@@ -435,7 +404,6 @@
                 els.otpCode.focus();
             } else {
                 pendingEmail = '';
-                pendingPhone = '';
                 els.otpCode.value = '';
                 els.email.focus();
             }
@@ -449,8 +417,8 @@
             els.tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
             els.formTitle.textContent = mode === 'login' ? 'Welcome back.' : 'Create owner access.';
             els.formSubtitle.textContent = mode === 'login'
-                ? 'Choose Google, Phone OTP, or Email Password + OTP.'
-                : 'Create account, then verify OTP to continue.';
+                ? 'Enter your email and we will send a secure OTP.'
+                : 'Enter your owner details and we will send a secure OTP.';
             els.fullNameField.hidden = mode !== 'signup';
             els.shopNameField.hidden = mode !== 'signup';
             els.fullName.disabled = mode !== 'signup';
@@ -462,7 +430,6 @@
         function goBackToEmail() {
             setCodeSent(false);
             els.email.value = '';
-            els.phone.readOnly = false;
             setNotice('Enter the correct email address and request a fresh OTP.', '');
         }
 
@@ -518,7 +485,6 @@
 
         async function sendOtp() {
             const email = els.email.value.trim();
-            const password = els.password.value.trim();
             const fullName = els.fullName.value.trim();
             const shopName = els.shopName.value.trim();
 
@@ -531,10 +497,6 @@
                 setNotice('Enter your email address first.', 'error');
                 return;
             }
-            if (!password || password.length < 6) {
-                setNotice('Enter a valid password (min 6 chars).', 'error');
-                return;
-            }
 
             if (authMode === 'signup' && (!fullName || !shopName)) {
                 setNotice('Enter your full name and shop name to continue.', 'error');
@@ -544,26 +506,21 @@
             setLoading(true);
             setNotice('');
 
+            const options = {
+                shouldCreateUser: authMode === 'signup',
+                emailRedirectTo: ownerPortalUrl()
+            };
+
+            if (authMode === 'signup') {
+                options.data = {
+                    full_name: fullName,
+                    shop_name: shopName
+                };
+            }
+
             let error = null;
             try {
-                if (authMode === 'signup') {
-                    ({ error } = await db.auth.signUp({
-                        email,
-                        password,
-                        options: {
-                            emailRedirectTo: ownerPortalUrl(),
-                            data: { full_name: fullName, shop_name: shopName }
-                        }
-                    }));
-                } else {
-                    ({ error } = await db.auth.signInWithPassword({ email, password }));
-                }
-                if (!error) {
-                    ({ error } = await db.auth.signInWithOtp({
-                        email,
-                        options: { shouldCreateUser: false, emailRedirectTo: ownerPortalUrl() }
-                    }));
-                }
+                ({ error } = await db.auth.signInWithOtp({ email, options }));
             } catch (requestError) {
                 error = requestError;
             }
@@ -576,56 +533,8 @@
             }
 
             pendingEmail = email;
-            pendingOtpType = 'email';
             setCodeSent(true);
-            setNotice('Email password accepted. OTP sent. Check your email and enter the 6-digit code.', 'success');
-        }
-
-        async function startPhoneOtp() {
-            const phone = els.phone.value.trim();
-            if (!db) {
-                setNotice('Supabase is not configured yet.', 'error');
-                return;
-            }
-            if (!phone) {
-                setNotice('Enter phone number with country code, e.g. +9198xxxxxx.', 'error');
-                return;
-            }
-            setLoading(true);
-            setNotice('');
-            let result = null;
-            try {
-                result = await db.auth.signInWithOtp({
-                    phone,
-                    options: { shouldCreateUser: authMode === 'signup' }
-                });
-            } catch (error) {
-                result = { error };
-            }
-            if (result.error) {
-                setNotice(result.error.message || 'Could not send phone OTP.', 'error');
-                setLoading(false);
-                return;
-            }
-            pendingPhone = phone;
-            pendingOtpType = 'phone';
-            els.phone.readOnly = true;
-            setCodeSent(true);
-            setNotice(`OTP sent to ${phone}. Enter the 6-digit code.`, 'success');
-        }
-
-        async function signInWithGoogle() {
-            if (!db) {
-                setNotice('Supabase is not configured yet.', 'error');
-                return;
-            }
-            const { error } = await db.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: ownerPortalUrl() }
-            });
-            if (error) {
-                setNotice(error.message || 'Google login failed.', 'error');
-            }
+            setNotice('OTP sent. Check your email and enter the 6-digit code.', 'success');
         }
 
         async function verifyOtp() {
@@ -636,7 +545,7 @@
                 return;
             }
 
-            if (token.length !== 6) {
+            if (!pendingEmail || token.length !== 6) {
                 setNotice('Enter the 6-digit OTP from your email.', 'error');
                 return;
             }
@@ -646,11 +555,11 @@
 
             let response = null;
             try {
-                if (pendingOtpType === 'phone') {
-                    response = await db.auth.verifyOtp({ phone: pendingPhone, token, type: 'sms' });
-                } else {
-                    response = await db.auth.verifyOtp({ email: pendingEmail, token, type: 'email' });
-                }
+                response = await db.auth.verifyOtp({
+                    email: pendingEmail,
+                    token,
+                    type: 'email'
+                });
             } catch (requestError) {
                 response = { error: requestError };
             }
@@ -697,8 +606,6 @@
 
         els.authForm.addEventListener('submit', handleAuthSubmit);
         els.goBackBtn.addEventListener('click', goBackToEmail);
-        els.phoneOtpBtn.addEventListener('click', startPhoneOtp);
-        els.googleBtn.addEventListener('click', signInWithGoogle);
 
         if (db) {
             db.auth.getSession().then(({ data }) => {
