@@ -46,6 +46,7 @@ create table if not exists public.profiles (
     id uuid primary key references auth.users(id) on delete cascade,
     email text,
     user_type text not null default 'customer',
+    is_premium boolean not null default false,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
@@ -55,6 +56,9 @@ alter table public.profiles
 
 alter table public.profiles
     add column if not exists user_type text;
+
+alter table public.profiles
+    add column if not exists is_premium boolean not null default false;
 
 alter table public.profiles
     add column if not exists created_at timestamptz not null default now();
@@ -91,6 +95,39 @@ alter table public.profiles
 
 alter table public.profiles
     alter column user_type set not null;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_type
+        where typname = 'zlon_user_type'
+          and typnamespace = 'public'::regnamespace
+    ) then
+        create type public.zlon_user_type as enum ('customer', 'owner');
+    end if;
+end
+$$;
+
+do $$
+begin
+    if exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'profiles'
+          and column_name = 'user_type'
+          and udt_name <> 'zlon_user_type'
+    ) then
+        alter table public.profiles
+            alter column user_type type public.zlon_user_type
+            using case
+                when lower(coalesce(user_type, 'customer')) = 'owner' then 'owner'::public.zlon_user_type
+                else 'customer'::public.zlon_user_type
+            end;
+    end if;
+end
+$$;
 
 do $$
 begin
@@ -184,3 +221,15 @@ end;
 $$;
 
 grant execute on function public.sync_current_user_profile(text) to authenticated;
+
+-- Auth provider checklist (configure in Supabase Dashboard > Authentication > Providers):
+-- 1) Phone (OTP) enabled.
+-- 2) Google OAuth enabled with:
+--    Site URL: https://zlon.in
+--    Redirect URLs:
+--      https://zlon.in
+--      https://mybusiness.zlon.in
+--      https://mybusiness.zlon.in/login.html
+-- 3) Email provider enabled with:
+--    - Email + Password signups enabled
+--    - OTP / magic link enabled
