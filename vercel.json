@@ -5,6 +5,46 @@
       "has": [{ "type": "host", "value": "zlon.in" }],
       "destination": "https://www.zlon.in/$1",
       "permanent": true
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/consumer.webmanifest",
+      "permanent": true
+    },
+    {
+      "source": "/site.webmanifest",
+      "destination": "/consumer.webmanifest",
+      "permanent": true
+    },
+    {
+      "source": "/business-manifest.json",
+      "destination": "/business.webmanifest",
+      "permanent": true
+    },
+    {
+      "source": "/login.html",
+      "destination": "https://mybusiness.zlon.in/",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard.html",
+      "destination": "https://mybusiness.zlon.in/",
+      "permanent": true
+    },
+    {
+      "source": "/business.html",
+      "destination": "https://mybusiness.zlon.in/",
+      "permanent": true
+    },
+    {
+      "source": "/apply.html",
+      "destination": "https://mybusiness.zlon.in/",
+      "permanent": true
     }
   ]
 }
