@@ -431,6 +431,7 @@ export function OwnerApp() {
       email: pendingEmail,
       options: {
         shouldCreateUser: false,
+        redirectTo: `${window.location.origin}/auth/callback`,
         data: { user_type: 'owner' }
       }
     });
