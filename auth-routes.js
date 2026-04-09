@@ -28,10 +28,10 @@
 
     function portalUrl() {
         if (isLocalOrigin()) {
-            return new URL('index.html', window.location.href).href;
+            return new URL('dashboard.html', window.location.href).href;
         }
 
-        return hostUrl(BUSINESS_HOST, '/');
+        return hostUrl(BUSINESS_HOST, '/dashboard.html');
     }
 
     function homeUrl() {
@@ -136,12 +136,13 @@
         return 'customer';
     }
 
-    async function syncProfile(db, user, userType) {
+    async function syncProfile(db, user, userType, phone = null) {
         const normalized = normalizeUserType(userType);
         if (!db || !user || !normalized) return;
 
         const { error } = await db.rpc('sync_current_user_profile', {
-            next_user_type: normalized
+            next_user_type: normalized,
+            next_phone: phone
         });
 
         if (error) {

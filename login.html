@@ -158,6 +158,16 @@
             background: #f3f4f6;
         }
 
+        .provider-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            padding: 5px;
+            margin-bottom: 24px;
+            border-radius: 8px;
+            background: #f3f4f6;
+        }
+
         .mode-tab {
             min-height: 44px;
             border: 0;
@@ -311,10 +321,24 @@
                 <button class="mode-tab" type="button" data-mode="signup">Sign Up</button>
             </div>
 
+            <div class="provider-tabs" role="tablist" aria-label="Authentication provider">
+                <button class="mode-tab active" type="button" data-provider="phone">Phone OTP</button>
+                <button class="mode-tab" type="button" data-provider="email">Email + Password</button>
+                <button class="mode-tab" type="button" data-provider="google">Google</button>
+            </div>
+
             <form id="authForm">
-                <div class="field">
-                    <input id="email" type="email" autocomplete="email" placeholder=" " required>
+                <div class="field" id="phoneField">
+                    <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder=" ">
+                    <label for="phone">Phone Number</label>
+                </div>
+                <div class="field" id="emailField" hidden>
+                    <input id="email" type="email" autocomplete="email" placeholder=" ">
                     <label for="email">Email Address</label>
+                </div>
+                <div class="field" id="passwordField" hidden>
+                    <input id="password" type="password" autocomplete="current-password" placeholder=" " minlength="6">
+                    <label for="password">Password</label>
                 </div>
                 <div class="field" id="fullNameField" hidden>
                     <input id="fullName" type="text" autocomplete="name" placeholder=" ">
@@ -329,11 +353,12 @@
                     <label for="otpCode">6-digit OTP</label>
                 </div>
                 <button class="submit-btn" id="submitBtn" type="submit">Send OTP</button>
+                <button class="secondary-btn" id="googleBtn" type="button" hidden>Continue with Google</button>
                 <button class="secondary-btn" id="goBackBtn" type="button" hidden>Go Back</button>
                 <p class="notice" id="notice" role="status" aria-live="polite"></p>
             </form>
 
-            <p class="microcopy">For first-time signup, use the same email added to <strong>owner_email</strong>. ZLon will attach your Auth ID after OTP verification.</p>
+            <p class="microcopy">For first-time signup, use the same email added to <strong>owner_email</strong>. Owners can authenticate using Phone OTP, Google OAuth, or Email + Password followed by OTP.</p>
         </section>
     </main>
 
@@ -342,24 +367,33 @@
 
         const els = {
             authForm: document.getElementById('authForm'),
+            phone: document.getElementById('phone'),
             email: document.getElementById('email'),
+            password: document.getElementById('password'),
             fullName: document.getElementById('fullName'),
             shopName: document.getElementById('shopName'),
             otpCode: document.getElementById('otpCode'),
+            phoneField: document.getElementById('phoneField'),
+            emailField: document.getElementById('emailField'),
+            passwordField: document.getElementById('passwordField'),
             fullNameField: document.getElementById('fullNameField'),
             shopNameField: document.getElementById('shopNameField'),
             otpField: document.getElementById('otpField'),
             submitBtn: document.getElementById('submitBtn'),
+            googleBtn: document.getElementById('googleBtn'),
             goBackBtn: document.getElementById('goBackBtn'),
             notice: document.getElementById('notice'),
             formTitle: document.getElementById('formTitle'),
             formSubtitle: document.getElementById('formSubtitle'),
-            tabs: Array.from(document.querySelectorAll('.mode-tab'))
+            modeTabs: Array.from(document.querySelectorAll('[data-mode]')),
+            providerTabs: Array.from(document.querySelectorAll('[data-provider]'))
         };
 
         let authMode = 'login';
+        let provider = 'phone';
         let isCodeSent = false;
         let pendingEmail = '';
+        let pendingPhone = '';
 
         try {
             db = window.ZLon.getSupabaseClient();
@@ -374,7 +408,7 @@
         function ownerPortalUrl() {
             return window.ZLon.authRoutes
                 ? window.ZLon.authRoutes.portalUrl()
-                : new URL('portal', window.location.href).href;
+                : new URL('dashboard.html', window.location.href).href;
         }
 
         function setNotice(message, type = '') {
@@ -384,57 +418,126 @@
 
         function setLoading(isLoading) {
             els.submitBtn.disabled = isLoading;
+            els.googleBtn.disabled = isLoading;
+            els.goBackBtn.disabled = isLoading;
             if (isLoading) {
                 els.submitBtn.textContent = 'Please wait...';
                 return;
             }
+            if (provider === 'google') {
+                els.submitBtn.textContent = 'Use Google';
+                return;
+            }
             els.submitBtn.textContent = isCodeSent ? 'Submit Code' : 'Send OTP';
+        }
+
+        function resetCodeState() {
+            setCodeSent(false);
+            pendingEmail = '';
+            pendingPhone = '';
         }
 
         function setCodeSent(nextIsCodeSent) {
             isCodeSent = nextIsCodeSent;
             els.otpField.hidden = !nextIsCodeSent;
             els.goBackBtn.hidden = !nextIsCodeSent;
-            els.otpCode.disabled = !nextIsCodeSent;
-            els.email.disabled = nextIsCodeSent;
-            els.fullName.disabled = nextIsCodeSent || authMode !== 'signup';
-            els.shopName.disabled = nextIsCodeSent || authMode !== 'signup';
-            els.tabs.forEach((tab) => { tab.disabled = nextIsCodeSent; });
+            els.otpCode.readOnly = !nextIsCodeSent;
+            els.modeTabs.forEach((tab) => { tab.disabled = nextIsCodeSent; });
+            els.providerTabs.forEach((tab) => { tab.disabled = nextIsCodeSent; });
+
+            if (provider === 'phone') {
+                els.phone.readOnly = nextIsCodeSent;
+            }
+            if (provider === 'email') {
+                els.email.readOnly = nextIsCodeSent;
+                els.password.readOnly = nextIsCodeSent;
+            }
+
+            els.fullName.readOnly = nextIsCodeSent || authMode !== 'signup';
+            els.shopName.readOnly = nextIsCodeSent || authMode !== 'signup';
             if (nextIsCodeSent) {
                 els.otpCode.focus();
             } else {
-                pendingEmail = '';
                 els.otpCode.value = '';
-                els.email.focus();
+                if (provider === 'phone') {
+                    els.phone.focus();
+                } else if (provider === 'email') {
+                    els.email.focus();
+                }
             }
             setLoading(false);
         }
 
         function setMode(mode) {
             authMode = mode;
-            pendingEmail = '';
-            setCodeSent(false);
-            els.tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
+            resetCodeState();
+            els.modeTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.mode === mode));
             els.formTitle.textContent = mode === 'login' ? 'Welcome back.' : 'Create owner access.';
             els.formSubtitle.textContent = mode === 'login'
-                ? 'Enter your email and we will send a secure OTP.'
-                : 'Enter your owner details and we will send a secure OTP.';
-            els.fullNameField.hidden = mode !== 'signup';
-            els.shopNameField.hidden = mode !== 'signup';
-            els.fullName.disabled = mode !== 'signup';
-            els.shopName.disabled = mode !== 'signup';
+                ? 'Choose a secure login method for your owner account.'
+                : 'Create owner access and verify with OTP.';
+            renderProviderState();
             setNotice('');
             setLoading(false);
         }
 
         function goBackToEmail() {
-            setCodeSent(false);
-            els.email.value = '';
-            setNotice('Enter the correct email address and request a fresh OTP.', '');
+            resetCodeState();
+            setNotice('Enter your details and request a fresh OTP.', '');
+        }
+
+        function setProvider(nextProvider) {
+            provider = nextProvider;
+            resetCodeState();
+            els.providerTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.provider === provider));
+            renderProviderState();
+            setNotice('');
+        }
+
+        function renderProviderState() {
+            const isPhone = provider === 'phone';
+            const isEmail = provider === 'email';
+            const isGoogle = provider === 'google';
+
+            els.phoneField.hidden = !isPhone;
+            els.emailField.hidden = !isEmail;
+            els.passwordField.hidden = !isEmail;
+
+            els.phone.required = isPhone;
+            els.email.required = isEmail;
+            els.password.required = isEmail;
+
+            const showSignupProfileFields = authMode === 'signup' && (isPhone || isEmail);
+            els.fullNameField.hidden = !showSignupProfileFields;
+            els.shopNameField.hidden = !showSignupProfileFields;
+            els.fullName.required = showSignupProfileFields;
+            els.shopName.required = showSignupProfileFields;
+
+            els.submitBtn.hidden = isGoogle;
+            els.googleBtn.hidden = !isGoogle;
+            els.goBackBtn.hidden = isGoogle || !isCodeSent;
+
+            if (!isCodeSent) {
+                els.otpField.hidden = true;
+            }
+
+            if (isPhone) {
+                els.formSubtitle.textContent = authMode === 'login'
+                    ? 'Enter phone number and verify with OTP.'
+                    : 'Create owner access with phone and OTP verification.';
+            } else if (isEmail) {
+                els.formSubtitle.textContent = authMode === 'login'
+                    ? 'Use email/password, then verify OTP.'
+                    : 'Create owner credentials, then verify OTP.';
+            } else {
+                els.formSubtitle.textContent = 'Continue with Google and verify owner linkage.';
+            }
+
+            setLoading(false);
         }
 
         async function linkSalonToOwner(user) {
-            if (!user || !user.id || !user.email) {
+            if (!user || !user.id) {
                 return { linked: false, message: 'No authenticated user was returned.' };
             }
 
@@ -446,6 +549,13 @@
 
             if (!owned.error && owned.data && owned.data.length) {
                 return { linked: true, salon: owned.data[0] };
+            }
+
+            if (!user.email) {
+                return {
+                    linked: false,
+                    message: 'Phone-auth user is not linked yet. Add this auth UID to salons.owner_id in Supabase.'
+                };
             }
 
             for (const column of ['owner_email', 'email']) {
@@ -483,8 +593,41 @@
             };
         }
 
-        async function sendOtp() {
-            const email = els.email.value.trim();
+        async function completeOwnerSession(session) {
+            if (!session || !session.user) {
+                setNotice('Session did not initialize correctly. Try again.', 'error');
+                setLoading(false);
+                return;
+            }
+
+            const resolvedType = window.ZLon.authRoutes
+                ? await window.ZLon.authRoutes.resolveUserType(db, session)
+                : '';
+            const link = await linkSalonToOwner(session.user);
+            if (!link.linked) {
+                if (resolvedType === 'customer' && window.ZLon.authRoutes) {
+                    window.location.replace(window.ZLon.authRoutes.homeUrl());
+                    return;
+                }
+                setNotice(link.message, 'error');
+                setLoading(false);
+                return;
+            }
+
+            if (window.ZLon.authRoutes) {
+                await window.ZLon.authRoutes.syncProfile(
+                    db,
+                    session.user,
+                    'owner',
+                    pendingPhone || null
+                );
+            }
+
+            window.location.replace(ownerPortalUrl());
+        }
+
+        async function sendPhoneOtp() {
+            const phone = els.phone.value.trim();
             const fullName = els.fullName.value.trim();
             const shopName = els.shopName.value.trim();
 
@@ -493,8 +636,8 @@
                 return;
             }
 
-            if (!email) {
-                setNotice('Enter your email address first.', 'error');
+            if (!phone) {
+                setNotice('Enter your phone number first.', 'error');
                 return;
             }
 
@@ -506,38 +649,146 @@
             setLoading(true);
             setNotice('');
 
-            const options = {
-                shouldCreateUser: authMode === 'signup',
-                emailRedirectTo: ownerPortalUrl()
-            };
-
-            if (authMode === 'signup') {
-                options.data = {
-                    full_name: fullName,
-                    shop_name: shopName
-                };
-            }
-
             let error = null;
             try {
-                ({ error } = await db.auth.signInWithOtp({ email, options }));
+                ({ error } = await db.auth.signInWithOtp({
+                    phone,
+                    options: {
+                        shouldCreateUser: authMode === 'signup',
+                        data: authMode === 'signup'
+                            ? {
+                                full_name: fullName,
+                                shop_name: shopName,
+                                user_type: 'owner'
+                            }
+                            : undefined
+                    }
+                }));
             } catch (requestError) {
                 error = requestError;
             }
 
             if (error) {
-                setNotice(error.message || 'Could not send OTP. Check the email and try again.', 'error');
+                setNotice(error.message || 'Could not send OTP. Check the phone number and try again.', 'error');
                 setCodeSent(false);
+                setLoading(false);
+                return;
+            }
+
+            pendingPhone = phone;
+            setCodeSent(true);
+            setNotice('OTP sent. Phone number is now locked until verification.', 'success');
+        }
+
+        async function verifyPhoneOtp() {
+            const token = els.otpCode.value.trim();
+
+            if (!db) {
+                setNotice('Supabase is not configured yet.', 'error');
+                return;
+            }
+
+            if (!pendingPhone || token.length !== 6) {
+                setNotice('Enter the 6-digit OTP sent to your phone.', 'error');
+                return;
+            }
+
+            setLoading(true);
+            setNotice('');
+
+            const response = await db.auth.verifyOtp({
+                phone: pendingPhone,
+                token,
+                type: 'sms'
+            });
+
+            if (response.error) {
+                setNotice(response.error.message || 'OTP verification failed. Try again or change the phone number.', 'error');
+                setLoading(false);
+                return;
+            }
+
+            await completeOwnerSession(response.data ? response.data.session : null);
+        }
+
+        async function sendEmailPasswordOtp() {
+            const email = els.email.value.trim();
+            const password = els.password.value.trim();
+            const fullName = els.fullName.value.trim();
+            const shopName = els.shopName.value.trim();
+
+            if (!db) {
+                setNotice('Supabase is not configured yet.', 'error');
+                return;
+            }
+
+            if (!email || !password) {
+                setNotice('Enter email and password first.', 'error');
+                return;
+            }
+
+            if (authMode === 'signup' && (!fullName || !shopName)) {
+                setNotice('Enter your full name and shop name to continue.', 'error');
+                return;
+            }
+
+            setLoading(true);
+            setNotice('');
+
+            let credentialError = null;
+            try {
+                if (authMode === 'signup') {
+                    const signUp = await db.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            data: {
+                                full_name: fullName,
+                                shop_name: shopName,
+                                user_type: 'owner'
+                            }
+                        }
+                    });
+                    credentialError = signUp.error || null;
+                } else {
+                    const signIn = await db.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    credentialError = signIn.error || null;
+                }
+            } catch (requestError) {
+                credentialError = requestError;
+            }
+
+            if (credentialError) {
+                setNotice(credentialError.message || 'Credential verification failed.', 'error');
+                setLoading(false);
+                return;
+            }
+
+            await db.auth.signOut();
+
+            const otp = await db.auth.signInWithOtp({
+                email,
+                options: {
+                    shouldCreateUser: false,
+                    emailRedirectTo: ownerPortalUrl()
+                }
+            });
+
+            if (otp.error) {
+                setNotice(otp.error.message || 'Could not send OTP to this email.', 'error');
                 setLoading(false);
                 return;
             }
 
             pendingEmail = email;
             setCodeSent(true);
-            setNotice('OTP sent. Check your email and enter the 6-digit code.', 'success');
+            setNotice('OTP sent. Enter the 6-digit code from your email.', 'success');
         }
 
-        async function verifyOtp() {
+        async function verifyEmailOtp() {
             const token = els.otpCode.value.trim();
 
             if (!db) {
@@ -553,16 +804,11 @@
             setLoading(true);
             setNotice('');
 
-            let response = null;
-            try {
-                response = await db.auth.verifyOtp({
-                    email: pendingEmail,
-                    token,
-                    type: 'email'
-                });
-            } catch (requestError) {
-                response = { error: requestError };
-            }
+            const response = await db.auth.verifyOtp({
+                email: pendingEmail,
+                token,
+                type: 'email'
+            });
 
             if (response.error) {
                 setNotice(response.error.message || 'OTP verification failed. Try again or change the email.', 'error');
@@ -570,52 +816,79 @@
                 return;
             }
 
-            if (!response.data || !response.data.session || !response.data.user) {
-                setNotice('OTP verified, but Supabase did not return a session. Try again.', 'error');
-                setLoading(false);
+            await completeOwnerSession(response.data ? response.data.session : null);
+        }
+
+        async function handleGoogleAuth() {
+            if (!db) {
+                setNotice('Supabase is not configured yet.', 'error');
                 return;
             }
 
-            const link = await linkSalonToOwner(response.data.user);
-            if (!link.linked) {
-                setNotice(link.message, 'error');
+            setLoading(true);
+            setNotice('');
+
+            const { error } = await db.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.ZLon.authRoutes ? window.ZLon.authRoutes.loginUrl() : window.location.href,
+                    queryParams: {
+                        prompt: 'select_account'
+                    }
+                }
+            });
+
+            if (error) {
+                setNotice(error.message || 'Google sign-in failed.', 'error');
                 setLoading(false);
-                return;
             }
-
-            if (window.ZLon.authRoutes) {
-                await window.ZLon.authRoutes.syncProfile(db, response.data.user, 'owner');
-            }
-
-            window.location.href = ownerPortalUrl();
         }
 
         async function handleAuthSubmit(event) {
             event.preventDefault();
-            if (isCodeSent) {
-                await verifyOtp();
+            if (provider === 'phone') {
+                if (!isCodeSent) {
+                    await sendPhoneOtp();
+                    setLoading(false);
+                    return;
+                }
+                await verifyPhoneOtp();
                 return;
             }
-            await sendOtp();
-            setLoading(false);
+
+            if (provider === 'email') {
+                if (!isCodeSent) {
+                    await sendEmailPasswordOtp();
+                    setLoading(false);
+                    return;
+                }
+                await verifyEmailOtp();
+                return;
+            }
         }
 
-        els.tabs.forEach((tab) => {
+        els.modeTabs.forEach((tab) => {
             tab.addEventListener('click', () => setMode(tab.dataset.mode));
+        });
+
+        els.providerTabs.forEach((tab) => {
+            tab.addEventListener('click', () => setProvider(tab.dataset.provider));
         });
 
         els.authForm.addEventListener('submit', handleAuthSubmit);
         els.goBackBtn.addEventListener('click', goBackToEmail);
+        els.googleBtn.addEventListener('click', handleGoogleAuth);
 
         if (db) {
             db.auth.getSession().then(({ data }) => {
                 if (data.session) {
-                    window.location.href = ownerPortalUrl();
+                    completeOwnerSession(data.session);
                 }
             });
         }
 
         setMode('login');
+        setProvider('phone');
     </script>
 </body>
 </html>

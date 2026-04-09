@@ -79,6 +79,7 @@ as $$
         extensions.ST_Distance(s.geo_location, user_point.geo) as distance_m
     from public.salons s, user_point
     where s.geo_location is not null
+      and coalesce(lower(s.queue_status), 'available') = 'available'
       and (salon_type is null or lower(s.type) = lower(salon_type))
       and extensions.ST_DWithin(s.geo_location, user_point.geo, radius_m)
     order by distance_m asc

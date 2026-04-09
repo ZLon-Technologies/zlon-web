@@ -88,15 +88,38 @@
         /* Loading animation */
         .loading-logo { font-size: 56px; font-weight: 900; letter-spacing: -2px; color: var(--brand-dark); animation: shiftUp 1.5s ease-in-out forwards; }
         @keyframes shiftUp { 0% { transform: translateY(0); } 100% { transform: translateY(-100px); opacity: 0; } }
+        #loading-screen { background: #0a0a0a; }
+        #loading-screen .loading-logo { color: var(--gold); }
 
         /* Login screen */
-        .login-container { max-width: 400px; width: 100%; }
+        #login-screen { justify-content: flex-start; padding-top: 120px; }
+        .login-container { max-width: 440px; width: 100%; background: white; border: 1px solid #eee; border-radius: 18px; padding: 24px; box-sizing: border-box; }
+        .auth-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; padding: 6px; background: #f3f4f6; border-radius: 10px; }
+        .auth-mode-btn { border: 0; background: transparent; color: #64748b; font-weight: 800; border-radius: 8px; padding: 10px; cursor: pointer; }
+        .auth-mode-btn.active { background: #fff; color: #0f172a; box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08); }
+        .auth-inline-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .auth-inline-switch button { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #334155; font-weight: 800; padding: 10px; cursor: pointer; }
+        .auth-inline-switch button.active { background: #0a0a0a; color: #fff; border-color: #0a0a0a; }
         .login-form { display: flex; flex-direction: column; gap: 20px; }
         .input-group { display: flex; flex-direction: column; text-align: left; }
         label { font-weight: bold; margin-bottom: 5px; }
         input { padding: 12px; border: 2px solid var(--brand-dark); border-radius: 6px; font-size: 16px; }
         .btn { padding: 12px; background-color: var(--brand-dark); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn:hover { background-color: #333; }
+        .btn-outline { padding: 12px; background: #fff; color: var(--brand-dark); border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .auth-note { min-height: 22px; margin-top: 12px; font-size: 13px; color: #64748b; line-height: 1.5; text-align: left; }
+        .auth-note.error { color: #dc2626; }
+        .auth-note.success { color: #15803d; }
+
+        .customer-home { align-items: stretch; justify-content: flex-start; max-width: 900px; width: 100%; margin: 0 auto; padding-top: 120px; box-sizing: border-box; }
+        .profile-section { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .profile-icon { width: 44px; height: 44px; border-radius: 50%; background: #0a0a0a; color: #fff; display: grid; place-items: center; font-weight: 900; }
+        .location { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; min-width: 0; }
+        .location span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .wallet-icon { border: 1px solid #0a0a0a; background: #fff; color: #0a0a0a; font-weight: 800; border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+        .book-now { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; background: #0a0a0a; color: #fff; border-radius: 8px; padding: 10px 14px; font-weight: 800; }
+        .ads-container { width: 100%; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 18px; color: #64748b; text-align: center; background: #fff; margin-bottom: 12px; }
+        #salons-list { width: 100%; }
 
         /* Menu overlay */
         #menu-overlay { position: fixed; top: 80px; left: 0; width: 100%; height: calc(100vh - 80px); background: rgba(0,0,0,0.8); z-index: 1000; display: flex; justify-content: center; align-items: center; }
@@ -163,7 +186,13 @@
         .support-actions { display: grid; gap: 12px; }
         .support-link { display: block; text-align: center; background: #000; color: #fff; text-decoration: none; padding: 16px; border-radius: 8px; font-weight: 900; }
 
-        @media (max-width: 768px) { h1 { font-size: 42px; } .logo { font-size: 30px; } .footer-grid { gap: 40px; } }
+        @media (max-width: 768px) {
+            h1 { font-size: 42px; }
+            .logo { font-size: 30px; }
+            .footer-grid { gap: 40px; }
+            .profile-section { grid-template-columns: auto minmax(0, 1fr); }
+            .wallet-icon, .book-now { width: 100%; }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
@@ -229,20 +258,48 @@
 
     <div id="login-screen" class="screen hidden">
         <div class="login-container">
-            <h2>Login</h2>
-            <form class="login-form" id="login-form">
+            <h2 style="margin-top:0;">Welcome</h2>
+            <div class="auth-modes">
+                <button type="button" class="auth-mode-btn active" data-auth-method="phone">Phone OTP</button>
+                <button type="button" class="auth-mode-btn" data-auth-method="email">Email + Password</button>
+            </div>
+
+            <form class="login-form" id="phone-auth-form">
                 <div class="input-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" required>
+                    <label for="phone-input">Phone Number</label>
+                    <input type="tel" id="phone-input" inputmode="tel" placeholder="+91XXXXXXXXXX" required>
                 </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required>
+                <div class="input-group hidden" id="phone-otp-wrap">
+                    <label for="phone-otp">OTP</label>
+                    <input type="text" id="phone-otp" inputmode="numeric" maxlength="6" placeholder="6-digit OTP">
                 </div>
-                <button type="submit" class="btn">Login</button>
+                <button type="submit" class="btn" id="phone-submit-btn">Send OTP</button>
+                <button type="button" class="btn-outline hidden" id="phone-edit-btn">Change Number</button>
             </form>
-            <button class="btn" id="google-login">Login with Google</button>
-            <button class="btn" id="phone-login">Login with Phone</button>
+
+            <form class="login-form hidden" id="email-auth-form">
+                <div class="auth-inline-switch">
+                    <button type="button" class="active" data-email-mode="login">Log In</button>
+                    <button type="button" data-email-mode="signup">Sign Up</button>
+                </div>
+                <div class="input-group">
+                    <label for="email-input">Email</label>
+                    <input type="email" id="email-input" required>
+                </div>
+                <div class="input-group">
+                    <label for="password-input">Password</label>
+                    <input type="password" id="password-input" minlength="6" required>
+                </div>
+                <div class="input-group hidden" id="email-otp-wrap">
+                    <label for="email-otp">OTP</label>
+                    <input type="text" id="email-otp" inputmode="numeric" maxlength="6" placeholder="6-digit OTP">
+                </div>
+                <button type="submit" class="btn" id="email-submit-btn">Continue</button>
+                <button type="button" class="btn-outline hidden" id="email-back-btn">Back</button>
+            </form>
+
+            <button class="btn-outline" id="google-login" type="button">Continue with Google</button>
+            <p class="auth-note" id="auth-note"></p>
         </div>
     </div>
 
@@ -253,9 +310,9 @@
                 <span>📍</span>
                 <span id="location-name">Your Location</span>
             </div>
+            <button class="wallet-icon" id="wallet-trigger" type="button">Wallet</button>
             <a href="#" class="book-now">Book Now</a>
         </div>
-        <div class="wallet-icon">💳 Wallet</div>
         <div class="ads-container">here will be the adds.</div>
         <!-- Local Salons will be loaded here -->
         <div id="salons-list"></div>
@@ -338,6 +395,7 @@
     <div class="app-modal-overlay" id="favoritesModal"><div class="app-modal" id="favoritesModalContent"><div class="modal-header"><h2>Saved Salons</h2><span class="close-app-modal" onclick="closeAppModal('favoritesModal')">&times;</span></div><p style="color:#64748b; line-height:1.6;">Your quick re-booking list stays on this device.</p><div class="modal-list" id="favoriteResults"></div></div></div>
 
     <div class="app-modal-overlay" id="supportModal"><div class="app-modal" id="supportModalContent"><div class="modal-header"><h2>ZLon Support</h2><span class="close-app-modal" onclick="closeAppModal('supportModal')">&times;</span></div><div class="support-actions"><a class="support-link" href="mailto:support@zlon.in">Email Support</a><button type="button" class="submit-btn" onclick="closeAppModal('supportModal'); openAppModal('complaintModal');">File a Grievance</button><a class="support-link" href="https://mybusiness.zlon.in/login.html" style="background:#fff; color:#000; border:1px solid #eee;">For Business</a></div></div></div>
+    <div class="app-modal-overlay" id="walletModal"><div class="app-modal" id="walletModalContent"><div class="modal-header"><h2>Wallet</h2><span class="close-app-modal" onclick="closeAppModal('walletModal')">&times;</span></div><div class="modal-list"><div class="modal-card"><h3>Amazon Pay Wallet</h3><p>Connect Amazon Pay in the next release for instant checkout.</p></div><div class="modal-card"><h3>ZLon Credits</h3><p>Use internal credits for offers, cashback, and priority booking.</p></div></div></div></div>
 
     <script>
         let _supabase = null;
@@ -359,6 +417,16 @@
             statusId: 'available',
             queueChannel: null
         };
+        const appShellState = {
+            authMethod: 'phone',
+            emailMode: 'login',
+            phoneOtpSent: false,
+            emailOtpSent: false,
+            pendingPhone: '',
+            pendingEmail: '',
+            booted: false
+        };
+        const SHELL_SCREENS = ['loading-screen', 'login-screen', 'customer-home'];
 
         const FAVORITES_KEY = 'zlon.favorite.salons';
         const DARK_MAP_STYLES = [
@@ -404,6 +472,324 @@
             }
         }
         loadSalonsFromCloud();
+
+        function showShellScreen(screenId) {
+            SHELL_SCREENS.forEach((id) => {
+                const element = document.getElementById(id);
+                if (!element) return;
+                element.classList.toggle('hidden', id !== screenId);
+            });
+        }
+
+        function wait(ms) {
+            return new Promise((resolve) => {
+                setTimeout(resolve, ms);
+            });
+        }
+
+        function setAuthNote(message, tone = '') {
+            const note = document.getElementById('auth-note');
+            if (!note) return;
+            note.textContent = message || '';
+            note.className = `auth-note ${tone}`.trim();
+        }
+
+        function setAuthMethod(method) {
+            appShellState.authMethod = method === 'email' ? 'email' : 'phone';
+            document.querySelectorAll('[data-auth-method]').forEach((button) => {
+                button.classList.toggle('active', button.getAttribute('data-auth-method') === appShellState.authMethod);
+            });
+            document.getElementById('phone-auth-form').classList.toggle('hidden', appShellState.authMethod !== 'phone');
+            document.getElementById('email-auth-form').classList.toggle('hidden', appShellState.authMethod !== 'email');
+            setAuthNote('');
+        }
+
+        function setEmailMode(mode) {
+            appShellState.emailMode = mode === 'signup' ? 'signup' : 'login';
+            document.querySelectorAll('[data-email-mode]').forEach((button) => {
+                button.classList.toggle('active', button.getAttribute('data-email-mode') === appShellState.emailMode);
+            });
+        }
+
+        function resetPhoneOtpFlow() {
+            appShellState.phoneOtpSent = false;
+            appShellState.pendingPhone = '';
+            document.getElementById('phone-input').value = '';
+            document.getElementById('phone-input').readOnly = false;
+            document.getElementById('phone-otp').value = '';
+            document.getElementById('phone-otp-wrap').classList.add('hidden');
+            document.getElementById('phone-edit-btn').classList.add('hidden');
+            document.getElementById('phone-submit-btn').textContent = 'Send OTP';
+        }
+
+        function resetEmailOtpFlow() {
+            appShellState.emailOtpSent = false;
+            appShellState.pendingEmail = '';
+            document.getElementById('email-input').readOnly = false;
+            document.getElementById('password-input').readOnly = false;
+            document.getElementById('email-otp').value = '';
+            document.getElementById('email-otp-wrap').classList.add('hidden');
+            document.getElementById('email-back-btn').classList.add('hidden');
+            document.getElementById('email-submit-btn').textContent = 'Continue';
+        }
+
+        function setFormBusy(formId, busy) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            form.querySelectorAll('button, input').forEach((field) => {
+                if (field.getAttribute('data-lock') === 'skip') return;
+                field.disabled = busy;
+            });
+        }
+
+        async function sendPhoneOtp() {
+            const phoneInput = document.getElementById('phone-input');
+            const phone = phoneInput.value.trim();
+            if (!phone) {
+                setAuthNote('Enter a valid phone number.', 'error');
+                return;
+            }
+
+            setFormBusy('phone-auth-form', true);
+            const { error } = await _supabase.auth.signInWithOtp({
+                phone,
+                options: {
+                    shouldCreateUser: true
+                }
+            });
+            setFormBusy('phone-auth-form', false);
+
+            if (error) {
+                setAuthNote(error.message, 'error');
+                return;
+            }
+
+            appShellState.phoneOtpSent = true;
+            appShellState.pendingPhone = phone;
+            phoneInput.readOnly = true;
+            document.getElementById('phone-otp-wrap').classList.remove('hidden');
+            document.getElementById('phone-edit-btn').classList.remove('hidden');
+            document.getElementById('phone-submit-btn').textContent = 'Verify OTP';
+            setAuthNote(`OTP sent to ${phone}. Phone is now locked until verification.`, 'success');
+        }
+
+        async function verifyPhoneOtp() {
+            const token = document.getElementById('phone-otp').value.trim();
+            if (token.length !== 6) {
+                setAuthNote('Enter the 6-digit OTP.', 'error');
+                return;
+            }
+
+            setFormBusy('phone-auth-form', true);
+            const response = await _supabase.auth.verifyOtp({
+                phone: appShellState.pendingPhone,
+                token,
+                type: 'sms'
+            });
+            setFormBusy('phone-auth-form', false);
+
+            if (response.error) {
+                setAuthNote(response.error.message, 'error');
+                return;
+            }
+
+            await completeSessionRoute(response.data ? response.data.session : null);
+        }
+
+        async function startEmailPasswordFlow() {
+            const emailInput = document.getElementById('email-input');
+            const passwordInput = document.getElementById('password-input');
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!email || !password) {
+                setAuthNote('Enter email and password to continue.', 'error');
+                return;
+            }
+
+            setFormBusy('email-auth-form', true);
+            let gateError = null;
+
+            if (appShellState.emailMode === 'signup') {
+                const signUp = await _supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            user_type: 'customer'
+                        }
+                    }
+                });
+                gateError = signUp.error || null;
+            } else {
+                const signIn = await _supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                gateError = signIn.error || null;
+            }
+
+            if (gateError) {
+                setFormBusy('email-auth-form', false);
+                setAuthNote(gateError.message, 'error');
+                return;
+            }
+
+            await _supabase.auth.signOut();
+
+            const otp = await _supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    shouldCreateUser: false
+                }
+            });
+            setFormBusy('email-auth-form', false);
+
+            if (otp.error) {
+                setAuthNote(otp.error.message, 'error');
+                return;
+            }
+
+            appShellState.emailOtpSent = true;
+            appShellState.pendingEmail = email;
+            emailInput.readOnly = true;
+            passwordInput.readOnly = true;
+            document.getElementById('email-otp-wrap').classList.remove('hidden');
+            document.getElementById('email-back-btn').classList.remove('hidden');
+            document.getElementById('email-submit-btn').textContent = 'Verify OTP';
+            setAuthNote(`OTP sent to ${email}.`, 'success');
+        }
+
+        async function verifyEmailOtp() {
+            const token = document.getElementById('email-otp').value.trim();
+            if (token.length !== 6) {
+                setAuthNote('Enter the 6-digit OTP.', 'error');
+                return;
+            }
+
+            setFormBusy('email-auth-form', true);
+            const response = await _supabase.auth.verifyOtp({
+                email: appShellState.pendingEmail,
+                token,
+                type: 'email'
+            });
+            setFormBusy('email-auth-form', false);
+
+            if (response.error) {
+                setAuthNote(response.error.message, 'error');
+                return;
+            }
+
+            await completeSessionRoute(response.data ? response.data.session : null);
+        }
+
+        async function completeSessionRoute(session) {
+            if (!_supabase || !window.ZLon.authRoutes) return;
+
+            const activeSession = session || await window.ZLon.authRoutes.getSession(_supabase);
+            if (!activeSession) {
+                setAuthNote('Session could not be created. Try again.', 'error');
+                return;
+            }
+
+            portalState.session = activeSession;
+            portalState.userType = await window.ZLon.authRoutes.resolveUserType(_supabase, activeSession) || 'customer';
+
+            if (portalState.userType === 'owner') {
+                window.location.replace(window.ZLon.authRoutes.portalUrl());
+                return;
+            }
+
+            await window.ZLon.authRoutes.syncProfile(_supabase, activeSession.user, 'customer', appShellState.pendingPhone || null);
+            showShellScreen('customer-home');
+            updateCustomerLocationLabel();
+            loadSalonsFromCloud();
+            setAuthNote('');
+            resetPhoneOtpFlow();
+            resetEmailOtpFlow();
+        }
+
+        async function updateCustomerLocationLabel() {
+            const locationLabel = document.getElementById('location-name');
+            if (!locationLabel || !navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    locationLabel.textContent = `${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
+                },
+                () => {
+                    locationLabel.textContent = 'Location Permission Needed';
+                },
+                { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 }
+            );
+        }
+
+        async function beginGoogleAuth() {
+            if (!_supabase) return;
+            setAuthNote('');
+            const redirectTo = window.ZLon.authRoutes ? window.ZLon.authRoutes.homeUrl() : window.location.href;
+            const { error } = await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo,
+                    queryParams: {
+                        prompt: 'select_account'
+                    }
+                }
+            });
+
+            if (error) {
+                setAuthNote(error.message, 'error');
+            }
+        }
+
+        function bindCustomerAuthUi() {
+            if (appShellState.booted) return;
+            appShellState.booted = true;
+
+            document.querySelectorAll('[data-auth-method]').forEach((button) => {
+                button.addEventListener('click', () => setAuthMethod(button.getAttribute('data-auth-method')));
+            });
+
+            document.querySelectorAll('[data-email-mode]').forEach((button) => {
+                button.addEventListener('click', () => setEmailMode(button.getAttribute('data-email-mode')));
+            });
+
+            document.getElementById('phone-auth-form').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (!_supabase) {
+                    setAuthNote('Supabase config is missing.', 'error');
+                    return;
+                }
+                if (!appShellState.phoneOtpSent) {
+                    await sendPhoneOtp();
+                    return;
+                }
+                await verifyPhoneOtp();
+            });
+
+            document.getElementById('email-auth-form').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                if (!_supabase) {
+                    setAuthNote('Supabase config is missing.', 'error');
+                    return;
+                }
+                if (!appShellState.emailOtpSent) {
+                    await startEmailPasswordFlow();
+                    return;
+                }
+                await verifyEmailOtp();
+            });
+
+            document.getElementById('phone-edit-btn').addEventListener('click', resetPhoneOtpFlow);
+            document.getElementById('email-back-btn').addEventListener('click', resetEmailOtpFlow);
+            document.getElementById('google-login').addEventListener('click', beginGoogleAuth);
+            document.getElementById('wallet-trigger').addEventListener('click', () => openAppModal('walletModal'));
+
+            resetPhoneOtpFlow();
+            resetEmailOtpFlow();
+            setEmailMode('login');
+            setAuthMethod('phone');
+        }
 
         function isBusinessHost() {
             return window.ZLon.authRoutes && window.ZLon.authRoutes.isBusinessPortalHost
@@ -765,31 +1151,38 @@
         }
 
         async function initPortalExperience() {
-            if (!_supabase || !window.ZLon.authRoutes) return;
+            bindCustomerAuthUi();
+            showShellScreen('loading-screen');
+            await wait(1500);
 
-            if (!isBusinessHost()) {
-                window.ZLon.authRoutes.redirectOwnersFromPublic(_supabase);
+            if (!_supabase || !window.ZLon.authRoutes) {
+                showShellScreen('login-screen');
+                setAuthNote('App auth is not configured yet.', 'error');
+                return;
+            }
+
+            if (isBusinessHost()) {
+                const session = await window.ZLon.authRoutes.getSession(_supabase);
+                if (!session) {
+                    window.location.replace(window.ZLon.authRoutes.loginUrl());
+                    return;
+                }
+                const userType = await window.ZLon.authRoutes.resolveUserType(_supabase, session);
+                if (userType !== 'owner') {
+                    window.location.replace(window.ZLon.authRoutes.homeUrl());
+                    return;
+                }
+                window.location.replace(window.ZLon.authRoutes.portalUrl());
                 return;
             }
 
             const session = await window.ZLon.authRoutes.getSession(_supabase);
-            if (!session) return;
-
-            portalState.session = session;
-            portalState.userType = await window.ZLon.authRoutes.resolveUserType(_supabase, session);
-            if (!isOwnerMode()) return;
-
-            const linked = await findOwnerSalon(session.user);
-            portalState.salon = linked.salon;
-            if (portalState.salon) {
-                portalState.statusId = ownerStatusFromSalon(portalState.salon);
-                await fetchOwnerQueue();
-                subscribeOwnerQueue();
-            } else {
-                setGeoStatus(linked.message);
+            if (!session) {
+                showShellScreen('login-screen');
+                return;
             }
 
-            openOwnerPortal();
+            await completeSessionRoute(session);
         }
 
         function toggleMenu() { document.getElementById("hamburger").classList.toggle("active"); document.getElementById("sidebar").classList.toggle("active"); document.getElementById("overlay").classList.toggle("active"); }
@@ -799,12 +1192,13 @@
         function closeAppModal(modalId) { const overlay = document.getElementById(modalId); if (overlay) overlay.style.display = 'none'; }
         function submitForm(event, modalId) { event.preventDefault(); alert("Success! Recorded."); closeAppModal(modalId); }
 
-        function openSalonView(type) {
+        async function openSalonView(type) {
             if (isOwnerMode()) {
                 openOwnerPortal();
                 return;
             }
 
+            await loadSalonsFromCloud();
             currentViewType = type;
             currentUserLocation = null;
             currentSalonResults = getSalonsByType(type);
@@ -981,7 +1375,12 @@
         }
 
         function getSalonsByType(type) {
-            return dbSalons.filter((salon) => getSalonType(salon) === type);
+            return dbSalons.filter((salon) => getSalonType(salon) === type && isSalonDiscoverable(salon));
+        }
+
+        function isSalonDiscoverable(salon) {
+            const status = String(salon.queue_status || 'available').toLowerCase();
+            return status === 'available';
         }
 
         function getSalonType(salon) {
@@ -1385,6 +1784,23 @@
             event.preventDefault();
             addOwnerWalkIn(form);
         });
+
+        const localSalonEntry = document.getElementById('menu-local-salons');
+        if (localSalonEntry) {
+            localSalonEntry.addEventListener('click', () => {
+                openSalonView('standard');
+            });
+        }
+
+        const bookingEntry = document.getElementById('menu-my-bookings');
+        if (bookingEntry) {
+            bookingEntry.addEventListener('click', openBookingsView);
+        }
+
+        const supportEntry = document.getElementById('menu-support');
+        if (supportEntry) {
+            supportEntry.addEventListener('click', openSupportView);
+        }
 
         initPortalExperience();
     </script>

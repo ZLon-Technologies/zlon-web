@@ -9,9 +9,15 @@
       "permanent": false
     },
     {
-      "source": "/dashboard.html",
+      "source": "/",
       "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
-      "destination": "/",
+      "destination": "/login.html",
+      "permanent": false
+    },
+    {
+      "source": "/index.html",
+      "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
+      "destination": "/login.html",
       "permanent": false
     },
     {
@@ -47,16 +53,16 @@
     {
       "source": "/dashboard.html",
       "has": [{ "type": "host", "value": "zlon.in" }],
-      "destination": "https://mybusiness.zlon.in/",
+      "destination": "https://mybusiness.zlon.in/dashboard.html",
       "permanent": false
     },
     {
       "source": "/dashboard.html",
       "has": [{ "type": "host", "value": "www.zlon.in" }],
-      "destination": "https://mybusiness.zlon.in/",
+      "destination": "https://mybusiness.zlon.in/dashboard.html",
       "permanent": false
     },
-    { "source": "/portal", "destination": "https://mybusiness.zlon.in/", "permanent": false },
-    { "source": "/owner", "destination": "https://mybusiness.zlon.in/", "permanent": false }
+    { "source": "/portal", "destination": "https://mybusiness.zlon.in/dashboard.html", "permanent": false },
+    { "source": "/owner", "destination": "https://mybusiness.zlon.in/dashboard.html", "permanent": false }
   ]
 }

@@ -310,7 +310,7 @@
 
         .metrics {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 14px;
             margin: 16px 0;
         }
@@ -497,7 +497,8 @@
             font-weight: 900;
         }
 
-        input {
+        input,
+        select {
             width: 100%;
             min-height: 46px;
             border: 1px solid var(--line);
@@ -507,7 +508,8 @@
             padding: 0 14px;
         }
 
-        input:focus {
+        input:focus,
+        select:focus {
             outline: 2px solid rgba(17, 24, 39, 0.12);
             background: #fff;
         }
@@ -672,6 +674,10 @@
                     <strong id="waitingCount">0</strong>
                 </div>
                 <div class="metric">
+                    <span>Daily Appointments</span>
+                    <strong id="dailyAppointments">0</strong>
+                </div>
+                <div class="metric">
                     <span>Next Up</span>
                     <strong id="nextCustomer">Clear</strong>
                 </div>
@@ -680,8 +686,8 @@
                     <strong id="waitEstimate">0m</strong>
                 </div>
                 <div class="metric">
-                    <span>Served Today</span>
-                    <strong id="servedToday">0</strong>
+                    <span>Earnings Today</span>
+                    <strong id="earningsToday">₹0</strong>
                 </div>
             </section>
 
@@ -713,6 +719,24 @@
                         </label>
                         <button class="submit-btn" id="addWalkInBtn" type="submit">Add Appointment</button>
                     </form>
+
+                    <p class="eyebrow">Brand Assets</p>
+                    <h2 style="margin-top: 0;">Upload Logo / Banner</h2>
+                    <form class="walk-in-form" id="assetForm">
+                        <label>
+                            Asset Type
+                            <select id="assetType" name="assetType">
+                                <option value="logo">Logo</option>
+                                <option value="banner">Banner</option>
+                            </select>
+                        </label>
+                        <label>
+                            Image File
+                            <input id="assetFile" name="assetFile" type="file" accept="image/*" required>
+                        </label>
+                        <button class="submit-btn" id="uploadAssetBtn" type="submit">Upload Asset</button>
+                    </form>
+                    <p class="ops-note" id="assetNote">Assets upload to <strong>salon-assets/&lt;salon_id&gt;/...</strong> and public URLs are saved to your salon record.</p>
 
                     <p class="ops-note" id="opsNote">Tip: add <strong>?salon_id=YOUR_ID</strong> to this dashboard URL when your Supabase queue table is ready for salon-specific rows.</p>
                 </aside>
@@ -748,6 +772,7 @@
             session: null,
             salon: null,
             statusId: 'available',
+            earningsToday: 0,
             toastTimer: null,
             queueChannel: null
         };
@@ -762,15 +787,21 @@
             refreshBtn: document.getElementById('refreshBtn'),
             logoutBtn: document.getElementById('logoutBtn'),
             waitingCount: document.getElementById('waitingCount'),
+            dailyAppointments: document.getElementById('dailyAppointments'),
             nextCustomer: document.getElementById('nextCustomer'),
             waitEstimate: document.getElementById('waitEstimate'),
-            servedToday: document.getElementById('servedToday'),
+            earningsToday: document.getElementById('earningsToday'),
             lastUpdated: document.getElementById('lastUpdated'),
             queueList: document.getElementById('queueList'),
             walkInForm: document.getElementById('walkInForm'),
             customerName: document.getElementById('customerName'),
             customerPhone: document.getElementById('customerPhone'),
             addWalkInBtn: document.getElementById('addWalkInBtn'),
+            assetForm: document.getElementById('assetForm'),
+            assetType: document.getElementById('assetType'),
+            assetFile: document.getElementById('assetFile'),
+            uploadAssetBtn: document.getElementById('uploadAssetBtn'),
+            assetNote: document.getElementById('assetNote'),
             opsNote: document.getElementById('opsNote'),
             toast: document.getElementById('toast'),
             ownerMenuBtn: document.getElementById('ownerMenuBtn'),
@@ -842,6 +873,66 @@
             return state.queue.filter((person) => getStatus(person) === 'waiting');
         }
 
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            }).format(Number(value) || 0);
+        }
+
+        function getRowAmount(row) {
+            const amountKeys = ['amount', 'price', 'total', 'total_amount', 'bill_amount', 'service_price', 'earnings'];
+            for (const key of amountKeys) {
+                const parsed = Number(row[key]);
+                if (Number.isFinite(parsed) && parsed > 0) return parsed;
+            }
+            return 0;
+        }
+
+        function getRowTime(row) {
+            const timeKeys = ['appointment_time', 'slot_time', 'scheduled_at', 'booking_time', 'created_at', 'date'];
+            for (const key of timeKeys) {
+                if (!row[key]) continue;
+                const parsed = new Date(row[key]);
+                if (!Number.isNaN(parsed.getTime())) return parsed;
+            }
+            return null;
+        }
+
+        async function refreshEarningsSummary() {
+            if (!state.salon) {
+                state.earningsToday = 0;
+                return;
+            }
+
+            const tables = ['appointments', 'bookings'];
+            for (const table of tables) {
+                const result = await db
+                    .from(table)
+                    .select('*')
+                    .eq('salon_id', state.salon.id)
+                    .limit(500);
+
+                if (result.error || !Array.isArray(result.data)) {
+                    continue;
+                }
+
+                const todaysRows = result.data.filter((row) => {
+                    const rowTime = getRowTime(row);
+                    return rowTime ? isToday(rowTime.toISOString()) : false;
+                });
+
+                const summed = todaysRows.reduce((total, row) => total + getRowAmount(row), 0);
+                if (summed > 0) {
+                    state.earningsToday = summed;
+                    return;
+                }
+            }
+
+            state.earningsToday = 0;
+        }
+
         function showToast(message) {
             els.toast.textContent = message;
             els.toast.classList.add('show');
@@ -870,18 +961,20 @@
                 button.disabled = !state.salon;
             });
             els.addWalkInBtn.disabled = !state.salon;
+            els.uploadAssetBtn.disabled = !state.salon;
         }
 
         function renderMetrics() {
             const waiting = getWaitingQueue();
-            const served = state.queue.filter((person) => getStatus(person) === 'served' && isToday(person.created_at));
+            const todaysAppointments = state.queue.filter((person) => isToday(person.created_at));
             const next = waiting[0];
             const option = WAIT_STATUSES[state.statusId] || WAIT_STATUSES.available;
 
             els.waitingCount.textContent = waiting.length;
+            els.dailyAppointments.textContent = todaysAppointments.length;
             els.nextCustomer.textContent = next ? getName(next).split(' ')[0] : 'Clear';
             els.waitEstimate.textContent = option.estimate;
-            els.servedToday.textContent = served.length;
+            els.earningsToday.textContent = formatCurrency(state.earningsToday);
         }
 
         function renderQueue() {
@@ -946,6 +1039,7 @@
         function renderUnlinked(message) {
             state.salon = null;
             state.queue = [];
+            state.earningsToday = 0;
             els.salonIdentity.textContent = state.session ? state.session.user.email : 'Owner console';
             els.dashboardTitle.textContent = 'No salon linked yet.';
             els.dashboardLede.textContent = message || 'Add this login email to owner_email in the salons table, then reload the dashboard.';
@@ -969,6 +1063,13 @@
 
             if (!owned.error && owned.data && owned.data.length) {
                 return { salon: owned.data[0] };
+            }
+
+            if (!user.email) {
+                return {
+                    salon: null,
+                    message: 'Phone-auth owner is not linked yet. Add this auth UID to salons.owner_id and reload.'
+                };
             }
 
             for (const column of ['owner_email', 'email']) {
@@ -1057,6 +1158,7 @@
             }
 
             state.queue = Array.isArray(result.data) ? result.data : [];
+            await refreshEarningsSummary();
             render();
         }
 
@@ -1122,6 +1224,79 @@
             els.walkInForm.reset();
             showToast('Walk-in added to the queue.');
             fetchQueue();
+        }
+
+        function getAssetExtension(filename) {
+            const parts = String(filename || '').split('.');
+            return parts.length > 1 ? parts.pop().toLowerCase().replace(/[^a-z0-9]/g, '') : 'png';
+        }
+
+        async function uploadSalonAsset(event) {
+            event.preventDefault();
+            if (!state.salon) {
+                showToast('Link a salon before uploading assets.');
+                return;
+            }
+
+            const file = els.assetFile.files[0];
+            if (!file) {
+                showToast('Choose an image file first.');
+                return;
+            }
+
+            const assetType = els.assetType.value === 'banner' ? 'banner' : 'logo';
+            const extension = getAssetExtension(file.name);
+            const objectPath = `${state.salon.id}/${assetType}-${Date.now()}.${extension}`;
+
+            els.uploadAssetBtn.disabled = true;
+            els.uploadAssetBtn.textContent = 'Uploading...';
+
+            const upload = await db.storage
+                .from('salon-assets')
+                .upload(objectPath, file, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+
+            if (upload.error) {
+                els.uploadAssetBtn.disabled = false;
+                els.uploadAssetBtn.textContent = 'Upload Asset';
+                showToast(`Upload failed: ${upload.error.message}`);
+                return;
+            }
+
+            const { data: publicData } = db.storage
+                .from('salon-assets')
+                .getPublicUrl(objectPath);
+
+            const publicUrl = publicData && publicData.publicUrl ? publicData.publicUrl : '';
+            const payload = assetType === 'banner'
+                ? { banner_url: publicUrl }
+                : { logo_url: publicUrl };
+
+            const update = await db
+                .from('salons')
+                .update(payload)
+                .eq('id', state.salon.id)
+                .eq('owner_id', state.session.user.id)
+                .select('*')
+                .limit(1);
+
+            els.uploadAssetBtn.disabled = false;
+            els.uploadAssetBtn.textContent = 'Upload Asset';
+
+            if (update.error) {
+                showToast(`Uploaded but salon update failed: ${update.error.message}`);
+                return;
+            }
+
+            if (update.data && update.data.length) {
+                state.salon = update.data[0];
+            }
+
+            els.assetForm.reset();
+            els.assetNote.innerHTML = `Latest ${escapeHtml(assetType)} URL: <a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener">${escapeHtml(publicUrl)}</a>`;
+            showToast(`${assetType === 'banner' ? 'Banner' : 'Logo'} uploaded successfully.`);
         }
 
         async function updateSalonWaitStatus(statusId) {
@@ -1207,6 +1382,7 @@
             showToast(`${button.dataset.ownerMenu} is being prepared for owner accounts.`);
         });
         els.walkInForm.addEventListener('submit', addWalkIn);
+        els.assetForm.addEventListener('submit', uploadSalonAsset);
         els.queueList.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action]');
             if (!button) return;

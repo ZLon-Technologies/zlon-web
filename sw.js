@@ -1,9 +1,11 @@
-const CACHE_NAME = 'zlon-app-shell-v3';
+const CACHE_NAME = 'zlon-app-shell-v4';
 const APP_SHELL = [
     '/',
     '/index.html',
     '/apply.html',
+    '/business.html',
     '/login.html',
+    '/dashboard.html',
     '/supabase-config.js',
     '/supabase-client.js',
     '/auth-routes.js',
@@ -60,7 +62,11 @@ async function handleNavigation(request, requestUrl) {
         cache.put(request, response.clone());
         return response;
     } catch (error) {
-        const fallback = requestUrl.pathname === '/login.html' ? '/login.html' : '/index.html';
+        const cached = await caches.match(request);
+        if (cached) return cached;
+
+        const isBusinessHost = requestUrl.hostname === 'mybusiness.zlon.in';
+        const fallback = isBusinessHost || requestUrl.pathname === '/login.html' ? '/login.html' : '/index.html';
 
         return caches.match(fallback);
     }
