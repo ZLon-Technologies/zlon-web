@@ -3,7 +3,7 @@
     "name": "ZLon Owner App",
     "short_name": "ZLon Owner",
     "description": "Owner dashboard for queue control, business operations, and salon asset management.",
-    "start_url": "/dashboard.html",
+    "start_url": "/login.html",
     "scope": "/",
     "display": "standalone",
     "orientation": "portrait",

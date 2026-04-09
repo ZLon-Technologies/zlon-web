@@ -2,14 +2,71 @@
     const namespace = window.ZLon = window.ZLon || {};
     const HISTORY_KEY = 'zlon.consumer.history';
     const WALLET_KEY = 'zlon.consumer.wallet';
+    const VIEW_KEY = 'zlon.consumer.last-view';
     const LOCATION_FALLBACK = 'Location auto select';
     const FALLBACK_SALONS = [
-        { id: 's1', name: 'Noir Studio', area: 'Napier Town', city: 'Jabalpur', waitTime: '8 min', queue_status: 'available', type: 'premium', phone: '919876543210' },
-        { id: 's2', name: 'Chair Theory', area: 'Civic Centre', city: 'Jabalpur', waitTime: '12 min', queue_status: 'available', type: 'standard', phone: '919812345670' },
-        { id: 's3', name: 'Velvet Barber Lab', area: 'Vijay Nagar', city: 'Jabalpur', waitTime: '5 min', queue_status: 'available', type: 'premium', phone: '919845612378' },
-        { id: 's4', name: 'Trim Deck', area: 'Madan Mahal', city: 'Jabalpur', waitTime: '14 min', queue_status: 'busy', type: 'standard', phone: '919800112233' },
-        { id: 's5', name: 'Sunday Fade Co.', area: 'Wright Town', city: 'Jabalpur', waitTime: '4 min', queue_status: 'available', type: 'standard', phone: '919877700022' }
+        {
+            id: 's1',
+            name: 'Noir Gold Studio',
+            area: 'Napier Town',
+            city: 'Jabalpur',
+            waitTime: '8 min',
+            queue_status: 'available',
+            type: 'premium',
+            phone: '919876543210',
+            latitude: 23.1731,
+            longitude: 79.9342
+        },
+        {
+            id: 's2',
+            name: 'Velvet Chair House',
+            area: 'Civic Centre',
+            city: 'Jabalpur',
+            waitTime: '12 min',
+            queue_status: 'available',
+            type: 'standard',
+            phone: '919812345670',
+            latitude: 23.1702,
+            longitude: 79.9384
+        },
+        {
+            id: 's3',
+            name: 'Trim Republic',
+            area: 'Vijay Nagar',
+            city: 'Jabalpur',
+            waitTime: '5 min',
+            queue_status: 'available',
+            type: 'premium',
+            phone: '919845612378',
+            latitude: 23.181,
+            longitude: 79.9505
+        },
+        {
+            id: 's4',
+            name: 'Midnight Mirror',
+            area: 'Madan Mahal',
+            city: 'Jabalpur',
+            waitTime: '14 min',
+            queue_status: 'busy',
+            type: 'standard',
+            phone: '919800112233',
+            latitude: 23.1547,
+            longitude: 79.9201
+        },
+        {
+            id: 's5',
+            name: 'Sunday Fade Co.',
+            area: 'Wright Town',
+            city: 'Jabalpur',
+            waitTime: '4 min',
+            queue_status: 'available',
+            type: 'standard',
+            phone: '919877700022',
+            latitude: 23.1656,
+            longitude: 79.9273
+        }
     ];
+
     const state = {
         db: null,
         session: null,
@@ -71,6 +128,7 @@
         emailVerifyButton: document.getElementById('emailVerifyButton'),
         profileButton: document.getElementById('profileButton'),
         historyProfileButton: document.getElementById('historyProfileButton'),
+        walletShortcutButton: document.getElementById('walletShortcutButton'),
         homeLocationButton: document.getElementById('homeLocationButton'),
         historyLocationButton: document.getElementById('historyLocationButton'),
         homeLocationLabel: document.getElementById('homeLocationLabel'),
@@ -80,11 +138,8 @@
         carouselDots: document.getElementById('carouselDots'),
         carouselPrevButton: document.getElementById('carouselPrevButton'),
         carouselNextButton: document.getElementById('carouselNextButton'),
-        walletShortcutButton: document.getElementById('walletShortcutButton'),
         walletBalancePreview: document.getElementById('walletBalancePreview'),
         bookNowButton: document.getElementById('bookNowButton'),
-        seeAllSalonsButton: document.getElementById('seeAllSalonsButton'),
-        nearbyRail: document.getElementById('nearbyRail'),
         bookBackButton: document.getElementById('bookBackButton'),
         salonSearchInput: document.getElementById('salonSearchInput'),
         filterToggleButton: document.getElementById('filterToggleButton'),
@@ -119,7 +174,17 @@
         window.localStorage.setItem(key, JSON.stringify(value));
     }
 
+    function safeSupabaseClient() {
+        try {
+            return namespace.getSupabaseClient();
+        } catch (error) {
+            console.warn(error.message);
+            return null;
+        }
+    }
+
     function showToast(message) {
+        if (!els.toast) return;
         els.toast.textContent = message;
         els.toast.classList.add('is-visible');
         window.clearTimeout(state.toastTimer);
@@ -157,7 +222,9 @@
             els.emailResendButton,
             els.emailVerifyButton
         ].forEach((element) => {
-            if (element) element.disabled = isBusy;
+            if (element) {
+                element.disabled = isBusy;
+            }
         });
     }
 
@@ -174,6 +241,17 @@
         els.emailEntryStep.hidden = step !== 'email-entry';
         els.emailOtpStep.hidden = step !== 'email-otp';
         setAuthStatus('');
+    }
+
+    function rememberView(view) {
+        if (view && view !== 'auth') {
+            window.localStorage.setItem(VIEW_KEY, view);
+        }
+    }
+
+    function getRememberedView() {
+        const remembered = window.localStorage.getItem(VIEW_KEY) || 'home';
+        return ['home', 'history', 'book', 'wallet', 'account'].includes(remembered) ? remembered : 'home';
     }
 
     function setActiveView(view) {
@@ -193,6 +271,7 @@
             button.classList.toggle('is-active', button.getAttribute('data-nav') === view);
         });
         closeProfileSheet();
+        rememberView(view);
 
         if (view === 'home') {
             renderHome();
@@ -227,15 +306,6 @@
         });
     }
 
-    function safeSupabaseClient() {
-        try {
-            return namespace.getSupabaseClient();
-        } catch (error) {
-            console.warn(error.message);
-            return null;
-        }
-    }
-
     function isBusinessHost() {
         return namespace.authRoutes && namespace.authRoutes.isBusinessPortalHost
             ? namespace.authRoutes.isBusinessPortalHost()
@@ -248,15 +318,8 @@
             : false;
     }
 
-    function iconSvg(name) {
-        if (name === 'arrow') {
-            return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 5-7 7 7 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        }
-        return '';
-    }
-
     function formatPhonePreview(phone) {
-        return phone.replace(/(\+91)(\d{5})(\d{5})/, '$1 $2 $3');
+        return String(phone || '').replace(/^(\+91)(\d{5})(\d{5})$/, '$1 $2 $3');
     }
 
     function toIndianPhone(raw) {
@@ -264,11 +327,11 @@
         if (!digits) return '';
         const normalized = digits.length > 10 ? digits.slice(-10) : digits;
         if (normalized.length !== 10) return '';
-        return `+91${normalized}`;
+        return '+91' + normalized;
     }
 
-    function textOrFallback(value, fallback) {
-        return value ? String(value) : fallback;
+    function normalizeDigits(raw) {
+        return String(raw || '').replace(/\D/g, '');
     }
 
     function getSalonKey(salon) {
@@ -329,48 +392,54 @@
         const coords = getSalonCoordinates(salon);
         if (!coords) return getSalonLocation(salon);
         const distance = distanceBetweenMeters(state.userLocation, coords);
-        if (distance >= 1000) return `${(distance / 1000).toFixed(1)} km away`;
-        return `${Math.round(distance)} m away`;
+        if (distance >= 1000) {
+            return (distance / 1000).toFixed(1) + ' km away';
+        }
+        return Math.round(distance) + ' m away';
     }
 
     function bannerStyle(index, salon) {
         if (salon && salon.banner_url) {
-            return `background-image: linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18)), url('${salon.banner_url}');`;
+            return "background-image: linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.18)), url('" + salon.banner_url + "');";
         }
 
         const gradients = [
-            'linear-gradient(145deg, #050505 0%, #2f2f2f 100%)',
-            'linear-gradient(145deg, #111111 0%, #454545 100%)',
-            'linear-gradient(145deg, #171717 0%, #636363 100%)',
-            'linear-gradient(145deg, #0e0e0e 0%, #3a3a3a 100%)'
+            'linear-gradient(145deg, #0a0908 0%, #2b2015 100%)',
+            'linear-gradient(145deg, #100d0a 0%, #4a3420 100%)',
+            'linear-gradient(145deg, #080808 0%, #3a2e1e 100%)',
+            'linear-gradient(145deg, #13110d 0%, #5b4328 100%)'
         ];
-        return `background-image: ${gradients[index % gradients.length]};`;
+        return 'background-image: ' + gradients[index % gradients.length] + ';';
     }
 
     function renderCarousel() {
         const featuredSalons = sortedSalons().slice(0, 2);
         const slides = [
             {
-                title: 'Here will be the adds.',
-                body: 'Premium placements for salons and partner brands rotate here every 4 seconds.'
+                title: 'here will be the adds.',
+                body: 'Premium partner placements rotate here every 4 seconds and can also be moved manually.'
             },
             {
-                title: featuredSalons[0] ? featuredSalons[0].name : 'Nearest chair first',
-                body: featuredSalons[0] ? `${getSalonLocation(featuredSalons[0])} • ${getSalonWaitTime(featuredSalons[0])}` : 'Turn on location and ZLon moves the closest salons to the top.'
+                title: featuredSalons[0] ? featuredSalons[0].name : 'Nearest salon first',
+                body: featuredSalons[0]
+                    ? getSalonLocation(featuredSalons[0]) + ' | ' + getSalonWaitTime(featuredSalons[0])
+                    : 'Turn on location and ZLon lifts the closest salon to the front.'
             },
             {
-                title: featuredSalons[1] ? featuredSalons[1].name : 'Salon owners can join here',
-                body: featuredSalons[1] ? `${getSalonLocation(featuredSalons[1])} • ${getSalonType(featuredSalons[1])}` : 'Featured salon slots can be used for salon adds and priority discovery.'
+                title: featuredSalons[1] ? featuredSalons[1].name : 'Salon adds here',
+                body: featuredSalons[1]
+                    ? getSalonLocation(featuredSalons[1]) + ' | ' + (getSalonType(featuredSalons[1]) === 'premium' ? 'Premium partner' : 'Open discovery')
+                    : 'Business promotions and new salon discovery slots can live inside this panel.'
             }
         ];
 
         els.carouselTrack.innerHTML = slides.map((slide, index) => {
-            return `<article class="slide" style="${bannerStyle(index)}"><h2>${escapeHtml(slide.title)}</h2><p>${escapeHtml(slide.body)}</p></article>`;
+            return '<article class="slide" style="' + bannerStyle(index) + '"><h2>' + escapeHtml(slide.title) + '</h2><p>' + escapeHtml(slide.body) + '</p></article>';
         }).join('');
 
         els.carouselDots.innerHTML = slides.map((_, index) => {
             const active = index === state.carouselIndex ? 'is-active' : '';
-            return `<button class="${active}" data-dot-index="${index}" type="button" aria-label="Slide ${index + 1}"></button>`;
+            return '<button class="' + active + '" data-dot-index="' + index + '" type="button" aria-label="Slide ' + (index + 1) + '"></button>';
         }).join('');
 
         moveCarousel();
@@ -380,7 +449,7 @@
     function moveCarousel() {
         const slideCount = Math.max(els.carouselTrack.children.length, 1);
         state.carouselIndex = ((state.carouselIndex % slideCount) + slideCount) % slideCount;
-        els.carouselTrack.style.transform = `translateX(${-100 * state.carouselIndex}%)`;
+        els.carouselTrack.style.transform = 'translateX(' + (-100 * state.carouselIndex) + '%)';
         Array.from(els.carouselDots.children).forEach((button, index) => {
             button.classList.toggle('is-active', index === state.carouselIndex);
         });
@@ -394,17 +463,10 @@
         }, 4000);
     }
 
-    function renderHomeRail() {
-        const items = sortedSalons().slice(0, 6);
-        els.nearbyRail.innerHTML = items.map((salon, index) => {
-            return `<button class="salon-mini-card" data-salon-action="open" data-salon-id="${escapeHtml(getSalonKey(salon))}" type="button"><div class="salon-banner" style="${bannerStyle(index, salon)}"></div><strong>${escapeHtml(salon.name || 'ZLon Salon')}</strong><span>${escapeHtml(formatDistanceLabel(salon))}</span></button>`;
-        }).join('');
-    }
-
     function renderSalonList() {
         const search = els.salonSearchInput.value.trim().toLowerCase();
         const results = sortedSalons().filter((salon) => {
-            const haystack = `${salon.name || ''} ${getSalonLocation(salon)} ${salon.city || ''}`.toLowerCase();
+            const haystack = (String(salon.name || '') + ' ' + getSalonLocation(salon) + ' ' + String(salon.city || '')).toLowerCase();
             if (!haystack.includes(search)) return false;
             if (state.filter === 'premium' && getSalonType(salon) !== 'premium') return false;
             if (state.filter === 'open' && !isAvailableSalon(salon)) return false;
@@ -423,32 +485,49 @@
         els.salonResults.innerHTML = results.map((salon, index) => {
             const phone = getSalonPhone(salon);
             const bookLabel = phone ? 'Book on WhatsApp' : 'Request booking';
-            return `<article class="salon-list-card"><div class="salon-list-banner" style="${bannerStyle(index, salon)}"></div><strong>${escapeHtml(textOrFallback(salon.name, 'ZLon Salon'))}</strong><p>${escapeHtml(getSalonLocation(salon))}</p><span>${escapeHtml(formatDistanceLabel(salon))} • ${escapeHtml(getSalonWaitTime(salon))}</span><div class="salon-list-footer"><span>${escapeHtml(getSalonType(salon) === 'premium' ? 'Premium partner' : 'Open discovery')}</span><button class="secondary-button" data-salon-action="book" data-salon-id="${escapeHtml(getSalonKey(salon))}" type="button">${bookLabel}</button></div></article>`;
+            const statusLabel = isAvailableSalon(salon) ? 'Open now' : 'Busy';
+            return ''
+                + '<article class="salon-card">'
+                + '<div class="salon-banner" style="' + bannerStyle(index, salon) + '"></div>'
+                + '<strong>' + escapeHtml(salon.name || 'ZLon Salon') + '</strong>'
+                + '<p>' + escapeHtml(getSalonLocation(salon)) + '</p>'
+                + '<span>' + escapeHtml(formatDistanceLabel(salon) + ' | ' + getSalonWaitTime(salon) + ' | ' + statusLabel) + '</span>'
+                + '<div class="salon-card-footer">'
+                + '<p class="muted-copy" style="margin:0;">' + escapeHtml(getSalonType(salon) === 'premium' ? 'Premium partner' : 'Open discovery') + '</p>'
+                + '<button class="salon-action" data-salon-action="book" data-salon-id="' + escapeHtml(getSalonKey(salon)) + '" type="button">' + bookLabel + '</button>'
+                + '</div>'
+                + '</article>';
         }).join('');
     }
 
     function renderHistory() {
         if (!state.history.length) {
-            els.historyList.innerHTML = '<div class="history-empty">No bookings yet. Tap Book now and your salon history will appear here.</div>';
+            els.historyList.innerHTML = '<div class="history-empty">No bookings yet. Tap book now and your salon history will appear here.</div>';
             return;
         }
 
         els.historyList.innerHTML = state.history.slice().reverse().map((entry, index) => {
-            return `<article class="salon-list-card"><div class="salon-list-banner" style="${bannerStyle(index)}"></div><strong>${escapeHtml(entry.name)}</strong><p>${escapeHtml(entry.location)}</p><span>${escapeHtml(new Date(entry.bookedAt).toLocaleString())}</span></article>`;
+            return ''
+                + '<article class="history-card">'
+                + '<div class="history-banner" style="' + bannerStyle(index) + '"></div>'
+                + '<strong>' + escapeHtml(entry.name) + '</strong>'
+                + '<p>' + escapeHtml(entry.location) + '</p>'
+                + '<span>' + escapeHtml(new Date(entry.bookedAt).toLocaleString()) + '</span>'
+                + '</article>';
         }).join('');
     }
 
     function renderWalletPreview() {
-        els.walletBalancePreview.textContent = `Balance Rs ${state.walletBalance} • Amazon Pay connection ready for next step.`;
+        els.walletBalancePreview.textContent = 'Balance Rs ' + state.walletBalance + ' | Amazon Pay ready for connection.';
     }
 
     function renderWallet() {
-        els.walletBalanceText.textContent = `Balance: Rs ${state.walletBalance}`;
+        els.walletBalanceText.textContent = 'Balance: Rs ' + state.walletBalance;
     }
 
     function renderAccount() {
         const user = state.session ? state.session.user : null;
-        const phone = user && user.phone ? user.phone : textOrFallback(state.pendingPhone, 'Not available');
+        const phone = user && user.phone ? user.phone : (state.pendingPhone || 'Not available');
         const email = user && user.email ? user.email : 'Phone-auth customer';
         els.accountNameText.textContent = user && user.user_metadata && user.user_metadata.full_name
             ? user.user_metadata.full_name
@@ -459,9 +538,7 @@
 
     function renderHome() {
         renderCarousel();
-        renderHomeRail();
         renderWalletPreview();
-        renderHistory();
         syncLocationLabels();
     }
 
@@ -528,7 +605,8 @@
         }
     }
 
-    async function completeCustomerSession(session) {
+    async function completeCustomerSession(session, options) {
+        const settings = options || {};
         if (!session || !session.user) {
             setAuthStatus('Session could not be created. Try again.', 'error');
             return;
@@ -554,7 +632,7 @@
 
         await Promise.all([loadSalons(), refreshLocation()]);
         renderAccount();
-        setActiveView('home');
+        setActiveView(settings.restoreView ? getRememberedView() : 'home');
     }
 
     async function startInitialSessionFlow() {
@@ -571,7 +649,7 @@
             return;
         }
 
-        await completeCustomerSession(session);
+        await completeCustomerSession(session, { restoreView: true });
     }
 
     async function sendPhoneOtp() {
@@ -587,7 +665,7 @@
 
         setAuthBusy(true);
         const { error } = await state.db.auth.signInWithOtp({
-            phone,
+            phone: phone,
             options: {
                 shouldCreateUser: true,
                 data: { user_type: 'customer' }
@@ -607,8 +685,7 @@
     }
 
     async function resendPhoneOtp() {
-        if (!state.pendingPhone) return;
-        if (!state.db) return;
+        if (!state.pendingPhone || !state.db) return;
 
         setAuthBusy(true);
         const { error } = await state.db.auth.signInWithOtp({
@@ -629,7 +706,7 @@
     }
 
     async function verifyPhoneOtp() {
-        const token = els.phoneOtpInput.value.trim();
+        const token = normalizeDigits(els.phoneOtpInput.value).slice(0, 6);
         if (token.length !== 6) {
             setAuthStatus('Enter the 6-digit OTP.', 'error');
             return;
@@ -639,7 +716,7 @@
         setAuthBusy(true);
         const response = await state.db.auth.verifyOtp({
             phone: state.pendingPhone,
-            token,
+            token: token,
             type: 'sms'
         });
         setAuthBusy(false);
@@ -649,12 +726,12 @@
             return;
         }
 
-        await completeCustomerSession(response.data ? response.data.session : null);
+        await completeCustomerSession(response.data ? response.data.session : null, { restoreView: false });
     }
 
     async function sendEmailOtpCode(email) {
         return state.db.auth.signInWithOtp({
-            email,
+            email: email,
             options: {
                 shouldCreateUser: false
             }
@@ -679,8 +756,8 @@
 
         if (state.emailMode === 'signup') {
             const signUp = await state.db.auth.signUp({
-                email,
-                password,
+                email: email,
+                password: password,
                 options: {
                     data: { user_type: 'customer' }
                 }
@@ -688,8 +765,8 @@
             credentialError = signUp.error || null;
         } else {
             const signIn = await state.db.auth.signInWithPassword({
-                email,
-                password
+                email: email,
+                password: password
             });
             credentialError = signIn.error || null;
         }
@@ -730,7 +807,7 @@
     }
 
     async function verifyEmailOtp() {
-        const token = els.emailOtpInput.value.trim();
+        const token = normalizeDigits(els.emailOtpInput.value).slice(0, 6);
         if (token.length !== 6) {
             setAuthStatus('Enter the 6-digit OTP.', 'error');
             return;
@@ -740,7 +817,7 @@
         setAuthBusy(true);
         const response = await state.db.auth.verifyOtp({
             email: state.pendingEmail,
-            token,
+            token: token,
             type: 'email'
         });
         setAuthBusy(false);
@@ -750,7 +827,7 @@
             return;
         }
 
-        await completeCustomerSession(response.data ? response.data.session : null);
+        await completeCustomerSession(response.data ? response.data.session : null, { restoreView: false });
     }
 
     async function startOAuth(provider) {
@@ -762,9 +839,9 @@
         setAuthBusy(true);
         const redirectTo = namespace.authRoutes ? namespace.authRoutes.homeUrl() : window.location.href;
         const { error } = await state.db.auth.signInWithOAuth({
-            provider,
+            provider: provider,
             options: {
-                redirectTo,
+                redirectTo: redirectTo,
                 queryParams: {
                     prompt: 'select_account'
                 }
@@ -779,17 +856,17 @@
 
     function buildBookingLink(salon) {
         const phone = getSalonPhone(salon);
-        const message = encodeURIComponent(`Hi, I want to book a slot at ${salon.name || 'your salon'} via ZLon.`);
+        const message = encodeURIComponent('Hi, I want to book a slot at ' + (salon.name || 'your salon') + ' via ZLon.');
         if (phone) {
-            return `https://wa.me/${phone}?text=${message}`;
+            return 'https://wa.me/' + phone + '?text=' + message;
         }
-        return `mailto:support@zlon.in?subject=${encodeURIComponent('ZLon booking request')}&body=${message}`;
+        return 'mailto:support@zlon.in?subject=' + encodeURIComponent('ZLon booking request') + '&body=' + message;
     }
 
     function addHistoryEntry(salon) {
         state.history.push({
             id: getSalonKey(salon),
-            name: textOrFallback(salon.name, 'ZLon Salon'),
+            name: salon.name || 'ZLon Salon',
             location: getSalonLocation(salon),
             bookedAt: new Date().toISOString()
         });
@@ -802,14 +879,13 @@
         if (!salon) return;
         addHistoryEntry(salon);
         window.open(buildBookingLink(salon), '_blank', 'noopener');
+        showToast('Booking route opened for ' + (salon.name || 'the salon') + '.');
     }
 
-    function openSalonById(salonId) {
-        els.salonSearchInput.value = '';
+    async function openBookView() {
         setActiveView('book');
-        const salon = state.salons.find((item) => getSalonKey(item) === salonId);
-        if (!salon) return;
-        els.salonSearchInput.value = salon.name || '';
+        showToast('Checking nearby salons...');
+        await refreshLocation();
         renderSalonList();
     }
 
@@ -829,6 +905,7 @@
         state.userType = 'customer';
         state.pendingPhone = '';
         state.pendingEmail = '';
+        window.localStorage.setItem(VIEW_KEY, 'home');
         els.phoneNumberInput.value = '';
         els.phoneOtpInput.value = '';
         els.emailAddressInput.value = '';
@@ -874,8 +951,7 @@
             renderWallet();
             showToast('Wallet recharged with Rs 500.');
         });
-        els.bookNowButton.addEventListener('click', () => setActiveView('book'));
-        els.seeAllSalonsButton.addEventListener('click', () => setActiveView('book'));
+        els.bookNowButton.addEventListener('click', openBookView);
         els.bookBackButton.addEventListener('click', () => setActiveView('home'));
         els.walletBackButton.addEventListener('click', () => setActiveView('home'));
         els.accountBackButton.addEventListener('click', () => setActiveView('home'));
@@ -912,11 +988,6 @@
             moveCarousel();
             resetCarouselTimer();
         });
-        els.nearbyRail.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-salon-action="open"]');
-            if (!button) return;
-            openSalonById(button.getAttribute('data-salon-id'));
-        });
         els.salonResults.addEventListener('click', (event) => {
             const button = event.target.closest('[data-salon-action="book"]');
             if (!button) return;
@@ -928,14 +999,19 @@
             });
         });
         els.sheetButtons.forEach((button) => {
-            button.addEventListener('click', () => {
+            button.addEventListener('click', async () => {
                 const action = button.getAttribute('data-sheet-action');
                 if (action === 'account') setActiveView('account');
-                if (action === 'book') setActiveView('book');
+                if (action === 'book') await openBookView();
                 if (action === 'history') setActiveView('history');
                 if (action === 'wallet') setActiveView('wallet');
                 if (action === 'logout') logout();
             });
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeProfileSheet();
+            }
         });
 
         if (state.db) {
@@ -952,7 +1028,7 @@
                 }
 
                 if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-                    await completeCustomerSession(session);
+                    await completeCustomerSession(session, { restoreView: true });
                 }
             });
         }
@@ -961,10 +1037,12 @@
     async function init() {
         state.db = safeSupabaseClient();
         bindEvents();
+        setEmailMode('login');
         renderWalletPreview();
         renderHome();
         renderWallet();
         renderAccount();
+        renderHistory();
 
         if (isBusinessHost()) {
             window.location.replace(namespace.authRoutes ? namespace.authRoutes.loginUrl() : '/login.html');

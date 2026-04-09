@@ -11,13 +11,13 @@
     {
       "source": "/",
       "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
-      "destination": "/dashboard.html",
+      "destination": "/login.html",
       "permanent": false
     },
     {
       "source": "/index.html",
       "has": [{ "type": "host", "value": "mybusiness.zlon.in" }],
-      "destination": "/dashboard.html",
+      "destination": "/login.html",
       "permanent": false
     },
     {

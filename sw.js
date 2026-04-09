@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zlon-app-shell-v5';
+const CACHE_NAME = 'zlon-app-shell-v6';
 const APP_SHELL = [
     '/',
     '/index.html',
@@ -68,7 +68,7 @@ async function handleNavigation(request, requestUrl) {
         if (cached) return cached;
 
         const isBusinessHost = requestUrl.hostname === 'mybusiness.zlon.in';
-        const fallback = isBusinessHost ? '/dashboard.html' : '/index.html';
+        const fallback = isBusinessHost ? '/login.html' : '/index.html';
 
         return caches.match(fallback);
     }
