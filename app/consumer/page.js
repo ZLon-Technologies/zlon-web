@@ -1,5 +1,5 @@
 import { ConsumerApp } from '@/components/consumer-app';
 
-export default function HomePage() {
+export default function ConsumerPage() {
   return <ConsumerApp />;
 }
