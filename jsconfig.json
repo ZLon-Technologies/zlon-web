@@ -1,8 +1,15 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "target": "es2020",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "jsx": "preserve",
+    "checkJs": true,
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./*"]
     }
-  }
+  },
+  "exclude": ["node_modules", ".next"]
 }
