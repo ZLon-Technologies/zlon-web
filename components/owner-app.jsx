@@ -373,7 +373,6 @@ export function OwnerApp() {
       email: emailInput.trim(),
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: { user_type: 'owner' }
       }
     });
@@ -429,7 +428,6 @@ export function OwnerApp() {
       email: pendingEmail,
       options: {
         shouldCreateUser: false,
-        redirectTo: `${window.location.origin}/auth/callback`,
         data: { user_type: 'owner' }
       }
     });
