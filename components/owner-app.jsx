@@ -238,21 +238,30 @@ export function OwnerApp() {
 
       authSubscriptionRef.current = data.subscription;
 
-      const existingSession = await withTimeout(
-        getSession(client),
-        AUTH_BOOTSTRAP_TIMEOUT_MS,
-        'Secure owner session check timed out. You can still sign in manually.'
-      );
-
-      if (existingSession) {
-        await withTimeout(
-          completeOwnerSession(existingSession),
+      try {
+        const existingSession = await withTimeout(
+          getSession(client),
           AUTH_BOOTSTRAP_TIMEOUT_MS,
-          'Owner dashboard loading timed out. You can still continue manually.'
+          'Secure owner session check timed out. You can still sign in manually.'
         );
+
+        if (existingSession) {
+          await withTimeout(
+            completeOwnerSession(existingSession),
+            AUTH_BOOTSTRAP_TIMEOUT_MS,
+            'Owner dashboard loading timed out. You can still continue manually.'
+          );
+          return;
+        }
+      } catch (sessionError) {
+        console.warn('Session check error:', sessionError);
       }
+
+      setView('auth');
+      setAuthStep('phone');
     } catch (error) {
       setView('auth');
+      setAuthStep('phone');
       setStatus(getErrorMessage(error, 'Could not finish owner startup. You can still sign in manually.'), 'error');
     } finally {
       setAuthBootstrapState('ready');
@@ -581,6 +590,9 @@ export function OwnerApp() {
   }
 
   function renderAuthBody() {
+    const showBootstrapUI = authBootstrapState === 'booting';
+    const hasFormStep = ['phone', 'phone-otp', 'email', 'email-otp'].includes(activeAuthStep);
+
     return (
       <div className="zlon-auth-card">
         <div className="zlon-auth-brand">
@@ -589,11 +601,19 @@ export function OwnerApp() {
           <p className="zlon-auth-copy">Same 6-digit OTP flow, but routed straight into the business dashboard.</p>
         </div>
 
-        {authBootstrapState === 'booting' && (
+        {showBootstrapUI && (
           <div className="zlon-readonly-card" role="status" aria-live="polite">
             <span className="zlon-readonly-label">Secure Session</span>
             <strong>Connecting to secure server...</strong>
             <span className="zlon-readonly-note">Checking the owner session now. If Supabase is slow, the sign-in form below will stay available.</span>
+          </div>
+        )}
+
+        {!showBootstrapUI && !hasFormStep && (
+          <div className="zlon-readonly-card" role="status">
+            <span className="zlon-readonly-label">Loading</span>
+            <strong>Preparing your sign-in options...</strong>
+            <span className="zlon-readonly-note">This should only take a moment.</span>
           </div>
         )}
 

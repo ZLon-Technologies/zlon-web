@@ -12,11 +12,17 @@ export function PwaBootstrap() {
       return undefined;
     }
 
-    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      return undefined;
-    }
+    // Unregister all service workers to bypass broken PWA caching
+    // This ensures the app loads fresh from the network without cache errors
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister().catch(() => {});
+        });
+      })
+      .catch(() => {});
 
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
     return undefined;
   }, []);
 

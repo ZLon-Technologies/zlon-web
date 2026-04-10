@@ -329,29 +329,39 @@ export function ConsumerApp() {
 
       authSubscriptionRef.current = data.subscription;
 
-      const existingSession = await withTimeout(
-        getSession(client),
-        AUTH_BOOTSTRAP_TIMEOUT_MS,
-        'Secure session check timed out. You can still sign in manually.'
-      );
-
-      if (existingSession) {
-        await withTimeout(
-          completeCustomerSession(existingSession, { restoreScreen: true }),
+      try {
+        const existingSession = await withTimeout(
+          getSession(client),
           AUTH_BOOTSTRAP_TIMEOUT_MS,
-          'Account loading timed out. You can still continue manually.'
+          'Secure session check timed out. You can still sign in manually.'
         );
-        return;
+
+        if (existingSession) {
+          await withTimeout(
+            completeCustomerSession(existingSession, { restoreScreen: true }),
+            AUTH_BOOTSTRAP_TIMEOUT_MS,
+            'Account loading timed out. You can still continue manually.'
+          );
+          return;
+        }
+      } catch (sessionError) {
+        console.warn('Session check error:', sessionError);
       }
 
       setScreen('auth');
-      await withTimeout(
-        loadSalonData(null),
-        AUTH_BOOTSTRAP_TIMEOUT_MS,
-        'Salon data is taking longer than expected. Showing the sign-in form now.'
-      );
+      setAuthStep('phone');
+      try {
+        await withTimeout(
+          loadSalonData(null),
+          AUTH_BOOTSTRAP_TIMEOUT_MS,
+          'Salon data is taking longer than expected. Showing the sign-in form now.'
+        );
+      } catch (salonError) {
+        console.warn('Salon data load error:', salonError);
+      }
     } catch (error) {
       setScreen('auth');
+      setAuthStep('phone');
       setStatus(getErrorMessage(error, 'Could not finish startup. You can still sign in manually.'), 'error');
     } finally {
       setAuthBootstrapState('ready');
@@ -659,6 +669,9 @@ export function ConsumerApp() {
   }
 
   function renderAuthBody() {
+    const showBootstrapUI = authBootstrapState === 'booting';
+    const hasFormStep = ['phone', 'phone-otp', 'email', 'email-otp'].includes(activeAuthStep);
+
     return (
       <div className="zlon-auth-card">
         <div className="zlon-auth-brand">
@@ -667,11 +680,19 @@ export function ConsumerApp() {
           <p className="zlon-auth-copy">Phone OTP, email OTP, or Google. No menu clutter. No website chrome.</p>
         </div>
 
-        {authBootstrapState === 'booting' && (
+        {showBootstrapUI && (
           <div className="zlon-readonly-card" role="status" aria-live="polite">
             <span className="zlon-readonly-label">Secure Session</span>
             <strong>Connecting to secure server...</strong>
             <span className="zlon-readonly-note">Checking your session now. If Supabase is slow, the sign-in form below will stay available.</span>
+          </div>
+        )}
+
+        {!showBootstrapUI && !hasFormStep && (
+          <div className="zlon-readonly-card" role="status">
+            <span className="zlon-readonly-label">Loading</span>
+            <strong>Preparing your sign-in options...</strong>
+            <span className="zlon-readonly-note">This should only take a moment.</span>
           </div>
         )}
 
