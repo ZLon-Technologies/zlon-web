@@ -669,62 +669,82 @@ export function ConsumerApp() {
   }
 
   function renderAuthBody() {
-    const showBootstrapUI = authBootstrapState === 'booting';
-    const hasFormStep = ['phone', 'phone-otp', 'email', 'email-otp'].includes(activeAuthStep);
+    const selectedCountry = COUNTRY_OPTIONS.find((option) => option.code === countryCode) || COUNTRY_OPTIONS[0];
+    const shellStyle = {
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      padding: '8px',
+      background: '#fff'
+    };
+    const labelStyle = {
+      fontSize: '12px',
+      display: 'block',
+      color: '#666',
+      marginBottom: '4px'
+    };
+    const inputStyle = {
+      border: 'none',
+      outline: 'none',
+      width: '100%',
+      fontWeight: '500',
+      fontSize: '15px',
+      background: 'transparent'
+    };
+    const footerStyle = {
+      marginTop: '40px',
+      textAlign: 'center',
+      fontSize: '10px',
+      color: '#888',
+      lineHeight: '1.5'
+    };
 
     return (
-      <div className="zlon-auth-card zlon-auth-card--consumer">
-        <div className="zlon-auth-brand zlon-auth-brand--consumer">
-          <div className="zlon-auth-brand__row">
-            <span className="zlon-wordmark zlon-wordmark--consumer">ZLon.</span>
-            <span className="zlon-consumer-tag">Consumer</span>
-          </div>
-          <p className="zlon-eyebrow">Aesthetic White</p>
-          <h1 className="zlon-auth-title">Salon booking in a cleaner shell.</h1>
-          <p className="zlon-auth-copy">Phone OTP, email OTP, or your existing account. Fast entry, pure white surfaces, zero visual noise.</p>
+      <div className="zlon-auth-container" style={{ padding: '40px 24px', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
+        <div className="zlon-auth-brand">
+          <h1 className="zlon-auth-logo">ZLon.</h1>
         </div>
 
-        {showBootstrapUI && (
-          <div className="zlon-readonly-card zlon-readonly-card--consumer" role="status" aria-live="polite">
-            <span className="zlon-readonly-label">Secure Session</span>
-            <strong>Connecting to secure server...</strong>
-            <span className="zlon-readonly-note">Checking your session now. If Supabase is slow, the sign-in form below stays available.</span>
-          </div>
-        )}
+        <div style={{ textAlign: 'center' }}>
+          <p className="zlon-auth-subtitle">Log in or sign up</p>
+        </div>
 
-        {!showBootstrapUI && !hasFormStep && (
-          <div className="zlon-readonly-card zlon-readonly-card--consumer" role="status">
-            <span className="zlon-readonly-label">Loading</span>
-            <strong>Preparing your sign-in options...</strong>
-            <span className="zlon-readonly-note">This should only take a moment.</span>
+        {authBootstrapState === 'booting' && (
+          <div style={{ textAlign: 'center', fontSize: '12px', color: '#666', marginBottom: '16px' }}>
+            Connecting to secure server...
           </div>
         )}
 
         {activeAuthStep === 'phone' && (
           <>
-            <p className="zlon-label">Mobile Number</p>
-            <div className="zlon-field-row zlon-field-row--consumer">
-              <label className="zlon-select-shell zlon-select-shell--consumer" htmlFor="country-code">
-                <span className="zlon-select-shell__label">Country</span>
-                <select id="country-code" value={countryCode} onChange={(event) => setCountryCode(event.target.value)}>
+            <div className="zlon-field-row" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <label className="zlon-input-shell" htmlFor="country-code" style={{ ...shellStyle, flex: '0 0 96px' }}>
+                <span style={labelStyle}>Country</span>
+                <select
+                  id="country-code"
+                  value={countryCode}
+                  onChange={(event) => setCountryCode(event.target.value)}
+                  style={{ ...inputStyle, fontWeight: '600' }}
+                >
                   {COUNTRY_OPTIONS.map((option) => (
                     <option key={option.code} value={option.code}>{`${option.flag} ${option.code}`}</option>
                   ))}
                 </select>
               </label>
-              <label className="zlon-input-shell zlon-input-shell--grow zlon-input-shell--consumer" htmlFor="mobile-number">
-                <span className="zlon-input-shell__label">Number</span>
+              <label className="zlon-input-shell" htmlFor="mobile-number" style={{ ...shellStyle, flex: 1 }}>
+                <span style={labelStyle}>Number</span>
                 <input
                   id="mobile-number"
-                  inputMode="numeric"
+                  type="tel"
+                  inputMode="tel"
                   autoComplete="tel-national"
                   placeholder="Enter mobile number"
+                  style={inputStyle}
                   value={phoneInput}
                   onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
                 />
               </label>
             </div>
-            <button className="zlon-button zlon-button--primary zlon-button--full zlon-button--consumer" type="button" onClick={handlePhoneContinue} disabled={busy}>
+            <button className="zlon-continue-btn" type="button" onClick={handlePhoneContinue} disabled={busy}>
               Continue
             </button>
           </>
@@ -732,22 +752,30 @@ export function ConsumerApp() {
 
         {activeAuthStep === 'phone-otp' && (
           <>
-            <div className="zlon-readonly-card zlon-readonly-card--consumer">
-              <span className="zlon-readonly-label">Mobile Number</span>
-              <strong>{formatReadonlyContact(countryCode, pendingPhone.replace(countryCode, ''))}</strong>
-              <span className="zlon-readonly-note">(not editable)</span>
+            <div className="zlon-input-shell" style={{ ...shellStyle, marginBottom: '16px' }}>
+              <span style={labelStyle}>Mobile Number</span>
+              <div style={{ fontWeight: '600' }}>{formatReadonlyContact(selectedCountry.code, pendingPhone.replace(selectedCountry.code, ''))}</div>
             </div>
-            <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={phoneOtp} onChange={setPhoneOtp} label="Phone OTP" />
-            <div className="zlon-inline-row zlon-inline-row--consumer">
-              <button className="zlon-button zlon-button--ghost zlon-button--consumer" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setAuthStep('phone')}
+                disabled={busy}
+                style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
+              >
                 Back
               </button>
-              <button className="zlon-link-button" type="button" onClick={handlePhoneResend} disabled={busy}>
+              <button
+                type="button"
+                onClick={handlePhoneResend}
+                disabled={busy}
+                style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
+              >
                 Resend OTP
               </button>
             </div>
-            <button className="zlon-button zlon-button--primary zlon-button--full zlon-button--consumer" type="button" onClick={handlePhoneVerify} disabled={busy}>
+            <button className="zlon-continue-btn" type="button" onClick={handlePhoneVerify} disabled={busy}>
               Verify OTP
             </button>
           </>
@@ -755,39 +783,44 @@ export function ConsumerApp() {
 
         {activeAuthStep === 'email' && (
           <>
-            <div className="zlon-mode-toggle zlon-mode-toggle--consumer">
+            <div className="zlon-mode-toggle zlon-mode-toggle--consumer" style={{ marginBottom: '16px' }}>
               <button type="button" className={emailMode === 'login' ? 'is-active' : ''} onClick={() => setEmailMode('login')}>Log In</button>
               <button type="button" className={emailMode === 'create' ? 'is-active' : ''} onClick={() => setEmailMode('create')}>Create</button>
             </div>
-            <p className="zlon-label">Email</p>
-            <label className="zlon-input-shell zlon-input-shell--consumer" htmlFor="email-address">
-              <span className="zlon-input-shell__label">Email</span>
+            <label className="zlon-input-shell" htmlFor="email-address" style={{ ...shellStyle, marginBottom: '12px' }}>
+              <span style={labelStyle}>Email</span>
               <input
                 id="email-address"
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
+                style={inputStyle}
                 value={emailInput}
                 onChange={(event) => setEmailInput(event.target.value)}
               />
             </label>
-            <p className="zlon-label">Password</p>
-            <label className="zlon-input-shell zlon-input-shell--consumer" htmlFor="email-password">
-              <span className="zlon-input-shell__label">Password</span>
+            <label className="zlon-input-shell" htmlFor="email-password" style={shellStyle}>
+              <span style={labelStyle}>Password</span>
               <input
                 id="email-password"
                 type="password"
                 autoComplete="current-password"
                 placeholder="Password"
+                style={inputStyle}
                 value={passwordInput}
                 onChange={(event) => setPasswordInput(event.target.value)}
               />
             </label>
-            <div className="zlon-inline-row zlon-inline-row--consumer">
-              <button className="zlon-button zlon-button--ghost zlon-button--consumer" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setAuthStep('phone')}
+                disabled={busy}
+                style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
+              >
                 Back
               </button>
-              <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleEmailContinue} disabled={busy}>
+              <button className="zlon-continue-btn" type="button" onClick={handleEmailContinue} disabled={busy} style={{ marginTop: 0, width: 'auto', minWidth: '140px' }}>
                 Continue
               </button>
             </div>
@@ -796,43 +829,53 @@ export function ConsumerApp() {
 
         {activeAuthStep === 'email-otp' && (
           <>
-            <div className="zlon-readonly-card zlon-readonly-card--consumer">
-              <span className="zlon-readonly-label">Email</span>
-              <strong>{pendingEmail}</strong>
-              <span className="zlon-readonly-note">(not editable)</span>
+            <div className="zlon-input-shell" style={{ ...shellStyle, marginBottom: '16px' }}>
+              <span style={labelStyle}>Email</span>
+              <div style={{ fontWeight: '600' }}>{pendingEmail}</div>
             </div>
-            <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={emailOtp} onChange={setEmailOtp} label="Email OTP" />
-            <div className="zlon-inline-row zlon-inline-row--consumer">
-              <button className="zlon-button zlon-button--ghost zlon-button--consumer" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setAuthStep('email')}
+                disabled={busy}
+                style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
+              >
                 Back
               </button>
-              <button className="zlon-link-button" type="button" onClick={handleEmailResend} disabled={busy}>
+              <button
+                type="button"
+                onClick={handleEmailResend}
+                disabled={busy}
+                style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
+              >
                 Resend OTP
               </button>
             </div>
-            <button className="zlon-button zlon-button--primary zlon-button--full zlon-button--consumer" type="button" onClick={handleEmailVerify} disabled={busy}>
+            <button className="zlon-continue-btn" type="button" onClick={handleEmailVerify} disabled={busy}>
               Verify OTP
             </button>
           </>
         )}
 
-        <div className="zlon-auth-divider zlon-auth-divider--consumer" />
-        <div className="zlon-provider-row zlon-provider-row--consumer">
-          <button className="zlon-provider-button zlon-provider-button--consumer" type="button" onClick={() => handleOAuth('google')} disabled={busy}>
-            <GoogleIcon className="zlon-provider-icon zlon-provider-icon--brand" />
-            <span>Google</span>
+        <div className="zlon-social-row">
+          <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('google')} disabled={busy}>
+            <GoogleIcon />
           </button>
-          <button className="zlon-provider-button zlon-provider-button--consumer" type="button" onClick={() => handleOAuth('apple')} disabled={busy}>
-            <AppleIcon className="zlon-provider-icon zlon-provider-icon--brand" />
-            <span>Apple</span>
+          <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')} disabled={busy}>
+            <AppleIcon />
           </button>
-          <button className="zlon-provider-button zlon-provider-button--consumer" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
-            <MailIcon className="zlon-provider-icon" />
-            <span>Email</span>
+          <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
+            <MailIcon />
           </button>
         </div>
-        <p className={statusClassName(statusTone)}>{statusMessage}</p>
+
+        <p className={statusClassName(statusTone)} style={{ marginTop: '16px', textAlign: 'center' }}>{statusMessage}</p>
+
+        <div style={footerStyle}>
+          By continuing, you agree to our <br />
+          <strong>Terms of Service</strong> &bull; <strong>Privacy Policy</strong> &bull; <strong>Content Policies</strong>
+        </div>
       </div>
     );
   }
