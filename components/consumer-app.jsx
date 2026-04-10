@@ -74,19 +74,6 @@ function readLastScreen() {
   return ['home', 'history', 'wallet', 'profile', 'book'].includes(stored) ? stored : 'home';
 }
 
-function formatReadonlyContact(countryCode, rawPhone) {
-  const digits = String(rawPhone || '').replace(/\D/g, '');
-  if (!digits) {
-    return countryCode;
-  }
-
-  if (digits.length > 5) {
-    return `${countryCode} ${digits.slice(0, 5)} ${digits.slice(5)}`.trim();
-  }
-
-  return `${countryCode} ${digits}`.trim();
-}
-
 function statusClassName(tone) {
   return tone ? `zlon-status is-${tone}` : 'zlon-status';
 }
@@ -113,7 +100,6 @@ function buildBookingLink(salon) {
 }
 
 export function ConsumerApp() {
-  const [splashLeaving, setSplashLeaving] = useState(false);
   const [appReady, setAppReady] = useState(false);
   const [screen, setScreen] = useState('auth');
   const [authStep, setAuthStep] = useState('phone');
@@ -369,12 +355,10 @@ export function ConsumerApp() {
   }
 
   useEffect(() => {
-    const leaveTimer = window.setTimeout(() => setSplashLeaving(true), 650);
     const readyTimer = window.setTimeout(() => setAppReady(true), 1350);
     initializeApp();
 
     return () => {
-      window.clearTimeout(leaveTimer);
       window.clearTimeout(readyTimer);
       window.clearTimeout(toastTimerRef.current);
       authSubscriptionRef.current?.unsubscribe();
@@ -669,7 +653,6 @@ export function ConsumerApp() {
   }
 
   function renderAuthBody() {
-    const selectedCountry = COUNTRY_OPTIONS.find((option) => option.code === countryCode) || COUNTRY_OPTIONS[0];
     const shellStyle = {
       border: '1px solid #ddd',
       borderRadius: '8px',
@@ -751,34 +734,21 @@ export function ConsumerApp() {
         )}
 
         {activeAuthStep === 'phone-otp' && (
-          <>
-            <div className="zlon-input-shell" style={{ ...shellStyle, marginBottom: '16px' }}>
-              <span style={labelStyle}>Mobile Number</span>
-              <div style={{ fontWeight: '600' }}>{formatReadonlyContact(selectedCountry.code, pendingPhone.replace(selectedCountry.code, ''))}</div>
-            </div>
-            <OtpInput value={phoneOtp} onChange={setPhoneOtp} label="Phone OTP" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setAuthStep('phone')}
-                disabled={busy}
-                style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handlePhoneResend}
-                disabled={busy}
-                style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
-              >
-                Resend OTP
-              </button>
+          <div style={{ textAlign: 'center' }}>
+            <p className="zlon-auth-subtitle">Enter 6-digit code</p>
+            <div className="zlon-otp-row">
+              <OtpInput
+                value={phoneOtp}
+                onChange={setPhoneOtp}
+                numInputs={6}
+                label="Phone OTP"
+                renderInput={(props) => <input {...props} className="zlon-otp-input" />}
+              />
             </div>
             <button className="zlon-continue-btn" type="button" onClick={handlePhoneVerify} disabled={busy}>
               Verify OTP
             </button>
-          </>
+          </div>
         )}
 
         {activeAuthStep === 'email' && (
@@ -1138,21 +1108,20 @@ export function ConsumerApp() {
 
   return (
     <div className="zlon-root zlon-root--consumer">
-      <div className="zlon-device zlon-device--consumer">
-        {!appReady && (
-          <div className={splashLeaving ? 'zlon-splash zlon-splash--consumer is-leaving' : 'zlon-splash zlon-splash--consumer'}>
-            <div className="zlon-splash__logo zlon-splash__logo--consumer">ZLon.</div>
-          </div>
-        )}
+      <div className={appReady ? 'zlon-splash zlon-splash--consumer is-leaving' : 'zlon-splash zlon-splash--consumer'}>
+        <span className="zlon-splash__logo zlon-splash__logo--consumer">ZLon.</span>
+      </div>
 
-        <div className={appReady ? 'zlon-frame zlon-frame--consumer is-ready' : 'zlon-frame zlon-frame--consumer'}>
-          {screen === 'auth' && <div className="zlon-screen zlon-screen--auth zlon-screen--auth-consumer">{renderAuthBody()}</div>}
-          {screen === 'home' && renderHome()}
-          {screen === 'book' && renderBook()}
-          {screen === 'history' && renderHistory()}
-          {screen === 'wallet' && renderWallet()}
-          {screen === 'profile' && renderProfile()}
-        </div>
+      <div
+        className={`${appReady ? 'zlon-frame is-ready' : 'zlon-frame'} zlon-device zlon-device--consumer zlon-frame--consumer`}
+        style={{ opacity: appReady ? 1 : 0 }}
+      >
+        {screen === 'auth' && renderAuthBody()}
+        {screen === 'home' && renderHome()}
+        {screen === 'book' && renderBook()}
+        {screen === 'history' && renderHistory()}
+        {screen === 'wallet' && renderWallet()}
+        {screen === 'profile' && renderProfile()}
 
         {session && (screen === 'home' || screen === 'history') && (
           <nav className="zlon-bottom-nav zlon-bottom-nav--consumer">
