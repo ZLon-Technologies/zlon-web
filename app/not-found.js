@@ -5,7 +5,7 @@ export default function NotFoundPage() {
     <div className="zlon-root">
       <div className="zlon-device zlon-device--consumer">
         <div className="zlon-screen zlon-screen--stacked">
-          <main className="zlon-scroll-view" style={{ paddingTop: 'max(72px, 12vh)' }}>
+          <main className="zlon-scroll-view hide-scrollbar" style={{ paddingTop: 'max(72px, 12vh)' }}>
             <section className="zlon-section-card zlon-section-card--hero">
               <p className="zlon-eyebrow">Not Found</p>
               <h1 className="zlon-section-title">This route does not exist in the new app.</h1>

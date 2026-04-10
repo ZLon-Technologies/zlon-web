@@ -565,19 +565,22 @@ backdrop-filter: blur(10px);
   padding: 12px 18px 108px;
   display: grid;
   gap: 14px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+}
+
+/* Replace line 577 and 1217 with this */
+.hide-scrollbar {
+  scrollbar-width: none;            /* Firefox */
+  -ms-overflow-style: none;         /* IE/Edge */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-  display: none;
+  display: none;                    /* Chrome, Safari, iOS */
 }
 
 .zlon-scroll-view--owner {
   padding-bottom: 28px;
 }
 
-.zlon-scroll-view::-webkit-scrollbar,
 .zlon-chip-row::-webkit-scrollbar {
   display: none;
 }
@@ -1205,11 +1208,6 @@ backdrop-filter: blur(10px);
   grid-template-rows: auto auto auto;
   grid-auto-rows: min-content;
   align-content: start;
-  scrollbar-width: none;
-}
-
-.zlon-home-grid--consumer::-webkit-scrollbar {
-  display: none;
 }
 
 .zlon-slide-panel--consumer {
@@ -1587,4 +1585,14 @@ body,
 .zlon-otp-cell:focus {
   border-color: #000 !important;
   background: #fff;
+}
+
+.zlon-frame {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.zlon-frame.is-ready {
+  opacity: 1 !important;
+  background-color: #ffffff;
 }

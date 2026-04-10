@@ -894,7 +894,7 @@ export function ConsumerApp() {
     return (
       <div className="zlon-screen zlon-screen--home zlon-screen--home-consumer">
         {renderConsumerHeader({ onBack: null, title: 'ZLon.', subtitle: 'Aesthetic White' })}
-        <main className="zlon-home-grid zlon-home-grid--consumer">
+        <main className="zlon-home-grid zlon-home-grid--consumer hide-scrollbar">
           <section className="zlon-slide-panel zlon-slide-panel--consumer">
             <div className="zlon-slide-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
               {featuredSlides.map((slide, index) => (
@@ -956,7 +956,7 @@ export function ConsumerApp() {
     return (
       <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
         {renderConsumerHeader({ onBack: () => navigate('home'), title: 'Book', subtitle: 'Nearest salons' })}
-        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+        <main className="zlon-scroll-view zlon-scroll-view--consumer hide-scrollbar">
           <section className="zlon-section-card zlon-section-card--consumer">
             <p className="zlon-eyebrow">Nearest Salons</p>
             <h2 className="zlon-section-title">Find your chair</h2>
@@ -1030,7 +1030,7 @@ export function ConsumerApp() {
     return (
       <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
         {renderConsumerHeader({ onBack: null, title: 'History', subtitle: `${todayItems.length} today` })}
-        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+        <main className="zlon-scroll-view zlon-scroll-view--consumer hide-scrollbar">
           <section className="zlon-section-card zlon-section-card--consumer">
             <p className="zlon-eyebrow">History</p>
             <h2 className="zlon-section-title">Recent bookings</h2>
@@ -1059,7 +1059,7 @@ export function ConsumerApp() {
     return (
       <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
         {renderConsumerHeader({ onBack: () => navigate('home'), title: 'Wallet', subtitle: 'Internal credits' })}
-        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+        <main className="zlon-scroll-view zlon-scroll-view--consumer hide-scrollbar">
           <section className="zlon-section-card zlon-section-card--consumer zlon-section-card--wallet">
             <p className="zlon-eyebrow">Wallet</p>
             <h2 className="zlon-section-title">Internal credits</h2>
@@ -1081,7 +1081,7 @@ export function ConsumerApp() {
     return (
       <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
         {renderConsumerHeader({ onBack: () => navigate('home'), title: 'Profile', subtitle: 'Signed in customer' })}
-        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+        <main className="zlon-scroll-view zlon-scroll-view--consumer hide-scrollbar">
           <section className="zlon-section-card zlon-section-card--consumer">
             <p className="zlon-eyebrow">Profile</p>
             <h2 className="zlon-section-title">My account</h2>

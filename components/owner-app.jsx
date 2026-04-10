@@ -775,7 +775,7 @@ export function OwnerApp() {
           </div>
         </header>
 
-        <main className="zlon-scroll-view zlon-scroll-view--owner">
+        <main className="zlon-scroll-view zlon-scroll-view--owner hide-scrollbar">
           <section className="zlon-section-card zlon-section-card--hero">
             <p className="zlon-eyebrow">Business Dashboard</p>
             <h1 className="zlon-section-title">{salon?.name || 'My Salon'}</h1>
