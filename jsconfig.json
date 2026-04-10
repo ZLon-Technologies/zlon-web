@@ -7,6 +7,8 @@
     "jsx": "preserve",
     "checkJs": true,
     "ignoreDeprecations": "6.0",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
     "paths": {
       "@/*": ["./*"]
     }
