@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -22,7 +23,6 @@ import { AUTH_BOOTSTRAP_TIMEOUT_MS, getErrorMessage, getSafeAuthStep, withTimeou
 import { businessUrl } from '@/lib/zlon/hosts';
 import {
   FALLBACK_SALONS,
-  bannerStyle,
   fetchSalons,
   formatDistanceLabel,
   getSalonKey,
@@ -156,15 +156,15 @@ export function ConsumerApp() {
     return [
       {
         title: 'ZLon.',
-        body: 'A native-feeling booking flow with no landing-page clutter.'
+        body: 'Minimal salon booking with the feel of a premium native service.'
       },
       {
-        title: primary ? primary.name : 'book now',
-        body: primary ? `${getSalonLocation(primary)} · ${getSalonWaitTime(primary)}` : 'Turn on location and the nearest salon moves to the front.'
+        title: primary ? primary.name : 'Nearest salon',
+        body: primary ? `${getSalonLocation(primary)} · ${getSalonWaitTime(primary)}` : 'Turn on location and the closest salon moves to the front.'
       },
       {
-        title: 'here will be the adds',
-        body: secondary ? `${secondary.name} · ${getSalonLocation(secondary)}` : 'Paid spots, salon promotions, and campaigns fit here.'
+        title: 'Feature dock',
+        body: secondary ? `${secondary.name} stays one tap away when you want a second option.` : 'Reserved clean space for future feature icons and quick utilities.'
       }
     ];
   }, [sortedSalons]);
@@ -673,23 +673,27 @@ export function ConsumerApp() {
     const hasFormStep = ['phone', 'phone-otp', 'email', 'email-otp'].includes(activeAuthStep);
 
     return (
-      <div className="zlon-auth-card">
-        <div className="zlon-auth-brand">
-          <p className="zlon-eyebrow">Consumer App</p>
-          <h1 className="zlon-auth-title">Instant salon access in four clean steps.</h1>
-          <p className="zlon-auth-copy">Phone OTP, email OTP, or Google. No menu clutter. No website chrome.</p>
+      <div className="zlon-auth-card zlon-auth-card--consumer">
+        <div className="zlon-auth-brand zlon-auth-brand--consumer">
+          <div className="zlon-auth-brand__row">
+            <span className="zlon-wordmark zlon-wordmark--consumer">ZLon.</span>
+            <span className="zlon-consumer-tag">Consumer</span>
+          </div>
+          <p className="zlon-eyebrow">Aesthetic White</p>
+          <h1 className="zlon-auth-title">Salon booking in a cleaner shell.</h1>
+          <p className="zlon-auth-copy">Phone OTP, email OTP, or your existing account. Fast entry, pure white surfaces, zero visual noise.</p>
         </div>
 
         {showBootstrapUI && (
-          <div className="zlon-readonly-card" role="status" aria-live="polite">
+          <div className="zlon-readonly-card zlon-readonly-card--consumer" role="status" aria-live="polite">
             <span className="zlon-readonly-label">Secure Session</span>
             <strong>Connecting to secure server...</strong>
-            <span className="zlon-readonly-note">Checking your session now. If Supabase is slow, the sign-in form below will stay available.</span>
+            <span className="zlon-readonly-note">Checking your session now. If Supabase is slow, the sign-in form below stays available.</span>
           </div>
         )}
 
         {!showBootstrapUI && !hasFormStep && (
-          <div className="zlon-readonly-card" role="status">
+          <div className="zlon-readonly-card zlon-readonly-card--consumer" role="status">
             <span className="zlon-readonly-label">Loading</span>
             <strong>Preparing your sign-in options...</strong>
             <span className="zlon-readonly-note">This should only take a moment.</span>
@@ -699,8 +703,8 @@ export function ConsumerApp() {
         {activeAuthStep === 'phone' && (
           <>
             <p className="zlon-label">Mobile Number</p>
-            <div className="zlon-field-row">
-              <label className="zlon-select-shell" htmlFor="country-code">
+            <div className="zlon-field-row zlon-field-row--consumer">
+              <label className="zlon-select-shell zlon-select-shell--consumer" htmlFor="country-code">
                 <span className="zlon-select-shell__label">Country</span>
                 <select id="country-code" value={countryCode} onChange={(event) => setCountryCode(event.target.value)}>
                   {COUNTRY_OPTIONS.map((option) => (
@@ -708,7 +712,7 @@ export function ConsumerApp() {
                   ))}
                 </select>
               </label>
-              <label className="zlon-input-shell zlon-input-shell--grow" htmlFor="mobile-number">
+              <label className="zlon-input-shell zlon-input-shell--grow zlon-input-shell--consumer" htmlFor="mobile-number">
                 <span className="zlon-input-shell__label">Number</span>
                 <input
                   id="mobile-number"
@@ -720,7 +724,7 @@ export function ConsumerApp() {
                 />
               </label>
             </div>
-            <button className="zlon-button zlon-button--primary" type="button" onClick={handlePhoneContinue} disabled={busy}>
+            <button className="zlon-button zlon-button--primary zlon-button--full zlon-button--consumer" type="button" onClick={handlePhoneContinue} disabled={busy}>
               Continue
             </button>
           </>
@@ -728,22 +732,22 @@ export function ConsumerApp() {
 
         {activeAuthStep === 'phone-otp' && (
           <>
-            <div className="zlon-readonly-card">
+            <div className="zlon-readonly-card zlon-readonly-card--consumer">
               <span className="zlon-readonly-label">Mobile Number</span>
               <strong>{formatReadonlyContact(countryCode, pendingPhone.replace(countryCode, ''))}</strong>
               <span className="zlon-readonly-note">(not editable)</span>
             </div>
             <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={phoneOtp} onChange={setPhoneOtp} label="Phone OTP" />
-            <div className="zlon-inline-row">
-              <button className="zlon-button zlon-button--ghost" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
-                &lt;- Back
+            <div className="zlon-inline-row zlon-inline-row--consumer">
+              <button className="zlon-button zlon-button--ghost zlon-button--consumer" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
+                Back
               </button>
               <button className="zlon-link-button" type="button" onClick={handlePhoneResend} disabled={busy}>
-                Resend otp
+                Resend OTP
               </button>
             </div>
-            <button className="zlon-button zlon-button--primary" type="button" onClick={handlePhoneVerify} disabled={busy}>
+            <button className="zlon-button zlon-button--primary zlon-button--full zlon-button--consumer" type="button" onClick={handlePhoneVerify} disabled={busy}>
               Verify OTP
             </button>
           </>
@@ -751,12 +755,12 @@ export function ConsumerApp() {
 
         {activeAuthStep === 'email' && (
           <>
-            <div className="zlon-mode-toggle">
+            <div className="zlon-mode-toggle zlon-mode-toggle--consumer">
               <button type="button" className={emailMode === 'login' ? 'is-active' : ''} onClick={() => setEmailMode('login')}>Log In</button>
               <button type="button" className={emailMode === 'create' ? 'is-active' : ''} onClick={() => setEmailMode('create')}>Create</button>
             </div>
             <p className="zlon-label">Email</p>
-            <label className="zlon-input-shell" htmlFor="email-address">
+            <label className="zlon-input-shell zlon-input-shell--consumer" htmlFor="email-address">
               <span className="zlon-input-shell__label">Email</span>
               <input
                 id="email-address"
@@ -768,7 +772,7 @@ export function ConsumerApp() {
               />
             </label>
             <p className="zlon-label">Password</p>
-            <label className="zlon-input-shell" htmlFor="email-password">
+            <label className="zlon-input-shell zlon-input-shell--consumer" htmlFor="email-password">
               <span className="zlon-input-shell__label">Password</span>
               <input
                 id="email-password"
@@ -779,11 +783,11 @@ export function ConsumerApp() {
                 onChange={(event) => setPasswordInput(event.target.value)}
               />
             </label>
-            <div className="zlon-inline-row">
-              <button className="zlon-button zlon-button--ghost" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
-                &lt;- Back
+            <div className="zlon-inline-row zlon-inline-row--consumer">
+              <button className="zlon-button zlon-button--ghost zlon-button--consumer" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
+                Back
               </button>
-              <button className="zlon-button zlon-button--primary" type="button" onClick={handleEmailContinue} disabled={busy}>
+              <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleEmailContinue} disabled={busy}>
                 Continue
               </button>
             </div>
@@ -792,38 +796,38 @@ export function ConsumerApp() {
 
         {activeAuthStep === 'email-otp' && (
           <>
-            <div className="zlon-readonly-card">
+            <div className="zlon-readonly-card zlon-readonly-card--consumer">
               <span className="zlon-readonly-label">Email</span>
               <strong>{pendingEmail}</strong>
               <span className="zlon-readonly-note">(not editable)</span>
             </div>
             <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={emailOtp} onChange={setEmailOtp} label="Email OTP" />
-            <div className="zlon-inline-row">
-              <button className="zlon-button zlon-button--ghost" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
-                &lt;- Back
+            <div className="zlon-inline-row zlon-inline-row--consumer">
+              <button className="zlon-button zlon-button--ghost zlon-button--consumer" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
+                Back
               </button>
               <button className="zlon-link-button" type="button" onClick={handleEmailResend} disabled={busy}>
-                Resend otp
+                Resend OTP
               </button>
             </div>
-            <button className="zlon-button zlon-button--primary" type="button" onClick={handleEmailVerify} disabled={busy}>
+            <button className="zlon-button zlon-button--primary zlon-button--full zlon-button--consumer" type="button" onClick={handleEmailVerify} disabled={busy}>
               Verify OTP
             </button>
           </>
         )}
 
-        <div className="zlon-auth-divider" />
-        <div className="zlon-provider-row">
-          <button className="zlon-provider-button" type="button" onClick={() => handleOAuth('google')} disabled={busy}>
-            <GoogleIcon className="zlon-provider-icon" />
+        <div className="zlon-auth-divider zlon-auth-divider--consumer" />
+        <div className="zlon-provider-row zlon-provider-row--consumer">
+          <button className="zlon-provider-button zlon-provider-button--consumer" type="button" onClick={() => handleOAuth('google')} disabled={busy}>
+            <GoogleIcon className="zlon-provider-icon zlon-provider-icon--brand" />
             <span>Google</span>
           </button>
-          <button className="zlon-provider-button" type="button" onClick={() => handleOAuth('apple')} disabled={busy}>
-            <AppleIcon className="zlon-provider-icon" />
+          <button className="zlon-provider-button zlon-provider-button--consumer" type="button" onClick={() => handleOAuth('apple')} disabled={busy}>
+            <AppleIcon className="zlon-provider-icon zlon-provider-icon--brand" />
             <span>Apple</span>
           </button>
-          <button className="zlon-provider-button" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
+          <button className="zlon-provider-button zlon-provider-button--consumer" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
             <MailIcon className="zlon-provider-icon" />
             <span>Email</span>
           </button>
@@ -833,52 +837,63 @@ export function ConsumerApp() {
     );
   }
 
-  function renderConsumerHeader({ onBack }) {
+  function renderConsumerHeader({ onBack, title, subtitle }) {
     return (
-      <header className="zlon-topbar">
-        <div className="zlon-topbar__cluster zlon-topbar__cluster--left">
-          {onBack ? (
-            <button className="zlon-icon-button" type="button" onClick={onBack} aria-label="Go back">
+      <header className="zlon-topbar zlon-topbar--consumer">
+        <div className="zlon-topbar__cluster zlon-topbar__cluster--consumer">
+          {onBack && (
+            <button className="zlon-icon-button zlon-icon-button--consumer" type="button" onClick={onBack} aria-label="Go back">
               <ChevronLeftIcon className="zlon-icon" />
             </button>
-          ) : (
+          )}
+          <div className="zlon-consumer-heading">
+            <span className="zlon-consumer-heading__label">{subtitle}</span>
+            {onBack ? (
+              <strong className="zlon-consumer-heading__title">{title}</strong>
+            ) : (
+              <span className="zlon-wordmark zlon-wordmark--consumer">{title}</span>
+            )}
+          </div>
+        </div>
+        <div className="zlon-topbar__actions zlon-topbar__actions--consumer">
+          <button className="zlon-location-pill zlon-location-pill--consumer" type="button" onClick={() => requestLocation({ silent: false }).then(loadSalonData)}>
+            <PinIcon className="zlon-location-pill__icon" />
+            <span>{locationLabel}</span>
+          </button>
+          {!onBack && (
             <>
-              <button className="zlon-icon-button" type="button" onClick={() => navigate('profile')} aria-label="Open profile">
-                <ProfileIcon className="zlon-icon" />
-              </button>
-              <button className="zlon-icon-button" type="button" onClick={() => navigate('wallet')} aria-label="Open wallet">
+              <button className="zlon-icon-button zlon-icon-button--consumer" type="button" onClick={() => navigate('wallet')} aria-label="Open wallet">
                 <WalletIcon className="zlon-icon" />
+              </button>
+              <button className="zlon-icon-button zlon-icon-button--consumer" type="button" onClick={() => navigate('profile')} aria-label="Open profile">
+                <ProfileIcon className="zlon-icon" />
               </button>
             </>
           )}
         </div>
-        <div className="zlon-topbar__brand">
-          <span className="zlon-wordmark">ZLon.</span>
-        </div>
-        <button className="zlon-location-pill" type="button" onClick={() => requestLocation({ silent: false }).then(loadSalonData)}>
-          <PinIcon className="zlon-location-pill__icon" />
-          <span>{locationLabel}</span>
-        </button>
       </header>
     );
   }
 
   function renderHome() {
+    const primarySalon = sortedSalons[0];
+
     return (
-      <div className="zlon-screen zlon-screen--home">
-        {renderConsumerHeader({ onBack: null })}
-        <main className="zlon-home-grid">
-          <section className="zlon-slide-panel">
+      <div className="zlon-screen zlon-screen--home zlon-screen--home-consumer">
+        {renderConsumerHeader({ onBack: null, title: 'ZLon.', subtitle: 'Aesthetic White' })}
+        <main className="zlon-home-grid zlon-home-grid--consumer">
+          <section className="zlon-slide-panel zlon-slide-panel--consumer">
             <div className="zlon-slide-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
               {featuredSlides.map((slide, index) => (
-                <article key={slide.title + index} className="zlon-slide-card" style={bannerStyle(index)}>
-                  <p className="zlon-eyebrow">Native App Flow</p>
+                <article key={slide.title + index} className="zlon-slide-card zlon-slide-card--consumer">
+                  <span className="zlon-consumer-slide__index">{`0${index + 1}`}</span>
+                  <p className="zlon-eyebrow">{index === 0 ? 'Consumer shell' : index === 1 ? 'Closest salon' : 'Feature placeholder'}</p>
                   <h2>{slide.title}</h2>
                   <p>{slide.body}</p>
                 </article>
               ))}
             </div>
-            <div className="zlon-slide-dots">
+            <div className="zlon-slide-dots zlon-slide-dots--consumer">
               {featuredSlides.map((slide, index) => (
                 <button
                   key={slide.title + index}
@@ -891,17 +906,33 @@ export function ConsumerApp() {
             </div>
           </section>
 
-          <button className="zlon-home-panel zlon-home-panel--cta" type="button" onClick={handleBookOpen}>
-            <span className="zlon-eyebrow">Instant Access</span>
-            <strong>book now</strong>
-            <p>Search the nearest salons, compare live availability, and jump straight into booking.</p>
-            <span className="zlon-home-panel__arrow"><ArrowRightIcon className="zlon-icon" /></span>
-          </button>
+          <section className="zlon-home-panel zlon-home-panel--consumer zlon-home-panel--cta-consumer">
+            <div className="zlon-home-panel__copy">
+              <span className="zlon-eyebrow">Primary action</span>
+              <strong>{primarySalon ? primarySalon.name : 'Open booking'}</strong>
+              <p>
+                {primarySalon
+                  ? `${getSalonLocation(primarySalon)} · ${getSalonWaitTime(primarySalon)}`
+                  : 'Search the nearest salons, compare live availability, and jump straight into booking.'}
+              </p>
+            </div>
+            <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleBookOpen}>
+              Book Now
+            </button>
+          </section>
 
-          <section className="zlon-home-panel zlon-home-panel--ads" aria-label="Ads container">
-            <span className="zlon-eyebrow">Ads</span>
-            <strong>here will be the adds</strong>
-            <p>Reserved for paid placements, launches, and salon promotions inside the same visual system.</p>
+          <section className="zlon-home-panel zlon-home-panel--consumer zlon-home-panel--placeholder" aria-label="Feature icon placeholder">
+            <div className="zlon-consumer-icon-dock" aria-hidden="true">
+              <span className="zlon-consumer-icon-dock__cell" />
+              <span className="zlon-consumer-icon-dock__cell" />
+              <span className="zlon-consumer-icon-dock__cell" />
+              <span className="zlon-consumer-icon-dock__cell" />
+            </div>
+            <div className="zlon-home-panel__copy">
+              <span className="zlon-eyebrow">Feature icons</span>
+              <strong>Clean placeholder</strong>
+              <p>Reserved white space for future micro-features, shortcuts, and partner icons.</p>
+            </div>
           </section>
         </main>
       </div>
@@ -910,14 +941,15 @@ export function ConsumerApp() {
 
   function renderBook() {
     return (
-      <div className="zlon-screen zlon-screen--stacked">
-        {renderConsumerHeader({ onBack: () => navigate('home') })}
-        <main className="zlon-scroll-view">
-          <section className="zlon-section-card">
+      <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
+        {renderConsumerHeader({ onBack: () => navigate('home'), title: 'Book', subtitle: 'Nearest salons' })}
+        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+          <section className="zlon-section-card zlon-section-card--consumer">
             <p className="zlon-eyebrow">Nearest Salons</p>
             <h2 className="zlon-section-title">Find your chair</h2>
-            <div className="zlon-search-row">
-              <label className="zlon-search-shell">
+            <p className="zlon-helper-copy">Search by salon name or area, then move into a booking flow in one tap.</p>
+            <div className="zlon-search-row zlon-search-row--consumer">
+              <label className="zlon-search-shell zlon-search-shell--consumer">
                 <SearchIcon className="zlon-icon" />
                 <input
                   type="search"
@@ -926,12 +958,12 @@ export function ConsumerApp() {
                   onChange={(event) => setSearchValue(event.target.value)}
                 />
               </label>
-              <button className="zlon-icon-button" type="button" onClick={() => setShowFilters((current) => !current)} aria-label="Toggle filters">
+              <button className="zlon-icon-button zlon-icon-button--consumer" type="button" onClick={() => setShowFilters((current) => !current)} aria-label="Toggle filters">
                 <FilterIcon className="zlon-icon" />
               </button>
             </div>
             {showFilters && (
-              <div className="zlon-chip-row">
+              <div className="zlon-chip-row zlon-chip-row--consumer">
                 {[
                   ['all', 'All'],
                   ['nearby', 'Nearby'],
@@ -941,7 +973,7 @@ export function ConsumerApp() {
                   <button
                     key={value}
                     type="button"
-                    className={filterValue === value ? 'zlon-chip is-active' : 'zlon-chip'}
+                    className={filterValue === value ? 'zlon-chip zlon-chip--consumer is-active' : 'zlon-chip zlon-chip--consumer'}
                     onClick={() => setFilterValue(value)}
                   >
                     {label}
@@ -951,22 +983,24 @@ export function ConsumerApp() {
             )}
           </section>
 
-          <section className="zlon-list">
+          <section className="zlon-list zlon-list--consumer">
             {filteredSalons.length === 0 && <div className="zlon-empty-state">No salons matched that search. Try another name, area, or filter.</div>}
-            {filteredSalons.map((salon, index) => (
-              <article key={getSalonKey(salon)} className="zlon-list-card">
-                <div className="zlon-list-card__banner" style={bannerStyle(index, salon)} />
-                <div className="zlon-list-card__body">
-                  <strong>{salon.name || 'ZLon Salon'}</strong>
-                  <p>{getSalonLocation(salon)}</p>
-                  <span>{`${formatDistanceLabel(salon, userLocation)} · ${getSalonWaitTime(salon)}`}</span>
-                </div>
-                <div className="zlon-list-card__footer">
+            {filteredSalons.map((salon) => (
+              <article key={getSalonKey(salon)} className="zlon-list-card zlon-list-card--consumer">
+                <div className="zlon-list-card__header">
+                  <div className="zlon-list-card__body">
+                    <p className="zlon-eyebrow">{getSalonType(salon) === 'premium' ? 'Premium salon' : 'Salon nearby'}</p>
+                    <strong>{salon.name || 'ZLon Salon'}</strong>
+                  </div>
                   <span className={isAvailableSalon(salon) ? 'zlon-badge is-success' : 'zlon-badge is-warning'}>
                     {isAvailableSalon(salon) ? 'Available' : 'Busy'}
                   </span>
-                  <button className="zlon-button zlon-button--primary" type="button" onClick={() => handleBookSalon(salon)}>
-                    Book
+                </div>
+                <p className="zlon-list-card__meta">{getSalonLocation(salon)}</p>
+                <div className="zlon-list-card__footer">
+                  <span>{`${formatDistanceLabel(salon, userLocation)} · ${getSalonWaitTime(salon)}`}</span>
+                  <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={() => handleBookSalon(salon)}>
+                    Book Now
                   </button>
                 </div>
               </article>
@@ -981,22 +1015,23 @@ export function ConsumerApp() {
     const todayItems = history.filter((entry) => isToday(entry.bookedAt));
 
     return (
-      <div className="zlon-screen zlon-screen--stacked">
-        {renderConsumerHeader({ onBack: null })}
-        <main className="zlon-scroll-view">
-          <section className="zlon-section-card">
+      <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
+        {renderConsumerHeader({ onBack: null, title: 'History', subtitle: `${todayItems.length} today` })}
+        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+          <section className="zlon-section-card zlon-section-card--consumer">
             <p className="zlon-eyebrow">History</p>
             <h2 className="zlon-section-title">Recent bookings</h2>
             <p className="zlon-helper-copy">Today: {todayItems.length} bookings</p>
           </section>
-          <section className="zlon-list">
+          <section className="zlon-list zlon-list--consumer">
             {history.length === 0 && <div className="zlon-empty-state">No bookings yet. Your salon history will appear here.</div>}
-            {history.map((entry, index) => (
-              <article key={`${entry.id}-${entry.bookedAt}`} className="zlon-list-card">
-                <div className="zlon-list-card__banner" style={bannerStyle(index)} />
+            {history.map((entry) => (
+              <article key={`${entry.id}-${entry.bookedAt}`} className="zlon-list-card zlon-list-card--consumer">
                 <div className="zlon-list-card__body">
                   <strong>{entry.name}</strong>
                   <p>{entry.location}</p>
+                </div>
+                <div className="zlon-list-card__footer">
                   <span>{new Date(entry.bookedAt).toLocaleString()}</span>
                 </div>
               </article>
@@ -1009,17 +1044,18 @@ export function ConsumerApp() {
 
   function renderWallet() {
     return (
-      <div className="zlon-screen zlon-screen--stacked">
-        {renderConsumerHeader({ onBack: () => navigate('home') })}
-        <main className="zlon-scroll-view">
-          <section className="zlon-section-card">
+      <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
+        {renderConsumerHeader({ onBack: () => navigate('home'), title: 'Wallet', subtitle: 'Internal credits' })}
+        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+          <section className="zlon-section-card zlon-section-card--consumer zlon-section-card--wallet">
             <p className="zlon-eyebrow">Wallet</p>
             <h2 className="zlon-section-title">Internal credits</h2>
             <strong className="zlon-money">₹{walletBalance}</strong>
+            <p className="zlon-helper-copy">Keep your next payment step ready before you reach the chair.</p>
           </section>
-          <section className="zlon-section-card">
+          <section className="zlon-home-panel zlon-home-panel--consumer">
             <p className="zlon-helper-copy">Recharge internal credits now, and keep Amazon Pay connection ready for the next payment pass.</p>
-            <button className="zlon-button zlon-button--primary" type="button" onClick={handleRecharge}>
+            <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleRecharge}>
               Recharge ₹500
             </button>
           </section>
@@ -1030,24 +1066,24 @@ export function ConsumerApp() {
 
   function renderProfile() {
     return (
-      <div className="zlon-screen zlon-screen--stacked">
-        {renderConsumerHeader({ onBack: () => navigate('home') })}
-        <main className="zlon-scroll-view">
-          <section className="zlon-section-card">
+      <div className="zlon-screen zlon-screen--stacked zlon-screen--stacked-consumer">
+        {renderConsumerHeader({ onBack: () => navigate('home'), title: 'Profile', subtitle: 'Signed in customer' })}
+        <main className="zlon-scroll-view zlon-scroll-view--consumer">
+          <section className="zlon-section-card zlon-section-card--consumer">
             <p className="zlon-eyebrow">Profile</p>
             <h2 className="zlon-section-title">My account</h2>
             <p className="zlon-helper-copy">{session?.user?.email || pendingPhone || 'Signed in customer'}</p>
           </section>
-          <section className="zlon-action-list">
-            <button className="zlon-action-row" type="button" onClick={() => navigate('wallet')}>
+          <section className="zlon-action-list zlon-action-list--consumer">
+            <button className="zlon-action-row zlon-action-row--consumer" type="button" onClick={() => navigate('wallet')}>
               <span>Wallet</span>
               <ArrowRightIcon className="zlon-icon" />
             </button>
-            <button className="zlon-action-row" type="button" onClick={() => navigate('history')}>
+            <button className="zlon-action-row zlon-action-row--consumer" type="button" onClick={() => navigate('history')}>
               <span>History</span>
               <ArrowRightIcon className="zlon-icon" />
             </button>
-            <button className="zlon-action-row" type="button" onClick={handleLogout}>
+            <button className="zlon-action-row zlon-action-row--consumer" type="button" onClick={handleLogout}>
               <span>Sign out</span>
               <ArrowRightIcon className="zlon-icon" />
             </button>
@@ -1057,14 +1093,17 @@ export function ConsumerApp() {
     );
   }
 
- return (
-    <div className="zlon-root" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
-      <div className="zlon-device zlon-device--consumer" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
-        
-        {/* We have completely removed the splash screen to guarantee visibility */}
-        
-        <div className="zlon-frame is-ready" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
-          {screen === 'auth' && <div className="zlon-screen zlon-screen--auth">{renderAuthBody()}</div>}
+  return (
+    <div className="zlon-root zlon-root--consumer">
+      <div className="zlon-device zlon-device--consumer">
+        {!appReady && (
+          <div className={splashLeaving ? 'zlon-splash zlon-splash--consumer is-leaving' : 'zlon-splash zlon-splash--consumer'}>
+            <div className="zlon-splash__logo zlon-splash__logo--consumer">ZLon.</div>
+          </div>
+        )}
+
+        <div className={appReady ? 'zlon-frame zlon-frame--consumer is-ready' : 'zlon-frame zlon-frame--consumer'}>
+          {screen === 'auth' && <div className="zlon-screen zlon-screen--auth zlon-screen--auth-consumer">{renderAuthBody()}</div>}
           {screen === 'home' && renderHome()}
           {screen === 'book' && renderBook()}
           {screen === 'history' && renderHistory()}
@@ -1073,7 +1112,7 @@ export function ConsumerApp() {
         </div>
 
         {session && (screen === 'home' || screen === 'history') && (
-          <nav className="zlon-bottom-nav">
+          <nav className="zlon-bottom-nav zlon-bottom-nav--consumer">
             <button className={screen === 'home' ? 'zlon-bottom-nav__button is-active' : 'zlon-bottom-nav__button'} type="button" onClick={() => navigate('home')}>
               <HomeIcon className="zlon-icon" />
               <span>Home</span>
@@ -1085,7 +1124,7 @@ export function ConsumerApp() {
           </nav>
         )}
 
-        {toast && <div className="zlon-toast">{toast}</div>}
+        {toast && <div className="zlon-toast zlon-toast--consumer">{toast}</div>}
       </div>
     </div>
   );

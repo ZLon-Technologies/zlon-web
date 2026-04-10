@@ -135,7 +135,8 @@ select {
   border-radius: 32px;
   background: rgba(12, 12, 15, 0.97);
   box-shadow: var(--zlon-shadow);
-  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(10px); 
+backdrop-filter: blur(10px);
 }
 
 .zlon-auth-brand {
@@ -564,9 +565,11 @@ select {
   padding: 12px 18px 108px;
   display: grid;
   gap: 14px;
-  scrollbar-width: none;
-}
+scrollbar-width: none;            
+  -ms-overflow-style: none;         
 
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;                    
 .zlon-scroll-view--owner {
   padding-bottom: 28px;
 }
@@ -615,7 +618,7 @@ select {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  scrollbar-width: none;
+  -ms-overflow-style: none;       /* IE and Edge */
 }
 
 .zlon-chip {
@@ -745,7 +748,8 @@ select {
   border-radius: 30px;
   background: rgba(7, 8, 10, 0.94);
   box-shadow: var(--zlon-shadow);
-  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(10px); 
+backdrop-filter: blur(10px);
 }
 
 .zlon-bottom-nav__button {
@@ -870,3 +874,609 @@ select {
     justify-self: end;
   }
 }
+
+.zlon-root--consumer {
+  background: #ffffff;
+  opacity: 1;
+}
+
+.zlon-device--consumer {
+  background: #ffffff;
+  color: #000000;
+  border-left: 1px solid #000000;
+  border-right: 1px solid #000000;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  opacity: 1;
+}
+
+.zlon-frame--consumer,
+.zlon-frame--consumer.is-ready {
+  background: #ffffff;
+  opacity: 1;
+  transform: none;
+}
+
+.zlon-splash--consumer {
+  background: #ffffff;
+}
+
+.zlon-splash__logo--consumer {
+  color: #000000;
+  font-weight: 300;
+}
+
+.zlon-screen--auth-consumer,
+.zlon-screen--home-consumer,
+.zlon-screen--stacked-consumer {
+  background: #ffffff;
+}
+
+.zlon-screen--auth-consumer {
+  padding: 24px 18px;
+  align-items: center;
+}
+
+.zlon-device--consumer .zlon-icon,
+.zlon-device--consumer .zlon-location-pill__icon {
+  color: #000000;
+}
+
+.zlon-device--consumer .zlon-eyebrow,
+.zlon-device--consumer .zlon-label,
+.zlon-device--consumer .zlon-input-shell__label,
+.zlon-device--consumer .zlon-select-shell__label,
+.zlon-device--consumer .zlon-readonly-label,
+.zlon-device--consumer .zlon-consumer-heading__label {
+  color: rgba(0, 0, 0, 0.58);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+
+.zlon-device--consumer .zlon-auth-copy,
+.zlon-device--consumer .zlon-helper-copy,
+.zlon-device--consumer .zlon-home-panel p,
+.zlon-device--consumer .zlon-slide-card p,
+.zlon-device--consumer .zlon-list-card__body p,
+.zlon-device--consumer .zlon-readonly-note,
+.zlon-device--consumer .zlon-list-card__meta,
+.zlon-device--consumer .zlon-list-card__footer span {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.zlon-wordmark--consumer {
+  color: #000000;
+  font-weight: 300;
+  letter-spacing: -0.08em;
+}
+
+.zlon-auth-card--consumer,
+.zlon-slide-panel--consumer,
+.zlon-home-panel--consumer,
+.zlon-section-card--consumer,
+.zlon-list-card--consumer,
+.zlon-action-row--consumer,
+.zlon-bottom-nav--consumer {
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.zlon-auth-card--consumer {
+  padding: 28px 22px 22px;
+  gap: 16px;
+}
+
+.zlon-auth-brand--consumer {
+  gap: 12px;
+}
+
+.zlon-auth-brand__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zlon-consumer-tag {
+  padding: 4px 8px;
+  border: 1px solid #000000;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.zlon-auth-card--consumer .zlon-auth-title,
+.zlon-device--consumer .zlon-section-title,
+.zlon-device--consumer .zlon-home-panel strong,
+.zlon-device--consumer .zlon-consumer-heading__title {
+  color: #000000;
+  font-weight: 300;
+  letter-spacing: -0.08em;
+}
+
+.zlon-auth-card--consumer .zlon-auth-title {
+  font-size: clamp(34px, 9vw, 48px);
+  line-height: 0.94;
+}
+
+.zlon-device--consumer .zlon-section-title {
+  font-size: clamp(30px, 8vw, 40px);
+}
+
+.zlon-device--consumer .zlon-input-shell,
+.zlon-device--consumer .zlon-select-shell,
+.zlon-device--consumer .zlon-search-shell,
+.zlon-readonly-card--consumer {
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.zlon-device--consumer .zlon-input-shell input,
+.zlon-device--consumer .zlon-input-shell select,
+.zlon-device--consumer .zlon-select-shell select,
+.zlon-device--consumer .zlon-search-shell input {
+  color: #000000;
+}
+
+.zlon-device--consumer .zlon-input-shell input::placeholder,
+.zlon-device--consumer .zlon-search-shell input::placeholder {
+  color: rgba(0, 0, 0, 0.32);
+}
+
+.zlon-field-row--consumer {
+  grid-template-columns: 124px 1fr;
+}
+
+.zlon-readonly-card--consumer {
+  gap: 8px;
+}
+
+.zlon-device--consumer .zlon-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zlon-device--consumer .zlon-button--primary {
+  background: #000000;
+  color: #ffffff;
+}
+
+.zlon-device--consumer .zlon-button--ghost {
+  background: #ffffff;
+  color: #000000;
+}
+
+.zlon-device--consumer .zlon-button--full {
+  width: 100%;
+}
+
+.zlon-device--consumer button:disabled {
+  opacity: 0.42;
+}
+
+.zlon-device--consumer .zlon-link-button {
+  color: #000000;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.zlon-mode-toggle--consumer {
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  padding: 3px;
+}
+
+.zlon-mode-toggle--consumer button {
+  min-height: 38px;
+  border-radius: 0;
+  color: rgba(0, 0, 0, 0.48);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.zlon-mode-toggle--consumer button.is-active {
+  background: #000000;
+  color: #ffffff;
+}
+
+.zlon-auth-divider--consumer {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.zlon-provider-row--consumer {
+  gap: 8px;
+}
+
+.zlon-provider-button--consumer {
+  min-height: 60px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}
+
+.zlon-provider-button--consumer span:last-child {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.zlon-device--consumer .zlon-otp-cell {
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.zlon-device--consumer .zlon-status,
+.zlon-device--consumer .zlon-status.is-error,
+.zlon-device--consumer .zlon-status.is-success {
+  color: #000000;
+  font-size: 12px;
+}
+
+.zlon-topbar--consumer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid #000000;
+}
+
+.zlon-topbar__cluster--consumer {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.zlon-topbar__actions--consumer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zlon-consumer-heading {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.zlon-icon-button--consumer {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}
+
+.zlon-location-pill--consumer {
+  min-height: 32px;
+  max-width: 150px;
+  padding: 0 10px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.zlon-location-pill--consumer .zlon-location-pill__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.zlon-home-grid--consumer,
+.zlon-scroll-view--consumer {
+  background: #ffffff;
+}
+
+.zlon-home-grid--consumer {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 18px 108px;
+  display: grid;
+  gap: 14px;
+  grid-template-rows: auto auto auto;
+  grid-auto-rows: min-content;
+  align-content: start;
+  webkit-scrollbar {
+  display: none;                  /* Chrome, Safari, and Opera */
+}
+
+.zlon-home-grid--consumer::-webkit-scrollbar {
+  display: none;
+}
+
+.zlon-slide-panel--consumer {
+  min-height: 280px;
+  overflow: hidden;
+}
+
+.zlon-slide-card--consumer {
+  position: relative;
+  min-height: 280px;
+  padding: 22px 20px 54px;
+  justify-content: flex-end;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, transparent 36%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 28px),
+    #ffffff;
+  color: #000000;
+}
+
+.zlon-slide-card--consumer h2 {
+  margin: 0;
+  color: #000000;
+  font-size: clamp(34px, 10vw, 50px);
+  font-weight: 300;
+  line-height: 0.94;
+}
+
+.zlon-consumer-slide__index {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  color: rgba(0, 0, 0, 0.42);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+
+.zlon-slide-dots--consumer button {
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.zlon-slide-dots--consumer button.is-active {
+  background: #000000;
+}
+
+.zlon-home-panel--consumer {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+  text-align: left;
+}
+
+.zlon-home-panel--cta-consumer {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.zlon-home-panel--placeholder {
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+}
+
+.zlon-home-panel__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.zlon-consumer-icon-dock {
+  display: grid;
+  grid-template-columns: repeat(2, 40px);
+  gap: 8px;
+}
+
+.zlon-consumer-icon-dock__cell {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #000000;
+  background: #ffffff;
+}
+
+.zlon-section-card--consumer {
+  padding: 18px;
+}
+
+.zlon-search-row--consumer {
+  grid-template-columns: 1fr auto;
+}
+
+.zlon-search-shell--consumer {
+  min-height: 44px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}
+
+.zlon-chip-row--consumer {
+  gap: 8px;
+}
+
+.zlon-chip--consumer {
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.zlon-chip--consumer.is-active {
+  border-color: #000000;
+  background: #000000;
+  color: #ffffff;
+}
+
+.zlon-list--consumer,
+.zlon-action-list--consumer {
+  gap: 12px;
+}
+
+.zlon-list-card--consumer {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.zlon-list-card--consumer .zlon-list-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zlon-list-card--consumer .zlon-list-card__body {
+  display: grid;
+  gap: 4px;
+}
+
+.zlon-list-card--consumer .zlon-list-card__body strong {
+  color: #000000;
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: -0.05em;
+}
+
+.zlon-list-card--consumer .zlon-list-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zlon-device--consumer .zlon-badge,
+.zlon-device--consumer .zlon-badge.is-success,
+.zlon-device--consumer .zlon-badge.is-warning,
+.zlon-device--consumer .zlon-badge.is-neutral {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.zlon-device--consumer .zlon-empty-state {
+  border: 1px dashed #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: rgba(0, 0, 0, 0.72);
+}
+
+.zlon-device--consumer .zlon-money {
+  color: #000000;
+  font-size: clamp(48px, 13vw, 70px);
+  font-weight: 300;
+}
+
+.zlon-action-row--consumer {
+  min-height: 52px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}
+
+.zlon-bottom-nav--consumer {
+  padding: 8px;
+  gap: 8px;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.zlon-bottom-nav--consumer .zlon-bottom-nav__button {
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.zlon-bottom-nav--consumer .zlon-bottom-nav__button.is-active {
+  border-color: #000000;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: inset 0 -3px 0 #000000;
+}
+
+.zlon-toast--consumer {
+  min-height: 44px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #000000;
+  color: #ffffff;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 540px) {
+  .zlon-device--consumer {
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .zlon-screen--auth-consumer {
+    padding-top: 18px;
+  }
+
+  .zlon-field-row--consumer,
+  .zlon-home-panel--cta-consumer,
+  .zlon-home-panel--placeholder {
+    grid-template-columns: 1fr;
+  }
+
+  .zlon-topbar--consumer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .zlon-topbar__actions--consumer {
+    justify-content: space-between;
+  }
+
+  .zlon-location-pill--consumer {
+    max-width: none;
+    flex: 1 1 auto;
+  }
+
+  .zlon-provider-row--consumer {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .zlon-list-card--consumer .zlon-list-card__header,
+  .zlon-list-card--consumer .zlon-list-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }}}}}
