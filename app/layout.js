@@ -1,6 +1,7 @@
 import './globals.css';
 import { headers } from 'next/headers';
 import { PwaBootstrap } from '@/components/pwa-bootstrap';
+import ErrorBoundary from '@/components/error-boundary'; // Ensure this file exists
 
 export const viewport = {
   width: 'device-width',
@@ -51,8 +52,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <PwaBootstrap />
-        {children}
+        {/* Wrapping the entire app in the Error Boundary catches crashes in any component below */}
+        <ErrorBoundary>
+          <PwaBootstrap />
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   );
