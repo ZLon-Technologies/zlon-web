@@ -1057,14 +1057,13 @@ export function ConsumerApp() {
     );
   }
 
-  return (
-    <div className="zlon-root">
-      <div className="zlon-device zlon-device--consumer">
-        <div className={splashLeaving ? 'zlon-splash is-leaving' : 'zlon-splash'} hidden={appReady}>
-          <span className="zlon-splash__logo">ZLon.</span>
-        </div>
-
-        <div className={appReady ? 'zlon-frame is-ready' : 'zlon-frame'}>
+ return (
+    <div className="zlon-root" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
+      <div className="zlon-device zlon-device--consumer" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
+        
+        {/* We have completely removed the splash screen to guarantee visibility */}
+        
+        <div className="zlon-frame is-ready" style={{ opacity: 1, visibility: 'visible', display: 'block' }}>
           {screen === 'auth' && <div className="zlon-screen zlon-screen--auth">{renderAuthBody()}</div>}
           {screen === 'home' && renderHome()}
           {screen === 'book' && renderBook()}
