@@ -18,6 +18,7 @@ import {
 import { OtpInput } from '@/components/otp-input';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { getSession, resolveUserType, syncProfile, toE164Phone } from '@/lib/zlon/auth';
+import { AUTH_BOOTSTRAP_TIMEOUT_MS, getErrorMessage, getSafeAuthStep, withTimeout } from '@/lib/zlon/auth-ui';
 import { businessUrl } from '@/lib/zlon/hosts';
 import {
   FALLBACK_SALONS,
@@ -139,6 +140,7 @@ export function ConsumerApp() {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [history, setHistory] = useState(() => readStorage(HISTORY_KEY, []));
   const [walletBalance, setWalletBalance] = useState(() => Number(readStorage(WALLET_KEY, 0)) || 0);
+  const [authBootstrapState, setAuthBootstrapState] = useState('booting');
 
   const clientRef = useRef(null);
   const toastTimerRef = useRef(null);
@@ -146,6 +148,7 @@ export function ConsumerApp() {
   const suppressAuthListenerRef = useRef(false);
 
   const sortedSalons = useMemo(() => sortSalonsByDistance(salons, userLocation), [salons, userLocation]);
+  const activeAuthStep = getSafeAuthStep(authStep);
   const featuredSlides = useMemo(() => {
     const primary = sortedSalons[0];
     const secondary = sortedSalons[1];
@@ -265,64 +268,94 @@ export function ConsumerApp() {
   async function completeCustomerSession(nextSession, { restoreScreen = false } = {}) {
     if (!nextSession?.user) {
       setStatus('Session could not be created. Try again.', 'error');
-      return;
+      return false;
     }
 
-    const client = clientRef.current;
-    if (client) {
-      const resolvedType = await resolveUserType(client, nextSession);
-      if (resolvedType === 'owner') {
-        window.location.replace(businessUrl());
-        return;
+    try {
+      const client = clientRef.current;
+      if (client) {
+        const resolvedType = await resolveUserType(client, nextSession);
+        if (resolvedType === 'owner') {
+          window.location.replace(businessUrl());
+          return true;
+        }
+
+        await syncProfile(client, nextSession.user, 'customer', nextSession.user.phone || pendingPhone || null);
       }
 
-      await syncProfile(client, nextSession.user, 'customer', nextSession.user.phone || pendingPhone || null);
+      setSession(nextSession);
+      setPendingPhone(nextSession.user.phone || pendingPhone);
+      setPendingEmail(nextSession.user.email || pendingEmail);
+      const nextLocation = await requestLocation({ silent: true });
+      await loadSalonData(nextLocation);
+      navigate(restoreScreen ? readLastScreen() : 'home');
+      return true;
+    } catch (error) {
+      setScreen('auth');
+      setStatus(getErrorMessage(error, 'Could not open your account. You can still sign in manually.'), 'error');
+      return false;
     }
-
-    setSession(nextSession);
-    setPendingPhone(nextSession.user.phone || pendingPhone);
-    setPendingEmail(nextSession.user.email || pendingEmail);
-    const nextLocation = await requestLocation({ silent: true });
-    await loadSalonData(nextLocation);
-    navigate(restoreScreen ? readLastScreen() : 'home');
   }
 
   async function initializeApp() {
+    setAuthBootstrapState('booting');
+
     try {
       clientRef.current = getSupabaseBrowserClient();
+      const client = clientRef.current;
+      const { data } = client.auth.onAuthStateChange(async (event, nextSession) => {
+        if (suppressAuthListenerRef.current) {
+          return;
+        }
+
+        try {
+          if (event === 'SIGNED_OUT' || !nextSession) {
+            setSession(null);
+            setAuthStep('phone');
+            setScreen('auth');
+            return;
+          }
+
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            await completeCustomerSession(nextSession, { restoreScreen: true });
+          }
+        } catch (error) {
+          setScreen('auth');
+          setStatus(getErrorMessage(error, 'Could not refresh your session. You can still sign in manually.'), 'error');
+        } finally {
+          setAuthBootstrapState('ready');
+        }
+      });
+
+      authSubscriptionRef.current = data.subscription;
+
+      const existingSession = await withTimeout(
+        getSession(client),
+        AUTH_BOOTSTRAP_TIMEOUT_MS,
+        'Secure session check timed out. You can still sign in manually.'
+      );
+
+      if (existingSession) {
+        await withTimeout(
+          completeCustomerSession(existingSession, { restoreScreen: true }),
+          AUTH_BOOTSTRAP_TIMEOUT_MS,
+          'Account loading timed out. You can still continue manually.'
+        );
+        return;
+      }
+
+      setScreen('auth');
+      await withTimeout(
+        loadSalonData(null),
+        AUTH_BOOTSTRAP_TIMEOUT_MS,
+        'Salon data is taking longer than expected. Showing the sign-in form now.'
+      );
     } catch (error) {
-      setStatus(error.message, 'error');
-      return;
+      setScreen('auth');
+      setStatus(getErrorMessage(error, 'Could not finish startup. You can still sign in manually.'), 'error');
+    } finally {
+      setAuthBootstrapState('ready');
     }
-
-    const client = clientRef.current;
-    const { data } = client.auth.onAuthStateChange(async (event, nextSession) => {
-      if (suppressAuthListenerRef.current) {
-        return;
-      }
-
-      if (event === 'SIGNED_OUT' || !nextSession) {
-        setSession(null);
-        setAuthStep('phone');
-        setScreen('auth');
-        return;
-      }
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await completeCustomerSession(nextSession, { restoreScreen: true });
-      }
-    });
-
-    authSubscriptionRef.current = data.subscription;
-
-    const existingSession = await getSession(client);
-    if (existingSession) {
-      await completeCustomerSession(existingSession, { restoreScreen: true });
-      return;
-    }
-
-    setScreen('auth');
-    await loadSalonData(null);
   }
 
   useEffect(() => {
@@ -634,9 +667,17 @@ export function ConsumerApp() {
           <p className="zlon-auth-copy">Phone OTP, email OTP, or Google. No menu clutter. No website chrome.</p>
         </div>
 
-        {authStep === 'phone' && (
+        {authBootstrapState === 'booting' && (
+          <div className="zlon-readonly-card" role="status" aria-live="polite">
+            <span className="zlon-readonly-label">Secure Session</span>
+            <strong>Connecting to secure server...</strong>
+            <span className="zlon-readonly-note">Checking your session now. If Supabase is slow, the sign-in form below will stay available.</span>
+          </div>
+        )}
+
+        {activeAuthStep === 'phone' && (
           <>
-            <label className="zlon-label">Mobile Number</label>
+            <p className="zlon-label">Mobile Number</p>
             <div className="zlon-field-row">
               <label className="zlon-select-shell" htmlFor="country-code">
                 <span className="zlon-select-shell__label">Country</span>
@@ -664,14 +705,14 @@ export function ConsumerApp() {
           </>
         )}
 
-        {authStep === 'phone-otp' && (
+        {activeAuthStep === 'phone-otp' && (
           <>
             <div className="zlon-readonly-card">
               <span className="zlon-readonly-label">Mobile Number</span>
               <strong>{formatReadonlyContact(countryCode, pendingPhone.replace(countryCode, ''))}</strong>
               <span className="zlon-readonly-note">(not editable)</span>
             </div>
-            <label className="zlon-label">6-digit OTP</label>
+            <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={phoneOtp} onChange={setPhoneOtp} label="Phone OTP" />
             <div className="zlon-inline-row">
               <button className="zlon-button zlon-button--ghost" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
@@ -687,13 +728,13 @@ export function ConsumerApp() {
           </>
         )}
 
-        {authStep === 'email' && (
+        {activeAuthStep === 'email' && (
           <>
             <div className="zlon-mode-toggle">
               <button type="button" className={emailMode === 'login' ? 'is-active' : ''} onClick={() => setEmailMode('login')}>Log In</button>
               <button type="button" className={emailMode === 'create' ? 'is-active' : ''} onClick={() => setEmailMode('create')}>Create</button>
             </div>
-            <label className="zlon-label">Email</label>
+            <p className="zlon-label">Email</p>
             <label className="zlon-input-shell" htmlFor="email-address">
               <span className="zlon-input-shell__label">Email</span>
               <input
@@ -705,7 +746,7 @@ export function ConsumerApp() {
                 onChange={(event) => setEmailInput(event.target.value)}
               />
             </label>
-            <label className="zlon-label">Password</label>
+            <p className="zlon-label">Password</p>
             <label className="zlon-input-shell" htmlFor="email-password">
               <span className="zlon-input-shell__label">Password</span>
               <input
@@ -728,14 +769,14 @@ export function ConsumerApp() {
           </>
         )}
 
-        {authStep === 'email-otp' && (
+        {activeAuthStep === 'email-otp' && (
           <>
             <div className="zlon-readonly-card">
               <span className="zlon-readonly-label">Email</span>
               <strong>{pendingEmail}</strong>
               <span className="zlon-readonly-note">(not editable)</span>
             </div>
-            <label className="zlon-label">6-digit OTP</label>
+            <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={emailOtp} onChange={setEmailOtp} label="Email OTP" />
             <div className="zlon-inline-row">
               <button className="zlon-button zlon-button--ghost" type="button" onClick={() => setAuthStep('email')} disabled={busy}>

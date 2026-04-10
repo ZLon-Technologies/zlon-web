@@ -12,6 +12,7 @@ import {
 import { OtpInput } from '@/components/otp-input';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { claimOwnerSalon, getSession, resolveUserType, syncProfile, toE164Phone } from '@/lib/zlon/auth';
+import { AUTH_BOOTSTRAP_TIMEOUT_MS, getErrorMessage, getSafeAuthStep, withTimeout } from '@/lib/zlon/auth-ui';
 import { customerUrl } from '@/lib/zlon/hosts';
 
 const COUNTRY_OPTIONS = [
@@ -127,6 +128,7 @@ export function OwnerApp() {
   const [assetType, setAssetType] = useState('logo');
   const [assetFile, setAssetFile] = useState(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [authBootstrapState, setAuthBootstrapState] = useState('booting');
 
   const clientRef = useRef(null);
   const authSubscriptionRef = useRef(null);
@@ -134,6 +136,7 @@ export function OwnerApp() {
   const toastTimerRef = useRef(null);
 
   const todaysAppointments = useMemo(() => appointments.filter((entry) => isToday(entry.created_at || entry.appointment_time || entry.start_time)), [appointments]);
+  const activeAuthStep = getSafeAuthStep(authStep);
   const earningsToday = useMemo(() => {
     const direct = todaysAppointments.reduce((sum, entry) => sum + readAmount(entry), 0);
     if (direct > 0) {
@@ -171,62 +174,88 @@ export function OwnerApp() {
   async function completeOwnerSession(nextSession) {
     if (!nextSession?.user) {
       setStatus('Session could not be created. Try again.', 'error');
-      return;
+      return false;
     }
 
-    const client = clientRef.current;
-    const resolvedType = await resolveUserType(client, nextSession);
-    if (resolvedType === 'customer') {
-      window.location.replace(customerUrl('/'));
-      return;
-    }
+    try {
+      const client = clientRef.current;
+      const resolvedType = await resolveUserType(client, nextSession);
+      if (resolvedType === 'customer') {
+        window.location.replace(customerUrl('/'));
+        return true;
+      }
 
-    const linkedSalon = await claimOwnerSalon(client, nextSession.user, pendingPhone);
-    if (!linkedSalon.linked) {
-      await client.auth.signOut();
-      setStatus(linkedSalon.message, 'error');
-      return;
-    }
+      const linkedSalon = await claimOwnerSalon(client, nextSession.user, pendingPhone);
+      if (!linkedSalon.linked) {
+        await client.auth.signOut();
+        setStatus(linkedSalon.message, 'error');
+        return false;
+      }
 
-    await syncProfile(client, nextSession.user, 'owner', nextSession.user.phone || pendingPhone || null);
-    setSession(nextSession);
-    setSalon(linkedSalon.salon);
-    setView('dashboard');
-    await refreshDashboard(linkedSalon.salon, nextSession);
+      await syncProfile(client, nextSession.user, 'owner', nextSession.user.phone || pendingPhone || null);
+      setSession(nextSession);
+      setSalon(linkedSalon.salon);
+      setView('dashboard');
+      await refreshDashboard(linkedSalon.salon, nextSession);
+      return true;
+    } catch (error) {
+      setView('auth');
+      setStatus(getErrorMessage(error, 'Could not open the owner dashboard. You can still sign in manually.'), 'error');
+      return false;
+    }
   }
 
   async function initializeOwnerApp() {
+    setAuthBootstrapState('booting');
+
     try {
       clientRef.current = getSupabaseBrowserClient();
+      const client = clientRef.current;
+      const { data } = client.auth.onAuthStateChange(async (event, nextSession) => {
+        if (suppressAuthListenerRef.current) {
+          return;
+        }
+
+        try {
+          if (event === 'SIGNED_OUT' || !nextSession) {
+            setSession(null);
+            setSalon(null);
+            setView('auth');
+            setAuthStep('phone');
+            return;
+          }
+
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            await completeOwnerSession(nextSession);
+          }
+        } catch (error) {
+          setView('auth');
+          setStatus(getErrorMessage(error, 'Could not refresh your owner session. You can still sign in manually.'), 'error');
+        } finally {
+          setAuthBootstrapState('ready');
+        }
+      });
+
+      authSubscriptionRef.current = data.subscription;
+
+      const existingSession = await withTimeout(
+        getSession(client),
+        AUTH_BOOTSTRAP_TIMEOUT_MS,
+        'Secure owner session check timed out. You can still sign in manually.'
+      );
+
+      if (existingSession) {
+        await withTimeout(
+          completeOwnerSession(existingSession),
+          AUTH_BOOTSTRAP_TIMEOUT_MS,
+          'Owner dashboard loading timed out. You can still continue manually.'
+        );
+      }
     } catch (error) {
-      setStatus(error.message, 'error');
-      return;
-    }
-
-    const client = clientRef.current;
-    const { data } = client.auth.onAuthStateChange(async (event, nextSession) => {
-      if (suppressAuthListenerRef.current) {
-        return;
-      }
-
-      if (event === 'SIGNED_OUT' || !nextSession) {
-        setSession(null);
-        setSalon(null);
-        setView('auth');
-        setAuthStep('phone');
-        return;
-      }
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await completeOwnerSession(nextSession);
-      }
-    });
-
-    authSubscriptionRef.current = data.subscription;
-
-    const existingSession = await getSession(client);
-    if (existingSession) {
-      await completeOwnerSession(existingSession);
+      setView('auth');
+      setStatus(getErrorMessage(error, 'Could not finish owner startup. You can still sign in manually.'), 'error');
+    } finally {
+      setAuthBootstrapState('ready');
     }
   }
 
@@ -560,9 +589,17 @@ export function OwnerApp() {
           <p className="zlon-auth-copy">Same 6-digit OTP flow, but routed straight into the business dashboard.</p>
         </div>
 
-        {authStep === 'phone' && (
+        {authBootstrapState === 'booting' && (
+          <div className="zlon-readonly-card" role="status" aria-live="polite">
+            <span className="zlon-readonly-label">Secure Session</span>
+            <strong>Connecting to secure server...</strong>
+            <span className="zlon-readonly-note">Checking the owner session now. If Supabase is slow, the sign-in form below will stay available.</span>
+          </div>
+        )}
+
+        {activeAuthStep === 'phone' && (
           <>
-            <label className="zlon-label">Owner Mobile Number</label>
+            <p className="zlon-label">Owner Mobile Number</p>
             <div className="zlon-field-row">
               <label className="zlon-select-shell" htmlFor="owner-country-code">
                 <span className="zlon-select-shell__label">Country</span>
@@ -590,14 +627,14 @@ export function OwnerApp() {
           </>
         )}
 
-        {authStep === 'phone-otp' && (
+        {activeAuthStep === 'phone-otp' && (
           <>
             <div className="zlon-readonly-card">
               <span className="zlon-readonly-label">Owner Number</span>
               <strong>{formatReadonlyContact(countryCode, pendingPhone.replace(countryCode, ''))}</strong>
               <span className="zlon-readonly-note">(not editable)</span>
             </div>
-            <label className="zlon-label">6-digit OTP</label>
+            <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={phoneOtp} onChange={setPhoneOtp} label="Owner phone OTP" />
             <div className="zlon-inline-row">
               <button className="zlon-button zlon-button--ghost" type="button" onClick={() => setAuthStep('phone')} disabled={busy}>
@@ -613,13 +650,13 @@ export function OwnerApp() {
           </>
         )}
 
-        {authStep === 'email' && (
+        {activeAuthStep === 'email' && (
           <>
             <div className="zlon-mode-toggle">
               <button type="button" className={emailMode === 'login' ? 'is-active' : ''} onClick={() => setEmailMode('login')}>Log In</button>
               <button type="button" className={emailMode === 'create' ? 'is-active' : ''} onClick={() => setEmailMode('create')}>Create</button>
             </div>
-            <label className="zlon-label">Owner Email</label>
+            <p className="zlon-label">Owner Email</p>
             <label className="zlon-input-shell" htmlFor="owner-email-address">
               <span className="zlon-input-shell__label">Email</span>
               <input
@@ -631,7 +668,7 @@ export function OwnerApp() {
                 onChange={(event) => setEmailInput(event.target.value)}
               />
             </label>
-            <label className="zlon-label">Password</label>
+            <p className="zlon-label">Password</p>
             <label className="zlon-input-shell" htmlFor="owner-email-password">
               <span className="zlon-input-shell__label">Password</span>
               <input
@@ -654,14 +691,14 @@ export function OwnerApp() {
           </>
         )}
 
-        {authStep === 'email-otp' && (
+        {activeAuthStep === 'email-otp' && (
           <>
             <div className="zlon-readonly-card">
               <span className="zlon-readonly-label">Email</span>
               <strong>{pendingEmail}</strong>
               <span className="zlon-readonly-note">(not editable)</span>
             </div>
-            <label className="zlon-label">6-digit OTP</label>
+            <p className="zlon-label">6-digit OTP</p>
             <OtpInput value={emailOtp} onChange={setEmailOtp} label="Owner email OTP" />
             <div className="zlon-inline-row">
               <button className="zlon-button zlon-button--ghost" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
