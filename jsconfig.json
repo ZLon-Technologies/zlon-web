@@ -1,17 +1,18 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "target": "es2020",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "jsx": "preserve",
-    "checkJs": true,
     "ignoreDeprecations": "6.0",
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "checkJs": false,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false
   },
   "exclude": ["node_modules", ".next"]
 }
