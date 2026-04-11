@@ -1,5 +1,10 @@
-import { OwnerApp } from '@/components/owner-app';
+import AppShell from '@/components/app-shell'
+import { OwnerApp } from '@/components/owner-app'
 
 export default function OwnerPage() {
-  return <OwnerApp />;
+  return (
+    <AppShell>
+      <OwnerApp />
+    </AppShell>
+  )
 }
