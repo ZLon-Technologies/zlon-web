@@ -569,8 +569,18 @@ backdrop-filter: blur(10px);
 
 /* Replace line 577 and 1217 with this */
 .hide-scrollbar {
-  scrollbar-width: none;            /* Firefox */
-  -ms-overflow-style: none;         /* IE/Edge */
+  -ms-overflow-style: none; /* For IE/Edge */
+}
+
+/* This handles Chrome, Safari, and iOS without warnings */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Ensure the app is actually visible */
+.zlon-frame {
+  opacity: 1 !important; /* Forces visibility to stop white screens */
+  background-color: #ffffff;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
