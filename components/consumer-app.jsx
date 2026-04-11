@@ -1274,39 +1274,41 @@ export function ConsumerApp() {
     return (
       <div className="zlon-screen zlon-screen--home zlon-screen--home-consumer">
         {renderConsumerHeader({ onBack: null, title: 'ZLon.', subtitle: 'Instant Grooming' })}
+        
         <main className="zlon-home-grid zlon-home-grid--consumer hide-scrollbar">
+          {/* --- Premium Carousel --- */}
           <section className="zlon-slide-panel zlon-slide-panel--consumer">
             <div className="zlon-slide-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
               {featuredSlides.map((slide, index) => (
                 <article key={slide.title + index} className="zlon-slide-card zlon-slide-card--consumer">
                   <span className="zlon-consumer-slide__index">{`0${index + 1}`}</span>
-                  <p className="zlon-eyebrow">{index === 0 ? 'Consumer shell' : index === 1 ? 'Closest salon' : 'Feature placeholder'}</p>
+                  <p className="zlon-eyebrow">Featured Service</p>
                   <h2>{slide.title}</h2>
                   <p>{slide.body}</p>
                 </article>
               ))}
             </div>
             <div className="zlon-slide-dots zlon-slide-dots--consumer">
-              {featuredSlides.map((slide, index) => (
+              {featuredSlides.map((_, index) => (
                 <button
-                  key={slide.title + index}
+                  key={index}
                   type="button"
                   className={carouselIndex === index ? 'is-active' : ''}
                   onClick={() => setCarouselIndex(index)}
-                  aria-label={`Go to slide ${index + 1}`}
                 />
               ))}
             </div>
           </section>
 
+          {/* --- Main Booking Card --- */}
           <section className="zlon-home-panel zlon-home-panel--consumer zlon-home-panel--cta-consumer">
             <div className="zlon-home-panel__copy">
-              <span className="zlon-eyebrow">Primary action</span>
-              <strong>{primarySalon ? primarySalon.name : 'Open booking'}</strong>
+              <span className="zlon-eyebrow">Available Nearby</span>
+              <strong>{primarySalon ? primarySalon.name : 'Find a Stylist'}</strong>
               <p>
                 {primarySalon
                   ? `${getSalonLocation(primarySalon)} · ${getSalonWaitTime(primarySalon)}`
-                  : 'Search the nearest salons, compare live availability, and jump straight into booking.'}
+                  : 'Search the nearest salons and book your chair in one tap.'}
               </p>
             </div>
             <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleBookOpen}>
@@ -1314,17 +1316,25 @@ export function ConsumerApp() {
             </button>
           </section>
 
-          <section className="zlon-home-panel zlon-home-panel--consumer zlon-home-panel--placeholder" aria-label="Feature icon placeholder">
-            <div className="zlon-consumer-icon-dock" aria-hidden="true">
-              <span className="zlon-consumer-icon-dock__cell" />
-              <span className="zlon-consumer-icon-dock__cell" />
-              <span className="zlon-consumer-icon-dock__cell" />
-              <span className="zlon-consumer-icon-dock__cell" />
-            </div>
-            <div className="zlon-home-panel__copy">
-              <span className="zlon-eyebrow">Feature icons</span>
-              <strong>Clean placeholder</strong>
-              <p>Reserved white space for future micro-features, shortcuts, and partner icons.</p>
+          {/* --- Quick Actions (Replaced empty cells) --- */}
+          <section className="zlon-quick-actions">
+            <div className="zlon-action-grid">
+              <button className="zlon-action-tile" onClick={() => navigate('wallet')}>
+                <WalletIcon />
+                <span>Add Money</span>
+              </button>
+              <button className="zlon-action-tile" onClick={() => navigate('history')}>
+                <HistoryIcon />
+                <span>My Bookings</span>
+              </button>
+              <button className="zlon-action-tile" onClick={() => navigate('profile')}>
+                <SearchIcon />
+                <span>Categories</span>
+              </button>
+              <button className="zlon-action-tile" onClick={() => window.open('https://wa.me/YOUR_NUM', '_blank')}>
+                <PinIcon />
+                <span>Support</span>
+              </button>
             </div>
           </section>
         </main>
