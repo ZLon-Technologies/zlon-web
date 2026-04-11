@@ -1066,7 +1066,7 @@ export function ConsumerApp() {
                   />
                 </label>
               </div>
-              <button className="zlon-continue-btn" type="button" onClick={handlePhoneContinue} disabled={busy}>
+              <button className="zlon-continue-btn" type="button" style={{ color: '#000000' }} onClick={handlePhoneContinue} disabled={busy}>
                 Continue
               </button>
             </>
@@ -1205,7 +1205,7 @@ export function ConsumerApp() {
   <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')} style={{ color: '#000' }}>
     <AppleIcon />
   </button>
-  <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')}>
+  <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')} style={{ color: '#891f1f' }}>
     <MailIcon />
   </button>
 </div>
