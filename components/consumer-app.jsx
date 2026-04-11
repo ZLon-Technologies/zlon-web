@@ -331,11 +331,15 @@ export function ConsumerApp() {
           return;
         }
       } catch (sessionError) {
-        console.warn('Session check error:', sessionError);
-      }
+  console.warn('Session check error:', sessionError);
+  // If we time out, we DO NOT force setScreen('auth') yet.
+  // We let the app stay on the splash screen while it keeps trying.
+}
 
-      setScreen('auth');
-      setAuthStep('phone');
+     if (authBootstrapState === 'ready' && !session) {
+  setScreen('auth');
+  setAuthStep('phone');
+}
       try {
         await withTimeout(
           loadSalonData(null),
@@ -351,7 +355,7 @@ export function ConsumerApp() {
       setStatus(getErrorMessage(error, 'Could not finish startup. You can still sign in manually.'), 'error');
     } finally {
       setAuthBootstrapState('ready');
-      setAppReady(true); // Forces the splash screen to shift and reveal the app
+      setAppReady(true); 
     }
   }
 
