@@ -1202,7 +1202,7 @@ export function ConsumerApp() {
   <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('google')}>
     <GoogleIcon />
   </button>
-  <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')}>
+  <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')} style={{ color: '#000' }}>
     <AppleIcon />
   </button>
   <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')}>
