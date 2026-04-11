@@ -351,6 +351,7 @@ export function ConsumerApp() {
       setStatus(getErrorMessage(error, 'Could not finish startup. You can still sign in manually.'), 'error');
     } finally {
       setAuthBootstrapState('ready');
+      setAppReady(true); // Forces the splash screen to shift and reveal the app
     }
   }
 
@@ -893,7 +894,7 @@ export function ConsumerApp() {
 
     return (
       <div className="zlon-screen zlon-screen--home zlon-screen--home-consumer">
-        {renderConsumerHeader({ onBack: null, title: 'ZLon.', subtitle: 'Aesthetic White' })}
+        {renderConsumerHeader({ onBack: null, title: 'ZLon.', subtitle: 'Instant Grooming' })}
         <main className="zlon-home-grid zlon-home-grid--consumer hide-scrollbar">
           <section className="zlon-slide-panel zlon-slide-panel--consumer">
             <div className="zlon-slide-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
