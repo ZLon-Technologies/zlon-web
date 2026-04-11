@@ -36,13 +36,23 @@ import {
 
 const HISTORY_KEY = 'zlon.consumer.history';
 const WALLET_KEY = 'zlon.consumer.wallet';
+const WALLET_PROVIDER_KEY = 'zlon.consumer.wallet.amazon-pay';
 const SCREEN_KEY = 'zlon.consumer.screen';
+const AUTH_STATE_KEY = 'zlon.consumer.auth';
 const LOCATION_FALLBACK = 'Location auto select';
 const COUNTRY_OPTIONS = [
   { flag: '🇮🇳', code: '+91', label: 'India' },
   { flag: '🇦🇪', code: '+971', label: 'UAE' },
   { flag: '🇺🇸', code: '+1', label: 'USA' }
 ];
+
+const DEFAULT_PROFILE_FORM = {
+  name: '',
+  email: '',
+  phone: '',
+  gender: 'prefer_not_to_say',
+  newPassword: ''
+};
 
 function readStorage(key, fallback) {
   if (typeof window === 'undefined') {
@@ -74,6 +84,88 @@ function readLastScreen() {
   return ['home', 'history', 'wallet', 'profile', 'book'].includes(stored) ? stored : 'home';
 }
 
+function readAuthState() {
+  const stored = readStorage(AUTH_STATE_KEY, {});
+  return {
+    authStep: getSafeAuthStep(stored.authStep),
+    emailMode: stored.emailMode === 'create' ? 'create' : 'login',
+    countryCode: COUNTRY_OPTIONS.some((option) => option.code === stored.countryCode) ? stored.countryCode : '+91',
+    pendingPhone: typeof stored.pendingPhone === 'string' ? stored.pendingPhone : '',
+    pendingEmail: typeof stored.pendingEmail === 'string' ? stored.pendingEmail : ''
+  };
+}
+
+function clearStorageKey(key) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem(key);
+}
+
+function toPhoneAttribute(countryCode, rawValue) {
+  const trimmed = String(rawValue || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  if (trimmed.startsWith('+')) {
+    const digits = trimmed.slice(1).replace(/\D/g, '');
+    return digits ? `+${digits}` : '';
+  }
+
+  return toE164Phone(countryCode, trimmed);
+}
+
+async function requestPhoneOtp(client, phone, userType = 'customer') {
+  const sharedOptions = {
+    shouldCreateUser: true,
+    data: { user_type: userType }
+  };
+
+  const whatsappAttempt = await client.auth.signInWithOtp({
+    phone,
+    options: {
+      ...sharedOptions,
+      channel: 'whatsapp'
+    }
+  });
+
+  if (!whatsappAttempt.error) {
+    return { error: null, channel: 'whatsapp' };
+  }
+
+  const message = String(whatsappAttempt.error.message || '').toLowerCase();
+  const shouldFallbackToSms = ['whatsapp', 'twilio', 'channel', 'unsupported', 'provider'].some((fragment) => message.includes(fragment));
+  if (!shouldFallbackToSms) {
+    return { error: whatsappAttempt.error, channel: 'whatsapp' };
+  }
+
+  const smsAttempt = await client.auth.signInWithOtp({
+    phone,
+    options: {
+      ...sharedOptions,
+      channel: 'sms'
+    }
+  });
+
+  return {
+    error: smsAttempt.error || null,
+    channel: smsAttempt.error ? 'whatsapp' : 'sms'
+  };
+}
+
+function buildProfileFormState(user, fallbackPhone = '') {
+  const metadata = user?.user_metadata || {};
+  return {
+    name: metadata.full_name || metadata.name || '',
+    email: user?.email || '',
+    phone: user?.phone || metadata.phone || fallbackPhone || '',
+    gender: metadata.gender || 'prefer_not_to_say',
+    newPassword: ''
+  };
+}
+
 function statusClassName(tone) {
   return tone ? `zlon-status is-${tone}` : 'zlon-status';
 }
@@ -100,18 +192,21 @@ function buildBookingLink(salon) {
 }
 
 export function ConsumerApp() {
+  const initialAuthState = useMemo(() => readAuthState(), []);
   const [appReady, setAppReady] = useState(false);
+  const [skipAuthReveal, setSkipAuthReveal] = useState(false);
   const [screen, setScreen] = useState('auth');
-  const [authStep, setAuthStep] = useState('phone');
-  const [emailMode, setEmailMode] = useState('login');
-  const [countryCode, setCountryCode] = useState('+91');
+  const [authStep, setAuthStep] = useState(initialAuthState.authStep);
+  const [emailMode, setEmailMode] = useState(initialAuthState.emailMode);
+  const [countryCode, setCountryCode] = useState(initialAuthState.countryCode);
   const [phoneInput, setPhoneInput] = useState('');
   const [phoneOtp, setPhoneOtp] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [emailOtp, setEmailOtp] = useState('');
-  const [pendingPhone, setPendingPhone] = useState('');
-  const [pendingEmail, setPendingEmail] = useState('');
+  const [pendingPhone, setPendingPhone] = useState(initialAuthState.pendingPhone);
+  const [pendingEmail, setPendingEmail] = useState(initialAuthState.pendingEmail);
+  const [phoneChannel, setPhoneChannel] = useState('sms');
   const [session, setSession] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusTone, setStatusTone] = useState('');
@@ -126,6 +221,9 @@ export function ConsumerApp() {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [history, setHistory] = useState(() => readStorage(HISTORY_KEY, []));
   const [walletBalance, setWalletBalance] = useState(() => Number(readStorage(WALLET_KEY, 0)) || 0);
+  const [amazonPayConnected, setAmazonPayConnected] = useState(() => Boolean(readStorage(WALLET_PROVIDER_KEY, false)));
+  const [profileForm, setProfileForm] = useState(DEFAULT_PROFILE_FORM);
+  const [profileBusy, setProfileBusy] = useState(false);
   const [authBootstrapState, setAuthBootstrapState] = useState('booting');
 
   const clientRef = useRef(null);
@@ -269,9 +367,12 @@ export function ConsumerApp() {
         await syncProfile(client, nextSession.user, 'customer', nextSession.user.phone || pendingPhone || null);
       }
 
+      clearStorageKey(AUTH_STATE_KEY);
+      setSkipAuthReveal(true);
       setSession(nextSession);
       setPendingPhone(nextSession.user.phone || pendingPhone);
       setPendingEmail(nextSession.user.email || pendingEmail);
+      setStatus('', '');
       const nextLocation = await requestLocation({ silent: true });
       await loadSalonData(nextLocation);
       navigate(restoreScreen ? readLastScreen() : 'home');
@@ -297,7 +398,8 @@ export function ConsumerApp() {
         try {
           if (event === 'SIGNED_OUT' || !nextSession) {
             setSession(null);
-            setAuthStep('phone');
+            setSkipAuthReveal(false);
+            setAuthStep(readAuthState().authStep);
             setScreen('auth');
             return;
           }
@@ -331,15 +433,13 @@ export function ConsumerApp() {
           return;
         }
       } catch (sessionError) {
-  console.warn('Session check error:', sessionError);
-  // If we time out, we DO NOT force setScreen('auth') yet.
-  // We let the app stay on the splash screen while it keeps trying.
-}
+        console.warn('Session check error:', sessionError);
+      }
 
-     if (authBootstrapState === 'ready' && !session) {
-  setScreen('auth');
-  setAuthStep('phone');
-}
+      setSession(null);
+      setSkipAuthReveal(false);
+      setScreen('auth');
+
       try {
         await withTimeout(
           loadSalonData(null),
@@ -351,20 +451,18 @@ export function ConsumerApp() {
       }
     } catch (error) {
       setScreen('auth');
-      setAuthStep('phone');
+      setSkipAuthReveal(false);
       setStatus(getErrorMessage(error, 'Could not finish startup. You can still sign in manually.'), 'error');
     } finally {
       setAuthBootstrapState('ready');
-      setAppReady(true); 
+      setAppReady(true);
     }
   }
 
   useEffect(() => {
-    const readyTimer = window.setTimeout(() => setAppReady(true), 1350);
     initializeApp();
 
     return () => {
-      window.clearTimeout(readyTimer);
       window.clearTimeout(toastTimerRef.current);
       authSubscriptionRef.current?.unsubscribe();
     };
@@ -390,6 +488,29 @@ export function ConsumerApp() {
     writeStorage(WALLET_KEY, walletBalance);
   }, [walletBalance]);
 
+  useEffect(() => {
+    writeStorage(WALLET_PROVIDER_KEY, amazonPayConnected);
+  }, [amazonPayConnected]);
+
+  useEffect(() => {
+    if (session) {
+      clearStorageKey(AUTH_STATE_KEY);
+      return;
+    }
+
+    writeStorage(AUTH_STATE_KEY, {
+      authStep: activeAuthStep,
+      emailMode,
+      countryCode,
+      pendingPhone,
+      pendingEmail
+    });
+  }, [activeAuthStep, countryCode, emailMode, pendingEmail, pendingPhone, session]);
+
+  useEffect(() => {
+    setProfileForm(buildProfileFormState(session?.user, pendingPhone));
+  }, [pendingPhone, session]);
+
   async function handlePhoneContinue() {
     const client = clientRef.current;
     if (!client) {
@@ -403,25 +524,25 @@ export function ConsumerApp() {
       return;
     }
 
-    setBusy(true);
-    const { error } = await client.auth.signInWithOtp({
-      phone: nextPhone,
-      options: {
-        shouldCreateUser: true,
-        data: { user_type: 'customer' }
+    try {
+      setBusy(true);
+      const { error, channel } = await requestPhoneOtp(client, nextPhone, 'customer');
+
+      if (error) {
+        setStatus(error.message, 'error');
+        return;
       }
-    });
-    setBusy(false);
 
-    if (error) {
-      setStatus(error.message, 'error');
-      return;
+      setPendingPhone(nextPhone);
+      setPhoneChannel(channel);
+      setPhoneOtp('');
+      setAuthStep('phone-otp');
+      setStatus(channel === 'whatsapp' ? '6-digit OTP sent on WhatsApp.' : '6-digit OTP sent to your number.', 'success');
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not send the OTP right now.'), 'error');
+    } finally {
+      setBusy(false);
     }
-
-    setPendingPhone(nextPhone);
-    setPhoneOtp('');
-    setAuthStep('phone-otp');
-    setStatus('6-digit OTP sent to your number.', 'success');
   }
 
   async function handlePhoneVerify() {
@@ -435,20 +556,25 @@ export function ConsumerApp() {
       return;
     }
 
-    setBusy(true);
-    const response = await client.auth.verifyOtp({
-      phone: pendingPhone,
-      token: phoneOtp,
-      type: 'sms'
-    });
-    setBusy(false);
+    try {
+      setBusy(true);
+      const response = await client.auth.verifyOtp({
+        phone: pendingPhone,
+        token: phoneOtp,
+        type: 'sms'
+      });
 
-    if (response.error) {
-      setStatus(response.error.message, 'error');
-      return;
+      if (response.error) {
+        setStatus(response.error.message, 'error');
+        return;
+      }
+
+      await completeCustomerSession(response.data?.session, { restoreScreen: false });
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not verify this OTP.'), 'error');
+    } finally {
+      setBusy(false);
     }
-
-    await completeCustomerSession(response.data?.session, { restoreScreen: false });
   }
 
   async function handlePhoneResend() {
@@ -457,22 +583,22 @@ export function ConsumerApp() {
       return;
     }
 
-    setBusy(true);
-    const { error } = await client.auth.signInWithOtp({
-      phone: pendingPhone,
-      options: {
-        shouldCreateUser: true,
-        data: { user_type: 'customer' }
+    try {
+      setBusy(true);
+      const { error, channel } = await requestPhoneOtp(client, pendingPhone, 'customer');
+
+      if (error) {
+        setStatus(error.message, 'error');
+        return;
       }
-    });
-    setBusy(false);
 
-    if (error) {
-      setStatus(error.message, 'error');
-      return;
+      setPhoneChannel(channel);
+      setStatus(channel === 'whatsapp' ? 'OTP resent on WhatsApp.' : 'OTP resent.', 'success');
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not resend the OTP.'), 'error');
+    } finally {
+      setBusy(false);
     }
-
-    setStatus('OTP resent.', 'success');
   }
 
   async function handleEmailContinue() {
@@ -487,54 +613,59 @@ export function ConsumerApp() {
       return;
     }
 
-    setBusy(true);
-    suppressAuthListenerRef.current = true;
-    let credentialError = null;
+    const nextEmail = emailInput.trim().toLowerCase();
 
-    if (emailMode === 'create') {
-      const signUp = await client.auth.signUp({
-        email: emailInput.trim(),
-        password: passwordInput,
+    try {
+      setBusy(true);
+      suppressAuthListenerRef.current = true;
+      let credentialError = null;
+
+      if (emailMode === 'create') {
+        const signUp = await client.auth.signUp({
+          email: nextEmail,
+          password: passwordInput,
+          options: {
+            data: { user_type: 'customer' }
+          }
+        });
+        credentialError = signUp.error || null;
+      } else {
+        const signIn = await client.auth.signInWithPassword({
+          email: nextEmail,
+          password: passwordInput
+        });
+        credentialError = signIn.error || null;
+      }
+
+      if (credentialError) {
+        setStatus(credentialError.message, 'error');
+        return;
+      }
+
+      await client.auth.signOut();
+      const otp = await client.auth.signInWithOtp({
+        email: nextEmail,
         options: {
+          shouldCreateUser: false,
           data: { user_type: 'customer' }
         }
       });
-      credentialError = signUp.error || null;
-    } else {
-      const signIn = await client.auth.signInWithPassword({
-        email: emailInput.trim(),
-        password: passwordInput
-      });
-      credentialError = signIn.error || null;
-    }
 
-    if (credentialError) {
+      if (otp.error) {
+        setStatus(otp.error.message, 'error');
+        return;
+      }
+
+      setPendingEmail(nextEmail);
+      setEmailOtp('');
+      setAuthStep('email-otp');
+      setStatus('6-digit OTP sent to your email.', 'success');
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not start email sign-in right now.'), 'error');
+    } finally {
       suppressAuthListenerRef.current = false;
       setBusy(false);
-      setStatus(credentialError.message, 'error');
-      return;
     }
-
-    await client.auth.signOut();
-    const otp = await client.auth.signInWithOtp({
-      email: emailInput.trim(),
-      options: {
-        shouldCreateUser: false,
-        data: { user_type: 'customer' }
-      }
-    });
-    suppressAuthListenerRef.current = false;
-    setBusy(false);
-
-    if (otp.error) {
-      setStatus(otp.error.message, 'error');
-      return;
-    }
-
-    setPendingEmail(emailInput.trim());
-    setEmailOtp('');
-    setAuthStep('email-otp');
-    setStatus('6-digit OTP sent to your email.', 'success');
   }
 
   async function handleEmailVerify() {
@@ -548,20 +679,25 @@ export function ConsumerApp() {
       return;
     }
 
-    setBusy(true);
-    const response = await client.auth.verifyOtp({
-      email: pendingEmail,
-      token: emailOtp,
-      type: 'email'
-    });
-    setBusy(false);
+    try {
+      setBusy(true);
+      const response = await client.auth.verifyOtp({
+        email: pendingEmail,
+        token: emailOtp,
+        type: 'email'
+      });
 
-    if (response.error) {
-      setStatus(response.error.message, 'error');
-      return;
+      if (response.error) {
+        setStatus(response.error.message, 'error');
+        return;
+      }
+
+      await completeCustomerSession(response.data?.session, { restoreScreen: false });
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not verify this email OTP.'), 'error');
+    } finally {
+      setBusy(false);
     }
-
-    await completeCustomerSession(response.data?.session, { restoreScreen: false });
   }
 
   async function handleEmailResend() {
@@ -570,22 +706,27 @@ export function ConsumerApp() {
       return;
     }
 
-    setBusy(true);
-    const otp = await client.auth.signInWithOtp({
-      email: pendingEmail,
-      options: {
-        shouldCreateUser: false,
-        data: { user_type: 'customer' }
+    try {
+      setBusy(true);
+      const otp = await client.auth.signInWithOtp({
+        email: pendingEmail,
+        options: {
+          shouldCreateUser: false,
+          data: { user_type: 'customer' }
+        }
+      });
+
+      if (otp.error) {
+        setStatus(otp.error.message, 'error');
+        return;
       }
-    });
-    setBusy(false);
 
-    if (otp.error) {
-      setStatus(otp.error.message, 'error');
-      return;
+      setStatus('OTP resent.', 'success');
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not resend the email OTP.'), 'error');
+    } finally {
+      setBusy(false);
     }
-
-    setStatus('OTP resent.', 'success');
   }
 
   async function handleOAuth(provider) {
@@ -596,14 +737,25 @@ export function ConsumerApp() {
     }
 
     setBusy(true);
+    const redirectTo = typeof window === 'undefined' ? undefined : new URL('/auth/callback', window.location.origin).toString();
+    const options = {
+      redirectTo
+    };
+
+    if (provider === 'google') {
+      options.queryParams = {
+        prompt: 'select_account',
+        access_type: 'offline'
+      };
+    }
+
+    if (provider === 'apple') {
+      options.scopes = 'name email';
+    }
+
     const { error } = await client.auth.signInWithOAuth({
       provider,
-      options: {
-        redirectTo: typeof window === 'undefined' ? undefined : window.location.origin,
-        queryParams: {
-          prompt: 'select_account'
-        }
-      }
+      options
     });
 
     if (error) {
@@ -618,6 +770,8 @@ export function ConsumerApp() {
       await client.auth.signOut();
     }
 
+    clearStorageKey(AUTH_STATE_KEY);
+    setSkipAuthReveal(false);
     setSession(null);
     setStatusMessage('');
     setStatusTone('');
@@ -642,6 +796,107 @@ export function ConsumerApp() {
   function handleRecharge() {
     setWalletBalance((current) => current + 500);
     showToast('Wallet recharged with ₹500.');
+  }
+
+  function handleAmazonPayConnect() {
+    setAmazonPayConnected(true);
+    showToast('Amazon Pay wallet marked as connected. Add provider credentials to activate real payments.');
+  }
+
+  function updateProfileField(field, value) {
+    setProfileForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  }
+
+  async function handleProfileSave() {
+    const client = clientRef.current;
+    if (!client || !session?.user) {
+      return;
+    }
+
+    const nextEmail = profileForm.email.trim().toLowerCase();
+    const nextPhone = toPhoneAttribute(countryCode, profileForm.phone);
+    const nextName = profileForm.name.trim();
+    const nextGender = profileForm.gender || 'prefer_not_to_say';
+
+    try {
+      setProfileBusy(true);
+      const attributes = {
+        data: {
+          ...(session.user.user_metadata || {}),
+          full_name: nextName,
+          gender: nextGender,
+          phone: nextPhone || null
+        }
+      };
+
+      if (nextEmail && nextEmail !== session.user.email) {
+        attributes.email = nextEmail;
+      }
+
+      if (nextPhone && nextPhone !== session.user.phone) {
+        attributes.phone = nextPhone;
+      }
+
+      const response = await client.auth.updateUser(attributes);
+      if (response.error) {
+        setStatus(response.error.message, 'error');
+        return;
+      }
+
+      const nextUser = response.data?.user || session.user;
+      await syncProfile(client, nextUser, 'customer', nextPhone || null);
+      setSession((current) => (current ? { ...current, user: nextUser } : current));
+      setProfileForm(buildProfileFormState(nextUser, nextPhone));
+      setStatus(
+        nextEmail !== session.user.email || nextPhone !== session.user.phone
+          ? 'Profile saved. Confirm any verification message from Supabase to finish contact changes.'
+          : 'Profile updated.',
+        'success'
+      );
+      showToast('Profile saved.');
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not save your profile right now.'), 'error');
+    } finally {
+      setProfileBusy(false);
+    }
+  }
+
+  async function handlePasswordUpdate() {
+    const client = clientRef.current;
+    if (!client) {
+      return;
+    }
+
+    if (profileForm.newPassword.trim().length < 8) {
+      setStatus('Use at least 8 characters for the new password.', 'error');
+      return;
+    }
+
+    try {
+      setProfileBusy(true);
+      const response = await client.auth.updateUser({
+        password: profileForm.newPassword
+      });
+
+      if (response.error) {
+        setStatus(response.error.message, 'error');
+        return;
+      }
+
+      setProfileForm((current) => ({
+        ...current,
+        newPassword: ''
+      }));
+      setStatus('Password updated.', 'success');
+      showToast('Password updated.');
+    } catch (error) {
+      setStatus(getErrorMessage(error, 'Could not update the password right now.'), 'error');
+    } finally {
+      setProfileBusy(false);
+    }
   }
 
   function handleBookSalon(salon) {
@@ -687,175 +942,219 @@ export function ConsumerApp() {
     };
 
     return (
-      <div className="zlon-auth-container" style={{ padding: '40px 24px', maxWidth: '400px', margin: '0 auto', width: '100%' }}>
-        <div className="zlon-auth-brand">
-          <h1 className="zlon-auth-logo">ZLon.</h1>
-        </div>
-
-        <div style={{ textAlign: 'center' }}>
-          <p className="zlon-auth-subtitle">Log in or sign up</p>
-        </div>
-
-        {authBootstrapState === 'booting' && (
-          <div style={{ textAlign: 'center', fontSize: '12px', color: '#666', marginBottom: '16px' }}>
-            Connecting to secure server...
-          </div>
-        )}
-
-        {activeAuthStep === 'phone' && (
-          <>
-            <div className="zlon-field-row" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              <label className="zlon-input-shell" htmlFor="country-code" style={{ ...shellStyle, flex: '0 0 96px' }}>
-                <span style={labelStyle}>Country</span>
-                <select
-                  id="country-code"
-                  value={countryCode}
-                  onChange={(event) => setCountryCode(event.target.value)}
-                  style={{ ...inputStyle, fontWeight: '600' }}
-                >
-                  {COUNTRY_OPTIONS.map((option) => (
-                    <option key={option.code} value={option.code}>{`${option.flag} ${option.code}`}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="zlon-input-shell" htmlFor="mobile-number" style={{ ...shellStyle, flex: 1 }}>
-                <span style={labelStyle}>Number</span>
-                <input
-                  id="mobile-number"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel-national"
-                  placeholder="Enter mobile number"
-                  style={inputStyle}
-                  value={phoneInput}
-                  onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
-                />
-              </label>
-            </div>
-            <button className="zlon-continue-btn" type="button" onClick={handlePhoneContinue} disabled={busy}>
-              Continue
-            </button>
-          </>
-        )}
-
-        {activeAuthStep === 'phone-otp' && (
+      <div className="zlon-screen zlon-screen--auth zlon-screen--auth-consumer">
+        <div className="zlon-auth-container">
           <div style={{ textAlign: 'center' }}>
-            <p className="zlon-auth-subtitle">Enter 6-digit code</p>
-            <div className="zlon-otp-row">
-              <OtpInput
-                value={phoneOtp}
-                onChange={setPhoneOtp}
-                numInputs={6}
-                label="Phone OTP"
-                renderInput={(props) => <input {...props} className="zlon-otp-input" />}
-              />
-            </div>
-            <button className="zlon-continue-btn" type="button" onClick={handlePhoneVerify} disabled={busy}>
-              Verify OTP
-            </button>
+            <p className="zlon-auth-subtitle">
+              {activeAuthStep === 'phone' || activeAuthStep === 'email' ? 'Log in or sign up' : 'Enter 6-digit code'}
+            </p>
           </div>
-        )}
 
-        {activeAuthStep === 'email' && (
-          <>
-            <div className="zlon-mode-toggle zlon-mode-toggle--consumer" style={{ marginBottom: '16px' }}>
-              <button type="button" className={emailMode === 'login' ? 'is-active' : ''} onClick={() => setEmailMode('login')}>Log In</button>
-              <button type="button" className={emailMode === 'create' ? 'is-active' : ''} onClick={() => setEmailMode('create')}>Create</button>
-            </div>
-            <label className="zlon-input-shell" htmlFor="email-address" style={{ ...shellStyle, marginBottom: '12px' }}>
-              <span style={labelStyle}>Email</span>
-              <input
-                id="email-address"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                style={inputStyle}
-                value={emailInput}
-                onChange={(event) => setEmailInput(event.target.value)}
-              />
-            </label>
-            <label className="zlon-input-shell" htmlFor="email-password" style={shellStyle}>
-              <span style={labelStyle}>Password</span>
-              <input
-                id="email-password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Password"
-                style={inputStyle}
-                value={passwordInput}
-                onChange={(event) => setPasswordInput(event.target.value)}
-              />
-            </label>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setAuthStep('phone')}
-                disabled={busy}
-                style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
-              >
-                Back
-              </button>
-              <button className="zlon-continue-btn" type="button" onClick={handleEmailContinue} disabled={busy} style={{ marginTop: 0, width: 'auto', minWidth: '140px' }}>
+          {activeAuthStep === 'phone' && (
+            <>
+              <div className="zlon-field-row" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <label className="zlon-input-shell" htmlFor="country-code" style={{ ...shellStyle, flex: '0 0 96px' }}>
+                  <span style={labelStyle}>Country</span>
+                  <select
+                    id="country-code"
+                    value={countryCode}
+                    onChange={(event) => setCountryCode(event.target.value)}
+                    style={{ ...inputStyle, fontWeight: '600' }}
+                  >
+                    {COUNTRY_OPTIONS.map((option) => (
+                      <option key={option.code} value={option.code}>{`${option.flag} ${option.code}`}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="zlon-input-shell" htmlFor="mobile-number" style={{ ...shellStyle, flex: 1 }}>
+                  <span style={labelStyle}>Number</span>
+                  <input
+                    id="mobile-number"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel-national"
+                    placeholder="Enter mobile number"
+                    style={inputStyle}
+                    value={phoneInput}
+                    onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
+                  />
+                </label>
+              </div>
+              <button className="zlon-continue-btn" type="button" onClick={handlePhoneContinue} disabled={busy}>
                 Continue
               </button>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {activeAuthStep === 'email-otp' && (
-          <>
-            <div className="zlon-input-shell" style={{ ...shellStyle, marginBottom: '16px' }}>
-              <span style={labelStyle}>Email</span>
-              <div style={{ fontWeight: '600' }}>{pendingEmail}</div>
-            </div>
-            <OtpInput value={emailOtp} onChange={setEmailOtp} label="Email OTP" />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setAuthStep('email')}
-                disabled={busy}
-                style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
-              >
-                Back
+          {activeAuthStep === 'phone-otp' && (
+            <div style={{ textAlign: 'center' }}>
+              <p className="zlon-helper-copy zlon-helper-copy--auth">
+                {phoneChannel === 'whatsapp' ? 'Code sent on WhatsApp' : 'Code sent to'} {pendingPhone}
+              </p>
+              <div className="zlon-otp-row">
+                <OtpInput
+                  value={phoneOtp}
+                  onChange={setPhoneOtp}
+                  numInputs={6}
+                  label="Phone OTP"
+                  className="zlon-otp-row__group"
+                  renderInput={(props) => <input {...props} className="zlon-otp-input" />}
+                />
+              </div>
+              <div className="zlon-auth-inline-actions">
+                <button
+                  type="button"
+                  onClick={() => setAuthStep('phone')}
+                  disabled={busy}
+                  style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePhoneResend}
+                  disabled={busy}
+                  style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Resend OTP
+                </button>
+              </div>
+              <button className="zlon-continue-btn" type="button" onClick={handlePhoneVerify} disabled={busy}>
+                Verify OTP
               </button>
-              <button
-                type="button"
-                onClick={handleEmailResend}
-                disabled={busy}
-                style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
-              >
-                Resend OTP
+            </div>
+          )}
+
+          {activeAuthStep === 'email' && (
+            <>
+              <div className="zlon-mode-toggle zlon-mode-toggle--consumer" style={{ marginBottom: '16px' }}>
+                <button type="button" className={emailMode === 'login' ? 'is-active' : ''} onClick={() => setEmailMode('login')}>Log In</button>
+                <button type="button" className={emailMode === 'create' ? 'is-active' : ''} onClick={() => setEmailMode('create')}>Create</button>
+              </div>
+              <label className="zlon-input-shell" htmlFor="email-address" style={{ ...shellStyle, marginBottom: '12px' }}>
+                <span style={labelStyle}>Email</span>
+                <input
+                  id="email-address"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  style={inputStyle}
+                  value={emailInput}
+                  onChange={(event) => setEmailInput(event.target.value)}
+                />
+              </label>
+              <label className="zlon-input-shell" htmlFor="email-password" style={shellStyle}>
+                <span style={labelStyle}>Password</span>
+                <input
+                  id="email-password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Password"
+                  style={inputStyle}
+                  value={passwordInput}
+                  onChange={(event) => setPasswordInput(event.target.value)}
+                />
+              </label>
+              <div className="zlon-auth-inline-actions">
+                <button
+                  type="button"
+                  onClick={() => setAuthStep('phone')}
+                  disabled={busy}
+                  style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Back
+                </button>
+                <button className="zlon-continue-btn" type="button" onClick={handleEmailContinue} disabled={busy} style={{ marginTop: 0, width: 'auto', minWidth: '140px' }}>
+                  Continue
+                </button>
+              </div>
+            </>
+          )}
+
+          {activeAuthStep === 'email-otp' && (
+            <>
+              <div className="zlon-input-shell" style={{ ...shellStyle, marginBottom: '16px' }}>
+                <span style={labelStyle}>Email</span>
+                <div style={{ fontWeight: '600' }}>{pendingEmail}</div>
+              </div>
+              <div className="zlon-otp-row">
+                <OtpInput
+                  value={emailOtp}
+                  onChange={setEmailOtp}
+                  numInputs={6}
+                  label="Email OTP"
+                  className="zlon-otp-row__group"
+                  renderInput={(props) => <input {...props} className="zlon-otp-input" />}
+                />
+              </div>
+              <div className="zlon-auth-inline-actions">
+                <button
+                  type="button"
+                  onClick={() => setAuthStep('email')}
+                  disabled={busy}
+                  style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEmailResend}
+                  disabled={busy}
+                  style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  Resend OTP
+                </button>
+              </div>
+              <button className="zlon-continue-btn" type="button" onClick={handleEmailVerify} disabled={busy}>
+                Verify OTP
+              </button>
+            </>
+          )}
+
+          {(activeAuthStep === 'phone' || activeAuthStep === 'email') && (
+            <div className="zlon-social-row">
+              <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('google')} disabled={busy} aria-label="Continue with Google">
+                <GoogleIcon />
+              </button>
+              <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')} disabled={busy} aria-label="Continue with Apple">
+                <AppleIcon />
+              </button>
+              <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')} disabled={busy} aria-label="Continue with Email">
+                <MailIcon style={{ color: '#d95c56' }} />
               </button>
             </div>
-            <button className="zlon-continue-btn" type="button" onClick={handleEmailVerify} disabled={busy}>
-              Verify OTP
-            </button>
-          </>
-        )}
+          )}
 
-        <div className="zlon-social-row">
-          <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('google')} disabled={busy}>
-            <GoogleIcon />
-          </button>
-          <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')} disabled={busy}>
-            <AppleIcon />
-          </button>
-          <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')} disabled={busy}>
-            <MailIcon />
-          </button>
-        </div>
+          <p className={statusClassName(statusTone)} style={{ marginTop: '16px', textAlign: 'center' }}>{statusMessage}</p>
 
-        <p className={statusClassName(statusTone)} style={{ marginTop: '16px', textAlign: 'center' }}>{statusMessage}</p>
-
-        <div style={footerStyle}>
-          By continuing, you agree to our <br />
-          <strong>Terms of Service</strong> &bull; <strong>Privacy Policy</strong> &bull; <strong>Content Policies</strong>
+          <div style={footerStyle}>
+            By continuing, you agree to our <br />
+            <strong>Terms of Service</strong> &bull; <strong>Privacy Policy</strong> &bull; <strong>Content Policies</strong>
+          </div>
         </div>
       </div>
     );
   }
 
   function renderConsumerHeader({ onBack, title, subtitle }) {
+    if (!onBack) {
+      return (
+        <header className="zlon-topbar zlon-topbar--consumer zlon-topbar--consumer-home">
+          <button className="zlon-icon-button zlon-icon-button--consumer" type="button" onClick={() => navigate('profile')} aria-label="Open profile">
+            <ProfileIcon className="zlon-icon" />
+          </button>
+          <div className="zlon-topbar__brand zlon-topbar__brand--consumer-home">
+            <span className="zlon-wordmark zlon-wordmark--consumer">{title}</span>
+            <span className="zlon-consumer-heading__label">{subtitle}</span>
+          </div>
+          <button className="zlon-location-pill zlon-location-pill--consumer" type="button" onClick={() => requestLocation({ silent: false }).then(loadSalonData)}>
+            <PinIcon className="zlon-location-pill__icon" />
+            <span>{locationLabel}</span>
+          </button>
+        </header>
+      );
+    }
+
     return (
       <header className="zlon-topbar zlon-topbar--consumer">
         <div className="zlon-topbar__cluster zlon-topbar__cluster--consumer">
@@ -878,16 +1177,6 @@ export function ConsumerApp() {
             <PinIcon className="zlon-location-pill__icon" />
             <span>{locationLabel}</span>
           </button>
-          {!onBack && (
-            <>
-              <button className="zlon-icon-button zlon-icon-button--consumer" type="button" onClick={() => navigate('wallet')} aria-label="Open wallet">
-                <WalletIcon className="zlon-icon" />
-              </button>
-              <button className="zlon-icon-button zlon-icon-button--consumer" type="button" onClick={() => navigate('profile')} aria-label="Open profile">
-                <ProfileIcon className="zlon-icon" />
-              </button>
-            </>
-          )}
         </div>
       </header>
     );
@@ -1073,9 +1362,19 @@ export function ConsumerApp() {
           </section>
           <section className="zlon-home-panel zlon-home-panel--consumer">
             <p className="zlon-helper-copy">Recharge internal credits now, and keep Amazon Pay connection ready for the next payment pass.</p>
-            <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleRecharge}>
-              Recharge ₹500
-            </button>
+            <div className="zlon-inline-row zlon-inline-row--consumer">
+              <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleRecharge}>
+                Recharge ₹500
+              </button>
+              <button className="zlon-button zlon-button--ghost zlon-button--consumer" type="button" onClick={handleAmazonPayConnect}>
+                {amazonPayConnected ? 'Amazon Pay Linked' : 'Connect Amazon Pay'}
+              </button>
+            </div>
+            <p className="zlon-helper-copy">
+              {amazonPayConnected
+                ? 'Amazon Pay is marked as linked for this shell. Add provider credentials and callbacks to activate live wallet payments.'
+                : 'Amazon Pay connection stays ready here so the wallet area can grow without changing the core layout.'}
+            </p>
           </section>
         </main>
       </div>
@@ -1088,13 +1387,74 @@ export function ConsumerApp() {
         {renderConsumerHeader({ onBack: () => navigate('home'), title: 'Profile', subtitle: 'Signed in customer' })}
         <main className="zlon-scroll-view zlon-scroll-view--consumer hide-scrollbar">
           <section className="zlon-section-card zlon-section-card--consumer">
-            <p className="zlon-eyebrow">Profile</p>
-            <h2 className="zlon-section-title">My account</h2>
-            <p className="zlon-helper-copy">{session?.user?.email || pendingPhone || 'Signed in customer'}</p>
+            <p className="zlon-eyebrow">My account</p>
+            <h2 className="zlon-section-title">Profile</h2>
+            <p className="zlon-helper-copy">Edit the customer details that travel with your consumer shell.</p>
+            <div className="zlon-settings-grid">
+              <label className="zlon-input-shell zlon-input-shell--consumer-field">
+                <span className="zlon-input-shell__label">Name</span>
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={profileForm.name}
+                  onChange={(event) => updateProfileField('name', event.target.value)}
+                />
+              </label>
+              <label className="zlon-input-shell zlon-input-shell--consumer-field">
+                <span className="zlon-input-shell__label">Email</span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={profileForm.email}
+                  onChange={(event) => updateProfileField('email', event.target.value)}
+                />
+              </label>
+              <label className="zlon-input-shell zlon-input-shell--consumer-field">
+                <span className="zlon-input-shell__label">Phone number</span>
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  value={profileForm.phone}
+                  onChange={(event) => updateProfileField('phone', event.target.value.replace(/[^\d+]/g, ''))}
+                />
+              </label>
+              <label className="zlon-input-shell zlon-input-shell--consumer-field">
+                <span className="zlon-input-shell__label">Gender</span>
+                <select value={profileForm.gender} onChange={(event) => updateProfileField('gender', event.target.value)}>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </label>
+            </div>
+            <button className="zlon-button zlon-button--primary zlon-button--consumer zlon-button--full" type="button" onClick={handleProfileSave} disabled={profileBusy}>
+              Save profile
+            </button>
+          </section>
+          <section className="zlon-section-card zlon-section-card--consumer">
+            <p className="zlon-eyebrow">Change password</p>
+            <h2 className="zlon-section-title">Security</h2>
+            <label className="zlon-input-shell zlon-input-shell--consumer-field">
+              <span className="zlon-input-shell__label">New password</span>
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder="Minimum 8 characters"
+                value={profileForm.newPassword}
+                onChange={(event) => updateProfileField('newPassword', event.target.value)}
+              />
+            </label>
+            <button className="zlon-button zlon-button--ghost zlon-button--consumer zlon-button--full" type="button" onClick={handlePasswordUpdate} disabled={profileBusy}>
+              Change password
+            </button>
           </section>
           <section className="zlon-action-list zlon-action-list--consumer">
             <button className="zlon-action-row zlon-action-row--consumer" type="button" onClick={() => navigate('wallet')}>
               <span>Wallet</span>
+              <ArrowRightIcon className="zlon-icon" />
+            </button>
+            <button className="zlon-action-row zlon-action-row--consumer" type="button" onClick={() => navigate('wallet')}>
+              <span>{amazonPayConnected ? 'Amazon Pay connected' : 'Connect Amazon Pay'}</span>
               <ArrowRightIcon className="zlon-icon" />
             </button>
             <button className="zlon-action-row zlon-action-row--consumer" type="button" onClick={() => navigate('history')}>
@@ -1102,10 +1462,11 @@ export function ConsumerApp() {
               <ArrowRightIcon className="zlon-icon" />
             </button>
             <button className="zlon-action-row zlon-action-row--consumer" type="button" onClick={handleLogout}>
-              <span>Sign out</span>
+              <span>Log out</span>
               <ArrowRightIcon className="zlon-icon" />
             </button>
           </section>
+          <p className={statusClassName(statusTone)}>{statusMessage}</p>
         </main>
       </div>
     );

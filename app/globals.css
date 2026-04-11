@@ -1,1608 +1,310 @@
+/* ================================================================
+ZLon - AESTHETIC WHITE DESIGN SYSTEM
+Premium Salon Booking Platform
+================================================================
+*/
+
+/* --- 1. CORE VARIABLES & RESET --- */
 :root {
-  --zlon-bg: #050505;
-  --zlon-bg-elevated: #0c0d10;
-  --zlon-surface: rgba(16, 17, 20, 0.96);
-  --zlon-surface-soft: rgba(255, 255, 255, 0.04);
-  --zlon-line: rgba(255, 255, 255, 0.08);
-  --zlon-line-strong: rgba(255, 255, 255, 0.16);
-  --zlon-text: #f7f7f8;
-  --zlon-muted: rgba(247, 247, 248, 0.58);
-  --zlon-accent: #57e6ff;
-  --zlon-accent-strong: #00d2ff;
-  --zlon-success: #52eea4;
-  --zlon-warning: #ff8b4a;
-  --zlon-danger: #ff5e7a;
-  --zlon-shadow: 0 28px 72px rgba(0, 0, 0, 0.52);
+  --zlon-white: #ffffff;
+  --zlon-black: #000000;
+  --zlon-primary: #a35b4f; /* Terracotta from Screenshot 2 */
+  --zlon-gray-bg: #f7f7f7;
+  --zlon-border: #e0e0e0;
+  --zlon-text-secondary: #666666;
+  --zlon-safe-area: 24px;
+  
+  /* System Heights */
+  --zlon-header-height: 72px;
+  --zlon-nav-height: 80px;
 }
 
 * {
   box-sizing: border-box;
-}
-
-html,
-body {
+  -webkit-tap-highlight-color: transparent;
   margin: 0;
+  padding: 0;
+}
+
+html, body {
   width: 100%;
-  min-height: 100%;
-  overflow: hidden;
-}
-
-body {
-  background:
-    radial-gradient(circle at top, rgba(87, 230, 255, 0.08), transparent 24%),
-    linear-gradient(180deg, #070708 0%, #050505 46%, #0a0b0f 100%);
-  color: var(--zlon-text);
-  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
+  height: 100%;
+  background-color: var(--zlon-white) !important;
+  color: var(--zlon-black);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Prevent bounce, handled by scroll-views */
 }
 
-button,
-input,
-select {
-  font: inherit;
+/* --- 2. GLOBAL UTILITIES --- */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;    /* Firefox */
 }
 
-button {
-  border: 0;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-input,
-select {
-  color: var(--zlon-text);
-}
-
-::selection {
-  background: rgba(87, 230, 255, 0.32);
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .zlon-root {
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-}
-
-.zlon-device {
   position: relative;
-  width: min(100vw, 460px);
-  height: 100dvh;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at top right, rgba(87, 230, 255, 0.08), transparent 22%),
-    linear-gradient(180deg, #050505 0%, #0a0a0c 100%);
-  box-shadow: var(--zlon-shadow);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.zlon-device--business {
-  background:
-    radial-gradient(circle at top right, rgba(82, 238, 164, 0.08), transparent 22%),
-    linear-gradient(180deg, #050505 0%, #0a0b0d 100%);
+/* Centers the app frame on desktop, full-width on mobile */
+.zlon-device {
+  width: 100%;
+  max-width: 440px;
+  height: 100%;
+  margin: 0 auto;
+  position: relative;
+  background: var(--zlon-white);
+  box-shadow: 0 0 40px rgba(0,0,0,0.05);
 }
 
+/* --- 3. SPLASH SCREEN & LOGO SHIFT --- */
 .zlon-splash {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 30;
-  display: grid;
-  place-items: center;
-  background: #ffffff;
+  z-index: 9999;
+  background: var(--zlon-white);
+  display: flex;
+  align-items: center; /* Initial center state */
+  justify-content: center;
+  transition: all 0.8s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-.zlon-splash.is-leaving .zlon-splash__logo {
-  transform: translateY(-28vh) scale(0.82);
-  opacity: 0;
+/* The Signature Shift Logic: No Take-off, just slides to top */
+.zlon-splash.is-leaving {
+  align-items: flex-start;
+  padding-top: 40px; /* Aligns with header position */
+  background: transparent;
+  pointer-events: none;
 }
 
 .zlon-splash__logo {
-  color: #050505;
-  font-size: clamp(52px, 13vw, 76px);
-  font-weight: 900;
-  letter-spacing: -0.1em;
-  transition: transform 0.72s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.56s ease;
-}
-
-.zlon-frame {
-  height: 100%;
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.45s ease, transform 0.45s ease;
-}
-
-.zlon-frame.is-ready {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.zlon-screen {
-  height: 100%;
-}
-
-.zlon-screen--auth {
-  display: grid;
-  align-items: end;
-  padding: 24px 18px;
-}
-
-.zlon-auth-card {
-  width: 100%;
-  padding: 24px 20px 20px;
-  display: grid;
-  gap: 14px;
-  border: 1px solid var(--zlon-line-strong);
-  border-radius: 32px;
-  background: rgba(12, 12, 15, 0.97);
-  box-shadow: var(--zlon-shadow);
-  -webkit-backdrop-filter: blur(10px); 
-backdrop-filter: blur(10px);
-}
-
-.zlon-auth-brand {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.zlon-eyebrow {
-  margin: 0;
-  color: var(--zlon-accent);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
-
-.zlon-auth-title,
-.zlon-section-title {
-  margin: 0;
-  letter-spacing: -0.08em;
-}
-
-.zlon-auth-title {
-  font-size: clamp(34px, 9vw, 50px);
-  line-height: 0.92;
-}
-
-.zlon-auth-copy,
-.zlon-helper-copy,
-.zlon-home-panel p,
-.zlon-slide-card p,
-.zlon-list-card__body p,
-.zlon-action-row,
-.zlon-appointment-card p,
-.zlon-section-card p {
-  color: var(--zlon-muted);
-  line-height: 1.6;
-}
-
-.zlon-label {
-  display: block;
-  color: rgba(247, 247, 248, 0.86);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.zlon-field-row,
-.zlon-inline-row,
-.zlon-search-row,
-.zlon-section-row {
-  display: grid;
-  gap: 10px;
-}
-
-.zlon-field-row {
-  grid-template-columns: 132px 1fr;
-}
-
-.zlon-inline-row,
-.zlon-section-row {
-  grid-template-columns: 1fr auto;
-  align-items: center;
-}
-
-.zlon-input-shell,
-.zlon-select-shell,
-.zlon-search-shell,
-.zlon-readonly-card {
-  border: 1px solid var(--zlon-line);
-  border-radius: 20px;
-  background: var(--zlon-surface-soft);
-}
-
-.zlon-input-shell,
-.zlon-select-shell {
-  display: grid;
-  gap: 8px;
-  padding: 12px 14px;
-}
-
-.zlon-input-shell--grow {
-  min-width: 0;
-}
-
-.zlon-input-shell__label,
-.zlon-select-shell__label,
-.zlon-readonly-label {
-  color: var(--zlon-muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.zlon-input-shell input,
-.zlon-input-shell select,
-.zlon-select-shell select,
-.zlon-search-shell input {
-  width: 100%;
-  border: 0;
-  outline: none;
-  background: transparent;
-  padding: 0;
-  color: var(--zlon-text);
-  font-size: 16px;
-}
-
-.zlon-input-shell input::placeholder,
-.zlon-search-shell input::placeholder {
-  color: rgba(247, 247, 248, 0.28);
-}
-
-.zlon-button {
-  min-height: 56px;
-  padding: 0 18px;
-  border-radius: 18px;
-  font-weight: 800;
-}
-
-.zlon-button--primary {
-  background: linear-gradient(135deg, var(--zlon-accent) 0%, var(--zlon-accent-strong) 100%);
-  color: #041015;
-}
-
-.zlon-button--ghost {
-  background: transparent;
-  border: 1px solid var(--zlon-line);
-  color: var(--zlon-text);
-}
-
-.zlon-link-button {
-  color: var(--zlon-accent);
-  font-weight: 700;
-  justify-self: end;
-}
-
-.zlon-mode-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 5px;
-  border: 1px solid var(--zlon-line);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.zlon-mode-toggle button {
-  min-height: 40px;
-  border-radius: 14px;
-  color: var(--zlon-muted);
-  font-weight: 700;
-}
-
-.zlon-mode-toggle button.is-active {
-  background: rgba(87, 230, 255, 0.12);
-  color: var(--zlon-accent);
-}
-
-.zlon-auth-divider {
-  height: 1px;
-  background: var(--zlon-line);
-}
-
-.zlon-provider-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.zlon-provider-button {
-  min-height: 68px;
-  display: grid;
-  place-items: center;
-  gap: 4px;
-  padding: 10px 0;
-  border: 1px solid var(--zlon-line);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.zlon-provider-button span:last-child {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.zlon-provider-icon,
-.zlon-icon {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 auto;
-}
-
-.zlon-otp-block {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-}
-
-.zlon-otp-cell {
-  height: 58px;
-  border: 1px solid var(--zlon-line);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--zlon-text);
-  text-align: center;
-  font-size: 26px;
-  font-weight: 800;
-  outline: none;
-}
-
-.zlon-readonly-card {
-  padding: 14px 16px;
-  display: grid;
-  gap: 6px;
-}
-
-.zlon-readonly-card strong {
-  font-size: 16px;
-}
-
-.zlon-readonly-note {
-  color: var(--zlon-muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.zlon-status {
-  min-height: 20px;
-  margin: 0;
-  color: var(--zlon-muted);
-  font-size: 13px;
-}
-
-.zlon-status.is-error {
-  color: var(--zlon-danger);
-}
-
-.zlon-status.is-success {
-  color: var(--zlon-success);
-}
-
-.zlon-topbar {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 18px 12px;
-}
-
-.zlon-topbar__cluster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.zlon-topbar__brand {
-  display: grid;
-  place-items: center;
-}
-
-.zlon-wordmark {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: -0.1em;
-}
-
-.zlon-icon-button,
-.zlon-location-pill,
-.zlon-owner-chip {
-  border: 1px solid var(--zlon-line);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.zlon-icon-button {
-  width: 48px;
-  height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 18px;
-  color: var(--zlon-text);
-}
-
-.zlon-location-pill,
-.zlon-owner-chip {
-  min-height: 42px;
-  max-width: 160px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border-radius: 999px;
-  color: var(--zlon-text);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.zlon-location-pill__icon {
-  width: 16px;
-  height: 16px;
-  color: var(--zlon-accent);
-}
-
-.zlon-screen--home {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.zlon-home-grid {
-  min-height: 0;
-  padding: 10px 18px 108px;
-  display: grid;
-  grid-template-rows: 1.15fr 1fr 1fr;
-  gap: 14px;
-}
-
-.zlon-slide-panel,
-.zlon-home-panel,
-.zlon-section-card,
-.zlon-list-card,
-.zlon-metric-card,
-.zlon-appointment-card {
-  border: 1px solid var(--zlon-line);
-  background: linear-gradient(180deg, rgba(17, 18, 22, 0.96) 0%, rgba(11, 12, 14, 0.96) 100%);
-  box-shadow: var(--zlon-shadow);
-}
-
-.zlon-slide-panel,
-.zlon-home-panel,
-.zlon-section-card {
-  border-radius: 28px;
-}
-
-.zlon-slide-panel {
-  position: relative;
-  overflow: hidden;
-}
-
-.zlon-slide-track {
-  display: flex;
-  height: 100%;
-  transition: transform 0.45s ease;
-}
-
-.zlon-slide-card {
-  min-width: 100%;
-  height: 100%;
-  padding: 22px 22px 54px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  background-size: cover;
-  background-position: center;
-}
-
-.zlon-slide-card h2 {
-  margin: 0;
-  font-size: clamp(28px, 8vw, 40px);
-  letter-spacing: -0.08em;
-}
-
-.zlon-slide-dots {
-  position: absolute;
-  left: 18px;
-  bottom: 16px;
-  display: flex;
-  gap: 8px;
-}
-
-.zlon-slide-dots button {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.zlon-slide-dots button.is-active {
-  width: 24px;
-  background: var(--zlon-accent);
-}
-
-.zlon-home-panel {
-  position: relative;
-  padding: 20px 22px;
-  display: grid;
-  gap: 8px;
-  text-align: left;
-}
-
-.zlon-home-panel strong {
-  font-size: clamp(28px, 8vw, 40px);
-  letter-spacing: -0.08em;
-}
-
-.zlon-home-panel__arrow {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(87, 230, 255, 0.12);
-  color: var(--zlon-accent);
-}
-
-.zlon-screen--stacked,
-.zlon-screen--owner {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.zlon-scroll-view {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px 18px 108px;
-  display: grid;
-  gap: 14px;
-}
-
-/* Replace line 577 and 1217 with this */
-.hide-scrollbar {
-  -ms-overflow-style: none; /* For IE/Edge */
-}
-
-/* This handles Chrome, Safari, and iOS without warnings */
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Ensure the app is actually visible */
-.zlon-frame {
-  opacity: 1 !important; /* Forces visibility to stop white screens */
-  background-color: #ffffff;
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;                    /* Chrome, Safari, iOS */
-}
-
-.zlon-scroll-view--owner {
-  padding-bottom: 28px;
-}
-
-.zlon-chip-row::-webkit-scrollbar {
-  display: none;
-}
-
-.zlon-section-card {
-  padding: 20px;
-}
-
-.zlon-section-card--hero {
-  min-height: 160px;
-}
-
-.zlon-section-card--status {
-  display: grid;
-  gap: 14px;
-}
-
-.zlon-section-title {
-  font-size: clamp(28px, 7vw, 38px);
-}
-
-.zlon-money {
-  font-size: clamp(42px, 12vw, 62px);
-  letter-spacing: -0.08em;
-}
-
-.zlon-search-row {
-  grid-template-columns: 1fr auto;
-}
-
-.zlon-search-shell {
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  border-radius: 999px;
-}
-
-.zlon-chip-row {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  -ms-overflow-style: none;       /* IE and Edge */
-}
-
-.zlon-chip {
-  padding: 10px 14px;
-  border: 1px solid var(--zlon-line);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--zlon-muted);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.zlon-chip.is-active {
-  background: var(--zlon-accent);
-  color: #041015;
-  border-color: transparent;
-}
-
-.zlon-list,
-.zlon-action-list,
-.zlon-appointment-list,
-.zlon-upload-form {
-  display: grid;
-  gap: 12px;
-}
-
-.zlon-list-card,
-.zlon-appointment-card {
-  padding: 14px;
-  border-radius: 22px;
-}
-
-.zlon-list-card__banner {
-  height: 148px;
-  border-radius: 18px;
-  margin-bottom: 12px;
-  background-size: cover;
-  background-position: center;
-}
-
-.zlon-list-card__body strong,
-.zlon-appointment-card strong {
-  display: block;
-  font-size: 18px;
-  letter-spacing: -0.04em;
-}
-
-.zlon-list-card__body p,
-.zlon-appointment-card p {
-  margin: 6px 0 0;
-}
-
-.zlon-list-card__body span {
-  display: block;
-  margin-top: 8px;
-  color: rgba(247, 247, 248, 0.78);
-  font-size: 13px;
-}
-
-.zlon-list-card__footer,
-.zlon-appointment-card {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.zlon-badge {
-  min-height: 34px;
-  padding: 0 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.zlon-badge.is-success {
-  background: rgba(82, 238, 164, 0.14);
-  color: var(--zlon-success);
-}
-
-.zlon-badge.is-warning {
-  background: rgba(255, 139, 74, 0.14);
-  color: var(--zlon-warning);
-}
-
-.zlon-badge.is-neutral {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--zlon-text);
-}
-
-.zlon-empty-state {
-  padding: 18px;
-  border: 1px dashed var(--zlon-line-strong);
-  border-radius: 20px;
-  color: var(--zlon-muted);
-  text-align: center;
-  line-height: 1.6;
-}
-
-.zlon-action-row {
-  min-height: 58px;
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border: 1px solid var(--zlon-line);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.zlon-bottom-nav {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  left: 14px;
-  z-index: 10;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--zlon-line-strong);
-  border-radius: 30px;
-  background: rgba(7, 8, 10, 0.94);
-  box-shadow: var(--zlon-shadow);
-  -webkit-backdrop-filter: blur(10px); 
-backdrop-filter: blur(10px);
-}
-
-.zlon-bottom-nav__button {
-  min-height: 56px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border-radius: 22px;
-  color: var(--zlon-muted);
-  font-weight: 700;
-}
-
-.zlon-bottom-nav__button.is-active {
-  background: rgba(87, 230, 255, 0.14);
-  color: var(--zlon-accent);
-}
-
-.zlon-owner-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.zlon-metric-card {
-  min-height: 122px;
-  padding: 18px;
-  border-radius: 24px;
-  display: grid;
-  gap: 8px;
-}
-
-.zlon-metric-card span {
-  color: var(--zlon-muted);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.zlon-metric-card strong {
-  font-size: clamp(28px, 8vw, 38px);
-  letter-spacing: -0.08em;
-}
-
-.zlon-status-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.zlon-status-toggle__button {
-  min-height: 76px;
-  border: 1px solid var(--zlon-line);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--zlon-text);
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.zlon-status-toggle__button.is-active {
-  background: rgba(82, 238, 164, 0.14);
-  color: var(--zlon-success);
-  border-color: rgba(82, 238, 164, 0.4);
-}
-
-.zlon-status-toggle__button.is-active.is-warning {
-  background: rgba(255, 139, 74, 0.16);
-  color: var(--zlon-warning);
-  border-color: rgba(255, 139, 74, 0.36);
-}
-
-.zlon-toast {
-  position: absolute;
-  right: 16px;
-  bottom: 22px;
-  left: 16px;
-  z-index: 20;
-  min-height: 56px;
-  padding: 0 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 18px;
-  background: var(--zlon-accent);
-  color: #041015;
-  font-weight: 800;
-  box-shadow: var(--zlon-shadow);
-}
-
-@media (max-width: 540px) {
-  .zlon-device {
-    width: 100vw;
-    box-shadow: none;
-  }
-}
-
-@media (max-width: 420px) {
-  .zlon-field-row,
-  .zlon-owner-metrics {
-    grid-template-columns: 1fr;
-  }
-
-  .zlon-home-grid {
-    padding-bottom: 104px;
-  }
-
-  .zlon-topbar {
-    grid-template-columns: auto 1fr;
-    row-gap: 10px;
-  }
-
-  .zlon-topbar__brand {
-    order: -1;
-    grid-column: 1 / -1;
-  }
-
-  .zlon-location-pill,
-  .zlon-owner-chip {
-    grid-column: 2;
-    justify-self: end;
-  }
-}
-
-.zlon-root--consumer {
-  background: #ffffff;
-  opacity: 1;
-}
-
-.zlon-device--consumer {
-  background: #ffffff;
-  color: #000000;
-  border-left: 1px solid #000000;
-  border-right: 1px solid #000000;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-  opacity: 1;
-}
-
-.zlon-frame--consumer,
-.zlon-frame--consumer.is-ready {
-  background: #ffffff;
-  opacity: 1;
-  transform: none;
-}
-
-.zlon-splash--consumer {
-  background: #ffffff;
-}
-
-.zlon-splash__logo--consumer {
-  color: #000000;
-  font-weight: 300;
-}
-
-.zlon-screen--auth-consumer,
-.zlon-screen--home-consumer,
-.zlon-screen--stacked-consumer {
-  background: #ffffff;
-}
-
-.zlon-screen--auth-consumer {
-  padding: 24px 18px;
-  align-items: center;
-}
-
-.zlon-device--consumer .zlon-icon,
-.zlon-device--consumer .zlon-location-pill__icon {
-  color: #000000;
-}
-
-.zlon-device--consumer .zlon-eyebrow,
-.zlon-device--consumer .zlon-label,
-.zlon-device--consumer .zlon-input-shell__label,
-.zlon-device--consumer .zlon-select-shell__label,
-.zlon-device--consumer .zlon-readonly-label,
-.zlon-device--consumer .zlon-consumer-heading__label {
-  color: rgba(0, 0, 0, 0.58);
-  font-weight: 600;
-  letter-spacing: 0.18em;
-}
-
-.zlon-device--consumer .zlon-auth-copy,
-.zlon-device--consumer .zlon-helper-copy,
-.zlon-device--consumer .zlon-home-panel p,
-.zlon-device--consumer .zlon-slide-card p,
-.zlon-device--consumer .zlon-list-card__body p,
-.zlon-device--consumer .zlon-readonly-note,
-.zlon-device--consumer .zlon-list-card__meta,
-.zlon-device--consumer .zlon-list-card__footer span {
-  color: rgba(0, 0, 0, 0.7);
-}
-
-.zlon-wordmark--consumer {
-  color: #000000;
-  font-weight: 300;
-  letter-spacing: -0.08em;
-}
-
-.zlon-auth-card--consumer,
-.zlon-slide-panel--consumer,
-.zlon-home-panel--consumer,
-.zlon-section-card--consumer,
-.zlon-list-card--consumer,
-.zlon-action-row--consumer,
-.zlon-bottom-nav--consumer {
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  box-shadow: none;
-}
-
-.zlon-auth-card--consumer {
-  padding: 28px 22px 22px;
-  gap: 16px;
-}
-
-.zlon-auth-brand--consumer {
-  gap: 12px;
-}
-
-.zlon-auth-brand__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.zlon-consumer-tag {
-  padding: 4px 8px;
-  border: 1px solid #000000;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.zlon-auth-card--consumer .zlon-auth-title,
-.zlon-device--consumer .zlon-section-title,
-.zlon-device--consumer .zlon-home-panel strong,
-.zlon-device--consumer .zlon-consumer-heading__title {
-  color: #000000;
-  font-weight: 300;
-  letter-spacing: -0.08em;
-}
-
-.zlon-auth-card--consumer .zlon-auth-title {
-  font-size: clamp(34px, 9vw, 48px);
-  line-height: 0.94;
-}
-
-.zlon-device--consumer .zlon-section-title {
-  font-size: clamp(30px, 8vw, 40px);
-}
-
-.zlon-device--consumer .zlon-input-shell,
-.zlon-device--consumer .zlon-select-shell,
-.zlon-device--consumer .zlon-search-shell,
-.zlon-readonly-card--consumer {
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-}
-
-.zlon-device--consumer .zlon-input-shell input,
-.zlon-device--consumer .zlon-input-shell select,
-.zlon-device--consumer .zlon-select-shell select,
-.zlon-device--consumer .zlon-search-shell input {
-  color: #000000;
-}
-
-.zlon-device--consumer .zlon-input-shell input::placeholder,
-.zlon-device--consumer .zlon-search-shell input::placeholder {
-  color: rgba(0, 0, 0, 0.32);
-}
-
-.zlon-field-row--consumer {
-  grid-template-columns: 124px 1fr;
-}
-
-.zlon-readonly-card--consumer {
-  gap: 8px;
-}
-
-.zlon-device--consumer .zlon-button {
-  min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid #000000;
-  border-radius: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.zlon-device--consumer .zlon-button--primary {
-  background: #000000;
-  color: #ffffff;
-}
-
-.zlon-device--consumer .zlon-button--ghost {
-  background: #ffffff;
-  color: #000000;
-}
-
-.zlon-device--consumer .zlon-button--full {
-  width: 100%;
-}
-
-.zlon-device--consumer button:disabled {
-  opacity: 0.42;
-}
-
-.zlon-device--consumer .zlon-link-button {
-  color: #000000;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.zlon-mode-toggle--consumer {
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  padding: 3px;
-}
-
-.zlon-mode-toggle--consumer button {
-  min-height: 38px;
-  border-radius: 0;
-  color: rgba(0, 0, 0, 0.48);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.zlon-mode-toggle--consumer button.is-active {
-  background: #000000;
-  color: #ffffff;
-}
-
-.zlon-auth-divider--consumer {
-  background: rgba(0, 0, 0, 0.12);
-}
-
-.zlon-provider-row--consumer {
-  gap: 8px;
-}
-
-.zlon-provider-button--consumer {
-  min-height: 60px;
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-}
-
-.zlon-provider-button--consumer span:last-child {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.zlon-device--consumer .zlon-otp-cell {
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-  font-size: 24px;
-  font-weight: 500;
-}
-
-.zlon-device--consumer .zlon-status,
-.zlon-device--consumer .zlon-status.is-error,
-.zlon-device--consumer .zlon-status.is-success {
-  color: #000000;
-  font-size: 12px;
-}
-
-.zlon-topbar--consumer {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 18px 12px;
-  border-bottom: 1px solid #000000;
-}
-
-.zlon-topbar__cluster--consumer {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  min-width: 0;
-}
-
-.zlon-topbar__actions--consumer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.zlon-consumer-heading {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.zlon-icon-button--consumer {
-  width: 34px;
-  height: 34px;
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-}
-
-.zlon-location-pill--consumer {
-  min-height: 32px;
-  max-width: 150px;
-  padding: 0 10px;
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.zlon-location-pill--consumer .zlon-location-pill__icon {
-  width: 14px;
-  height: 14px;
-}
-
-.zlon-home-grid--consumer,
-.zlon-scroll-view--consumer {
-  background: #ffffff;
-}
-
-.zlon-home-grid--consumer {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 12px 18px 108px;
-  display: grid;
-  gap: 14px;
-  grid-template-rows: auto auto auto;
-  grid-auto-rows: min-content;
-  align-content: start;
-}
-
-.zlon-slide-panel--consumer {
-  min-height: 280px;
-  overflow: hidden;
-}
-
-.zlon-slide-card--consumer {
-  position: relative;
-  min-height: 280px;
-  padding: 22px 20px 54px;
-  justify-content: flex-end;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, transparent 36%),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 28px),
-    #ffffff;
-  color: #000000;
-}
-
-.zlon-slide-card--consumer h2 {
-  margin: 0;
-  color: #000000;
-  font-size: clamp(34px, 10vw, 50px);
-  font-weight: 300;
-  line-height: 0.94;
-}
-
-.zlon-consumer-slide__index {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  color: rgba(0, 0, 0, 0.42);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-}
-
-.zlon-slide-dots--consumer button {
-  border-radius: 0;
-  background: rgba(0, 0, 0, 0.14);
-}
-
-.zlon-slide-dots--consumer button.is-active {
-  background: #000000;
-}
-
-.zlon-home-panel--consumer {
-  padding: 18px;
-  display: grid;
-  gap: 14px;
-  text-align: left;
-}
-
-.zlon-home-panel--cta-consumer {
-  grid-template-columns: 1fr auto;
-  align-items: end;
-}
-
-.zlon-home-panel--placeholder {
-  grid-template-columns: 96px 1fr;
-  align-items: center;
-}
-
-.zlon-home-panel__copy {
-  display: grid;
-  gap: 6px;
-}
-
-.zlon-consumer-icon-dock {
-  display: grid;
-  grid-template-columns: repeat(2, 40px);
-  gap: 8px;
-}
-
-.zlon-consumer-icon-dock__cell {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #000000;
-  background: #ffffff;
-}
-
-.zlon-section-card--consumer {
-  padding: 18px;
-}
-
-.zlon-search-row--consumer {
-  grid-template-columns: 1fr auto;
-}
-
-.zlon-search-shell--consumer {
-  min-height: 44px;
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-}
-
-.zlon-chip-row--consumer {
-  gap: 8px;
-}
-
-.zlon-chip--consumer {
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.zlon-chip--consumer.is-active {
-  border-color: #000000;
-  background: #000000;
-  color: #ffffff;
-}
-
-.zlon-list--consumer,
-.zlon-action-list--consumer {
-  gap: 12px;
-}
-
-.zlon-list-card--consumer {
-  padding: 16px;
-  display: grid;
-  gap: 14px;
-}
-
-.zlon-list-card--consumer .zlon-list-card__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.zlon-list-card--consumer .zlon-list-card__body {
-  display: grid;
-  gap: 4px;
-}
-
-.zlon-list-card--consumer .zlon-list-card__body strong {
-  color: #000000;
-  font-size: 20px;
-  font-weight: 300;
-  letter-spacing: -0.05em;
-}
-
-.zlon-list-card--consumer .zlon-list-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.zlon-device--consumer .zlon-badge,
-.zlon-device--consumer .zlon-badge.is-success,
-.zlon-device--consumer .zlon-badge.is-warning,
-.zlon-device--consumer .zlon-badge.is-neutral {
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.zlon-device--consumer .zlon-empty-state {
-  border: 1px dashed #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: rgba(0, 0, 0, 0.72);
-}
-
-.zlon-device--consumer .zlon-money {
-  color: #000000;
-  font-size: clamp(48px, 13vw, 70px);
-  font-weight: 300;
-}
-
-.zlon-action-row--consumer {
-  min-height: 52px;
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #ffffff;
-  color: #000000;
-}
-
-.zlon-bottom-nav--consumer {
-  padding: 8px;
-  gap: 8px;
-  border-radius: 0;
-  background: #ffffff;
-}
-
-.zlon-bottom-nav--consumer .zlon-bottom-nav__button {
-  min-height: 44px;
-  border: 1px solid transparent;
-  border-radius: 0;
-  color: #000000;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.zlon-bottom-nav--consumer .zlon-bottom-nav__button.is-active {
-  border-color: #000000;
-  background: #ffffff;
-  color: #000000;
-  box-shadow: inset 0 -3px 0 #000000;
-}
-
-.zlon-toast--consumer {
-  min-height: 44px;
-  border: 1px solid #000000;
-  border-radius: 0;
-  background: #000000;
-  color: #ffffff;
-  box-shadow: none;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-@media (max-width: 540px) {
-  .zlon-device--consumer {
-    border-left: 0;
-    border-right: 0;
-    box-shadow: none;
-  }
-}
-
-@media (max-width: 420px) {
-  .zlon-screen--auth-consumer {
-    padding-top: 18px;
-  }
-
-  .zlon-field-row--consumer,
-  .zlon-home-panel--cta-consumer,
-  .zlon-home-panel--placeholder {
-    grid-template-columns: 1fr;
-  }
-
-  .zlon-topbar--consumer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .zlon-topbar__actions--consumer {
-    justify-content: space-between;
-  }
-
-  .zlon-location-pill--consumer {
-    max-width: none;
-    flex: 1 1 auto;
-  }
-
-  .zlon-provider-row--consumer {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .zlon-list-card--consumer .zlon-list-card__header,
-  .zlon-list-card--consumer .zlon-list-card__footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-:root {
-  --zlon-white: #ffffff;
-  --zlon-black: #000000;
-  --zlon-primary: #a35b4f;
-  --zlon-gray: #f2f2f2;
-}
-
-body,
-.zlon-root--consumer,
-.zlon-device--consumer,
-.zlon-screen--auth-consumer {
-  background-color: var(--zlon-white) !important;
   color: var(--zlon-black);
-}
-
-.zlon-auth-container {
-  width: 100%;
-}
-
-.zlon-device--consumer .zlon-auth-brand {
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-.zlon-device--consumer .zlon-auth-logo {
-  margin: 0 0 8px;
   font-size: 64px;
   font-weight: 900;
-  letter-spacing: -2px;
+  letter-spacing: -3px;
+  transition: all 0.8s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-.zlon-device--consumer .zlon-auth-subtitle {
-  margin: 0 0 24px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
+.zlon-splash.is-leaving .zlon-splash__logo {
+  font-size: 32px; /* Logo shrinks as it becomes the header title */
+  letter-spacing: -1.5px;
 }
 
-.zlon-continue-btn {
-  background-color: var(--zlon-primary) !important;
-  color: white !important;
-  width: 100%;
-  padding: 14px;
-  border-radius: 8px;
-  font-weight: 600;
-  border: none;
-  margin-top: 10px;
-}
-
-.zlon-social-row {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 24px;
-}
-
-.zlon-social-btn {
-  flex: 1;
-  background: var(--zlon-gray);
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.zlon-social-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* --- Compact OTP Section --- */
-.zlon-otp-row,
-.zlon-otp-block {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin: 20px 0;
-}
-
-.zlon-otp-input,
-.zlon-otp-cell {
-  width: 42px !important;
-  height: 50px !important;
-  border: 1px solid #ddd !important;
-  border-radius: 8px !important;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 600;
-  background: #f9f9f9;
-  color: #000;
-  outline: none;
-}
-
-.zlon-otp-row .zlon-otp-block {
-  margin: 0;
-}
-
-.zlon-otp-input:focus,
-.zlon-otp-cell:focus {
-  border-color: #000 !important;
-  background: #fff;
-}
-
+/* --- 4. MAIN FRAME VISIBILITY --- */
 .zlon-frame {
+  height: 100%;
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .zlon-frame.is-ready {
   opacity: 1 !important;
-  background-color: #ffffff;
+  transform: translateY(0);
+}
+
+/* --- 5. AUTH & LOGIN UI (Screenshot 2 Match) --- */
+.zlon-auth-container {
+  padding: 140px var(--zlon-safe-area) 40px;
+  text-align: center;
+}
+
+.zlon-auth-subtitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.zlon-field-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.zlon-input-shell {
+  flex: 1;
+  border: 1.5px solid var(--zlon-black);
+  border-radius: 4px;
+  padding: 10px 14px;
+  text-align: left;
+  background: var(--zlon-white);
+}
+
+.zlon-input-shell__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #888;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.zlon-input-shell input, 
+.zlon-input-shell select {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-weight: 500;
+  background: transparent;
+}
+
+/* Terracotta Primary Button */
+.zlon-continue-btn {
+  background-color: var(--zlon-primary) !important;
+  color: white !important;
+  width: 100%;
+  padding: 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+/* Compact 6-Digit OTP Grid - Fixed for mobile */
+.zlon-otp-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 30px 0;
+}
+
+.zlon-otp-input {
+  width: 42px !important; /* Locked width to fit screen */
+  height: 54px !important;
+  border: 1.5px solid var(--zlon-black) !important;
+  border-radius: 4px !important;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  background: var(--zlon-gray-bg);
+}
+
+/* Social Buttons Row */
+.zlon-social-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 40px;
+}
+
+.zlon-social-btn {
+  flex: 1;
+  border: 1px solid var(--zlon-border);
+  background: var(--zlon-gray-bg);
+  padding: 14px;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+}
+
+/* --- 6. CORE APP INTERIOR --- */
+
+/* Header / Topbar */
+.zlon-topbar {
+  height: var(--zlon-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--zlon-safe-area);
+  background: rgba(255,255,255,0.8);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--zlon-border);
+}
+
+.zlon-location-pill {
+  background: var(--zlon-gray-bg);
+  border: 1px solid var(--zlon-border);
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Home Grid & List Cards */
+.zlon-scroll-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px var(--zlon-safe-area);
+}
+
+.zlon-list-card {
+  background: var(--zlon-white);
+  border: 1px solid var(--zlon-border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.zlon-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--zlon-primary);
+  margin-bottom: 4px;
+}
+
+.zlon-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.zlon-badge.is-success { background: #E8F5E9; color: #2E7D32; }
+.zlon-badge.is-warning { background: #FFF3E0; color: #E65100; }
+
+/* Bottom Navigation */
+.zlon-bottom-nav {
+  height: var(--zlon-nav-height);
+  border-top: 1px solid var(--zlon-border);
+  display: flex;
+  background: var(--zlon-white);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.zlon-bottom-nav__button {
+  flex: 1;
+  border: none;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #aaa;
+}
+
+.zlon-bottom-nav__button.is-active {
+  color: var(--zlon-black);
+}
+
+.zlon-bottom-nav__button span {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* --- 7. RESPONSIVE QUERIES --- */
+@media (max-width: 360px) {
+  .zlon-otp-input {
+    width: 38px !important;
+    gap: 4px;
+  }
 }
