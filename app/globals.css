@@ -191,21 +191,54 @@ html, body {
   background: var(--zlon-gray-bg);
 }
 
-/* Social Buttons Row */
+/* --- Optimized Social Login Row --- */
 .zlon-social-row {
   display: flex;
   gap: 12px;
-  margin-top: 40px;
+  margin-top: 32px;
+  justify-content: center;
+  /* CRITICAL: Constrain width so it doesn't stretch on Desktop */
+  width: 100%;
+  max-width: 300px; 
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .zlon-social-btn {
   flex: 1;
-  border: 1px solid var(--zlon-border);
-  background: var(--zlon-gray-bg);
-  padding: 14px;
+  height: 48px; /* Standard premium button height */
+  border: 1px solid #e0e0e0;
+  background: #f7f7f7;
   border-radius: 4px;
   display: flex;
+  align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.zlon-social-btn:hover {
+  background: #eeeeee;
+  border-color: #000000;
+}
+
+/* Fixes the "too big" icon problem */
+.zlon-social-btn svg {
+  width: 20px !important; 
+  height: 20px !important;
+  display: block;
+}
+
+/* Mobile specific adjustment for tiny screens */
+@media (max-width: 380px) {
+  .zlon-social-row {
+    gap: 8px;
+    max-width: 100%;
+  }
+  
+  .zlon-social-btn {
+    height: 44px;
+  }
 }
 
 /* --- 6. CORE APP INTERIOR --- */

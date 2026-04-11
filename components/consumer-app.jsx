@@ -1198,17 +1198,17 @@ export function ConsumerApp() {
           )}
 
           {(activeAuthStep === 'phone' || activeAuthStep === 'email') && (
-            <div className="zlon-social-row">
-              <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('google')} disabled={busy} aria-label="Continue with Google">
-                <GoogleIcon />
-              </button>
-              <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')} disabled={busy} aria-label="Continue with Apple">
-                <AppleIcon />
-              </button>
-              <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')} disabled={busy} aria-label="Continue with Email">
-                <MailIcon style={{ color: '#d95c56' }} />
-              </button>
-            </div>
+           <div className="zlon-social-row">
+  <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('google')}>
+    <GoogleIcon />
+  </button>
+  <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')}>
+    <AppleIcon />
+  </button>
+  <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')}>
+    <MailIcon />
+  </button>
+</div>
           )}
 
           <p className={statusClassName(statusTone)} style={{ marginTop: '16px', textAlign: 'center' }}>{statusMessage}</p>
