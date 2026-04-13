@@ -282,6 +282,22 @@ export function ConsumerApp() {
   const [appReady, setAppReady] = useState(false);
   const [skipAuthReveal, setSkipAuthReveal] = useState(false);
   const [screen, setScreen] = useState('loading');
+
+  const handleGoogleLogin = async () => {
+    console.log('Google login clicked');
+
+    // later connect Supabase here
+  };
+
+  const handleAppleLogin = async () => {
+    console.log('Apple login clicked');
+  };
+
+  const handleEmailLogin = () => {
+    console.log('Email login clicked');
+    setScreen('email');
+  };
+
   const [authStep, setAuthStep] = useState(initialAuthState.authStep);
   const [emailMode, setEmailMode] = useState(initialAuthState.emailMode);
   const [countryCode, setCountryCode] = useState(initialAuthState.countryCode);
