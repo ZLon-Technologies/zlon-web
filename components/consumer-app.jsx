@@ -16,6 +16,7 @@ import {
   SearchIcon,
   WalletIcon
 } from '@/components/icons';
+import AuthScreen from '@/components/screens/AuthScreen';
 import { OtpInput } from '@/components/otp-input';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser';
 import { getSession, resolveUserType, syncProfile, toE164Phone } from '@/lib/zlon/auth';
@@ -613,14 +614,14 @@ export function ConsumerApp() {
     setProfileForm(buildProfileFormState(session?.user, pendingPhone));
   }, [pendingPhone, session]);
 
-  async function handlePhoneContinue() {
+  async function handlePhoneContinue(rawPhoneInput = phoneInput) {
     const client = clientRef.current;
     if (!client) {
       setStatus('6-digit OTP sent to your WhatsApp.', 'success');
       return;
     }
 
-    const nextPhone = toE164Phone(countryCode, phoneInput);
+    const nextPhone = toE164Phone(countryCode, rawPhoneInput);
     if (!nextPhone || nextPhone.length < 8) {
       setStatus('Enter a valid mobile number.', 'error');
       return;
@@ -1015,6 +1016,21 @@ export function ConsumerApp() {
   }
 
   function renderAuthBody() {
+    if (activeAuthStep === 'phone') {
+      return (
+        <AuthScreen
+          onContinue={(phone) => {
+            const sanitizedPhone = String(phone || '').replace(/\D/g, '');
+            setPhoneInput(sanitizedPhone);
+            handlePhoneContinue(sanitizedPhone);
+          }}
+          onGoogle={handleGoogleLogin}
+          onApple={handleAppleLogin}
+          onEmail={handleEmailLogin}
+        />
+      );
+    }
+
     const panelStyle = {
       background: '#000',
       color: '#fff',
@@ -1058,59 +1074,24 @@ export function ConsumerApp() {
         <div className="zlon-auth-template-bg">
           <h1 className="zlon-splash__logo" style={{ fontSize: '70px', marginBottom: '6px', textAlign: 'center' }}>ZLon.</h1>
           <div style={panelStyle}>
-            {(activeAuthStep === 'phone' || activeAuthStep === 'phone-otp') && (
+            {activeAuthStep === 'phone-otp' && (
               <>
                 <p style={{ textAlign: 'center', fontSize: '34px', fontWeight: 800, marginBottom: '18px' }}>
-                  Login or sign up
+                  Verify OTP
                 </p>
-                <div style={pillShellStyle}>
-                  <select
-                    id="country-code"
-                    value={countryCode}
-                    onChange={(event) => setCountryCode(event.target.value)}
-                    style={countryPillStyle}
-                  >
-                    {COUNTRY_OPTIONS.map((option) => (
-                      <option key={option.code} value={option.code}>{`${option.flag} ${option.code}`}</option>
-                    ))}
-                  </select>
-                  <input
-                    id="mobile-number"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel-national"
-                    placeholder="Enter Number"
-                    value={phoneInput}
-                    onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
-                    style={phoneInputStyle}
+                <div className="zlon-otp-row" style={{ margin: '20px 0' }}>
+                  <OtpInput
+                    value={phoneOtp}
+                    onChange={setPhoneOtp}
+                    numInputs={6}
+                    label="Phone OTP"
+                    className="zlon-otp-row__group"
+                    renderInput={(props) => <input {...props} className="zlon-otp-input" />}
                   />
                 </div>
-                {activeAuthStep === 'phone-otp' && (
-                  <div className="zlon-otp-row" style={{ margin: '20px 0' }}>
-                    <OtpInput
-                      value={phoneOtp}
-                      onChange={setPhoneOtp}
-                      numInputs={6}
-                      label="Phone OTP"
-                      className="zlon-otp-row__group"
-                      renderInput={(props) => <input {...props} className="zlon-otp-input" />}
-                    />
-                  </div>
-                )}
-                <button className="zlon-auth-continue" type="button" onClick={activeAuthStep === 'phone' ? handlePhoneContinue : handlePhoneVerify} disabled={busy}>
+                <button className="zlon-auth-continue" type="button" onClick={handlePhoneVerify} disabled={busy}>
                   Continue
                 </button>
-                <div className="zlon-social-row">
-                  <button className="zlon-social-btn" type="button" onClick={handleGoogleLogin} aria-label="Continue with Google">
-                    <GoogleIcon />
-                  </button>
-                  <button className="zlon-social-btn" type="button" onClick={handleAppleLogin} aria-label="Continue with Apple">
-                    <AppleIcon />
-                  </button>
-                  <button className="zlon-social-btn" type="button" onClick={handleEmailLogin} aria-label="Continue with Email">
-                    <MailIcon />
-                  </button>
-                </div>
               </>
             )}
 
