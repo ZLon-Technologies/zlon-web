@@ -1,18 +1,10 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    },
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "jsx": "preserve",
-    "checkJs": false,
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": false,
-    "noImplicitAny": false
+    }
   },
-  "exclude": ["node_modules", ".next"]
+  "exclude": ["node_modules"]
 }
