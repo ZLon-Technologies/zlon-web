@@ -1016,25 +1016,47 @@ export function ConsumerApp() {
 
   function renderAuthBody() {
     return (
-      <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-        <h1 className="zlon-splash__logo" style={{ fontSize: '48px', marginBottom: '40px' }}>ZLon.</h1>
+      <div className="zlon-screen zlon-screen--auth zlon-screen--auth-consumer">
+        <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+          <h1 className="zlon-splash__logo" style={{ fontSize: '48px', marginBottom: '40px' }}>ZLon.</h1>
 
-        <div style={{ textAlign: 'left', marginTop: '40px' }}>
-          <div className="zlon-input-shell" style={{ border: '2px solid black', padding: '16px' }}>
-            <label style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '1px' }}>MOBILE NUMBER</label>
-            <input
-              type="tel"
-              placeholder="+91"
-              style={{ width: '100%', border: 'none', fontSize: '18px', fontWeight: 600, marginTop: '4px' }}
-            />
+          <div style={{ textAlign: 'left', marginTop: '40px' }}>
+            <div className="zlon-input-shell" style={{ border: '2px solid black', padding: '16px' }}>
+              <label htmlFor="mobile-number" style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '1px' }}>MOBILE NUMBER</label>
+              <input
+                id="mobile-number"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel-national"
+                placeholder="+91"
+                value={phoneInput}
+                onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
+                style={{ width: '100%', border: 'none', fontSize: '18px', fontWeight: 600, marginTop: '4px' }}
+              />
+            </div>
+
+            <button className="zlon-btn-black" type="button" onClick={handlePhoneContinue} disabled={busy}>
+              CONTINUE
+            </button>
+
+            <div className="zlon-social-row" style={{ marginTop: '16px' }}>
+              <button className="zlon-social-btn" type="button" onClick={handleGoogleLogin} aria-label="Continue with Google">
+                <GoogleIcon />
+              </button>
+              <button className="zlon-social-btn" type="button" onClick={handleAppleLogin} aria-label="Continue with Apple">
+                <AppleIcon />
+              </button>
+              <button className="zlon-social-btn" type="button" onClick={handleEmailLogin} aria-label="Continue with Email">
+                <MailIcon />
+              </button>
+            </div>
           </div>
 
-          <button className="zlon-btn-black">CONTINUE</button>
+          <p className={statusClassName(statusTone)} style={{ marginTop: '16px', textAlign: 'center' }}>{statusMessage}</p>
+          <p style={{ fontSize: '11px', marginTop: '30px', color: '#888' }}>
+            By continuing, you agree to the ZLon. Infrastructure Terms.
+          </p>
         </div>
-
-        <p style={{ fontSize: '11px', marginTop: '30px', color: '#888' }}>
-          By continuing, you agree to the ZLon. Infrastructure Terms.
-        </p>
       </div>
     );
   }
