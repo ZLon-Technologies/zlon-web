@@ -999,225 +999,26 @@ export function ConsumerApp() {
   }
 
   function renderAuthBody() {
-    const shellStyle = {
-      border: '1px solid #ddd',
-      borderRadius: '8px',
-      padding: '8px',
-      background: '#fff'
-    };
-    const labelStyle = {
-      fontSize: '12px',
-      display: 'block',
-      color: '#666',
-      marginBottom: '4px'
-    };
-    const inputStyle = {
-      border: 'none',
-      outline: 'none',
-      width: '100%',
-      fontWeight: '500',
-      fontSize: '15px',
-      background: 'transparent'
-    };
-    const footerStyle = {
-      marginTop: '40px',
-      textAlign: 'center',
-      fontSize: '10px',
-      color: '#888',
-      lineHeight: '1.5'
-    };
-
     return (
-      <div className="zlon-screen zlon-screen--auth zlon-screen--auth-consumer">
-        <div className="zlon-auth-container">
-          <div style={{ textAlign: 'center' }}>
-            <p className="zlon-auth-subtitle">
-              {activeAuthStep === 'phone' || activeAuthStep === 'email' ? 'Log in or sign up' : 'Enter 6-digit code'}
-            </p>
+      <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+        <h1 className="zlon-splash__logo" style={{ fontSize: '48px', marginBottom: '40px' }}>ZLon.</h1>
+
+        <div style={{ textAlign: 'left', marginTop: '40px' }}>
+          <div className="zlon-input-shell" style={{ border: '2px solid black', padding: '16px' }}>
+            <label style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '1px' }}>MOBILE NUMBER</label>
+            <input
+              type="tel"
+              placeholder="+91"
+              style={{ width: '100%', border: 'none', fontSize: '18px', fontWeight: 600, marginTop: '4px' }}
+            />
           </div>
 
-          {activeAuthStep === 'phone' && (
-            <>
-              <div className="zlon-field-row" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                <label className="zlon-input-shell" htmlFor="country-code" style={{ ...shellStyle, flex: '0 0 96px' }}>
-                  <span style={labelStyle}>Country</span>
-                  <select
-                    id="country-code"
-                    value={countryCode}
-                    onChange={(event) => setCountryCode(event.target.value)}
-                    style={{ ...inputStyle, fontWeight: '600' }}
-                  >
-                    {COUNTRY_OPTIONS.map((option) => (
-                      <option key={option.code} value={option.code}>{`${option.flag} ${option.code}`}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="zlon-input-shell" htmlFor="mobile-number" style={{ ...shellStyle, flex: 1 }}>
-                  <span style={labelStyle}>Number</span>
-                  <input
-                    id="mobile-number"
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel-national"
-                    placeholder="Enter mobile number"
-                    style={inputStyle}
-                    value={phoneInput}
-                    onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
-                  />
-                </label>
-              </div>
-              <button className="zlon-continue-btn" type="button" style={{ color: '#000000' }} onClick={handlePhoneContinue} disabled={busy}>
-                Continue
-              </button>
-            </>
-          )}
-
-          {activeAuthStep === 'phone-otp' && (
-            <div style={{ textAlign: 'center' }}>
-              <p className="zlon-helper-copy zlon-helper-copy--auth">
-                {phoneChannel === 'whatsapp' ? 'Code sent on WhatsApp' : 'Code sent to'} {pendingPhone}
-              </p>
-              <div className="zlon-otp-row">
-                <OtpInput
-                  value={phoneOtp}
-                  onChange={setPhoneOtp}
-                  numInputs={6}
-                  label="Phone OTP"
-                  className="zlon-otp-row__group"
-                  renderInput={(props) => <input {...props} className="zlon-otp-input" />}
-                />
-              </div>
-              <div className="zlon-auth-inline-actions">
-                <button
-                  type="button"
-                  onClick={() => setAuthStep('phone')}
-                  disabled={busy}
-                  style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePhoneResend}
-                  disabled={busy}
-                  style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
-                >
-                  Resend OTP
-                </button>
-              </div>
-              <button className="zlon-continue-btn" type="button" onClick={handlePhoneVerify} disabled={busy}>
-                Verify OTP
-              </button>
-            </div>
-          )}
-
-          {activeAuthStep === 'email' && (
-            <>
-              <div className="zlon-mode-toggle zlon-mode-toggle--consumer" style={{ marginBottom: '16px' }}>
-                <button type="button" className={emailMode === 'login' ? 'is-active' : ''} onClick={() => setEmailMode('login')}>Log In</button>
-                <button type="button" className={emailMode === 'create' ? 'is-active' : ''} onClick={() => setEmailMode('create')}>Create</button>
-              </div>
-              <label className="zlon-input-shell" htmlFor="email-address" style={{ ...shellStyle, marginBottom: '12px' }}>
-                <span style={labelStyle}>Email</span>
-                <input
-                  id="email-address"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  style={inputStyle}
-                  value={emailInput}
-                  onChange={(event) => setEmailInput(event.target.value)}
-                />
-              </label>
-              <label className="zlon-input-shell" htmlFor="email-password" style={shellStyle}>
-                <span style={labelStyle}>Password</span>
-                <input
-                  id="email-password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Password"
-                  style={inputStyle}
-                  value={passwordInput}
-                  onChange={(event) => setPasswordInput(event.target.value)}
-                />
-              </label>
-              <div className="zlon-auth-inline-actions">
-                <button
-                  type="button"
-                  onClick={() => setAuthStep('phone')}
-                  disabled={busy}
-                  style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
-                >
-                  Back
-                </button>
-                <button className="zlon-continue-btn" type="button" onClick={handleEmailContinue} disabled={busy} style={{ marginTop: 0, width: 'auto', minWidth: '140px' }}>
-                  Continue
-                </button>
-              </div>
-            </>
-          )}
-
-          {activeAuthStep === 'email-otp' && (
-            <>
-              <div className="zlon-input-shell" style={{ ...shellStyle, marginBottom: '16px' }}>
-                <span style={labelStyle}>Email</span>
-                <div style={{ fontWeight: '600' }}>{pendingEmail}</div>
-              </div>
-              <div className="zlon-otp-row">
-                <OtpInput
-                  value={emailOtp}
-                  onChange={setEmailOtp}
-                  numInputs={6}
-                  label="Email OTP"
-                  className="zlon-otp-row__group"
-                  renderInput={(props) => <input {...props} className="zlon-otp-input" />}
-                />
-              </div>
-              <div className="zlon-auth-inline-actions">
-                <button
-                  type="button"
-                  onClick={() => setAuthStep('email')}
-                  disabled={busy}
-                  style={{ ...shellStyle, padding: '10px 14px', fontWeight: '600', cursor: 'pointer' }}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleEmailResend}
-                  disabled={busy}
-                  style={{ border: 'none', background: 'none', color: '#666', fontWeight: '600', cursor: 'pointer' }}
-                >
-                  Resend OTP
-                </button>
-              </div>
-              <button className="zlon-continue-btn" type="button" onClick={handleEmailVerify} disabled={busy}>
-                Verify OTP
-              </button>
-            </>
-          )}
-
-          {(activeAuthStep === 'phone' || activeAuthStep === 'email') && (
-           <div className="zlon-social-row">
-  <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('google')}>
-    <GoogleIcon />
-  </button>
-  <button className="zlon-social-btn" type="button" onClick={() => handleOAuth('apple')} style={{ color: '#000' }}>
-    <AppleIcon />
-  </button>
-  <button className="zlon-social-btn" type="button" onClick={() => setAuthStep('email')} style={{ color: '#891f1f' }}>
-    <MailIcon />
-  </button>
-</div>
-          )}
-
-          <p className={statusClassName(statusTone)} style={{ marginTop: '16px', textAlign: 'center' }}>{statusMessage}</p>
-
-          <div style={footerStyle}>
-            By continuing, you agree to our <br />
-            <strong>Terms of Service</strong> &bull; <strong>Privacy Policy</strong> &bull; <strong>Content Policies</strong>
-          </div>
+          <button className="zlon-btn-black">CONTINUE</button>
         </div>
+
+        <p style={{ fontSize: '11px', marginTop: '30px', color: '#888' }}>
+          By continuing, you agree to the ZLon. Infrastructure Terms.
+        </p>
       </div>
     );
   }

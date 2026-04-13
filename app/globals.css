@@ -1,421 +1,67 @@
-/* ================================================================
-ZLon - AESTHETIC WHITE DESIGN SYSTEM
-Premium Salon Booking Platform
-================================================================
-*/
-
-/* --- 1. CORE VARIABLES & RESET --- */
 :root {
   --zlon-white: #ffffff;
   --zlon-black: #000000;
-  --zlon-primary: #000000; /* Terracotta from Screenshot 2 */
-  --zlon-gray-bg: #f7f7f7;
-  --zlon-border: #e0e0e0;
-  --zlon-text-secondary: #666666;
-  --zlon-safe-area: 24px;
-  
-  /* System Heights */
-  --zlon-header-height: 72px;
-  --zlon-nav-height: 80px;
+  --zlon-gray-soft: #f9f9f9;
 }
 
+/* --- THE NEW MINIMALISM --- */
 * {
   box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  margin: 0;
-  padding: 0;
+  border-radius: 0 !important; /* Forces the sharp Zara look */
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
-html, body {
-  width: 100%;
-  height: 100%;
-  background-color: var(--zlon-white) !important;
+body {
+  background-color: var(--zlon-white);
   color: var(--zlon-black);
-  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow: hidden; /* Prevent bounce, handled by scroll-views */
 }
 
-/* --- 2. GLOBAL UTILITIES --- */
-.hide-scrollbar {
-  -ms-overflow-style: none; /* IE/Edge */
+/* --- THE POSTER HERO --- */
+.zlon-hero-photo {
+  height: 40vh;
+  background-image: url('/photo-output.jpeg'); /* Use your uploaded photo */
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(100%) contrast(1.1); /* Professional IT B&W filter */
+  border-bottom: 2px solid var(--zlon-black);
 }
 
-.hide-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
-.zlon-root {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Centers the app frame on desktop, full-width on mobile */
-.zlon-device {
-  width: 100%;
-  max-width: 440px;
-  height: 100%;
-  margin: 0 auto;
-  position: relative;
-  background: var(--zlon-white);
-  box-shadow: 0 0 40px rgba(0,0,0,0.05);
-}
-
-/* --- 3. SPLASH SCREEN & LOGO SHIFT --- */
-.zlon-splash {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: var(--zlon-white);
-  display: flex;
-  align-items: center; /* Initial center state */
-  justify-content: center;
-  transition: all 0.8s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-/* The Signature Shift Logic: No Take-off, just slides to top */
-.zlon-splash.is-leaving {
-  align-items: flex-start;
-  padding-top: 40px; /* Aligns with header position */
-  background: transparent;
-  pointer-events: none;
-}
-
-.zlon-splash__logo {
-  color: var(--zlon-black);
-  font-size: 64px;
-  font-weight: 900;
-  letter-spacing: -3px;
-  transition: all 0.8s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-.zlon-splash.is-leaving .zlon-splash__logo {
-  font-size: 32px; /* Logo shrinks as it becomes the header title */
-  letter-spacing: -1.5px;
-}
-
-/* --- 4. MAIN FRAME VISIBILITY --- */
-.zlon-frame {
-  height: 100%;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.zlon-frame.is-ready {
-  opacity: 1 !important;
-  transform: translateY(0);
-}
-
-/* --- 5. AUTH & LOGIN UI (Screenshot 2 Match) --- */
-.zlon-auth-container {
-  padding: 140px var(--zlon-safe-area) 40px;
-  text-align: center;
-}
-
-.zlon-auth-subtitle {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 24px;
-}
-
-.zlon-field-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.zlon-input-shell {
-  flex: 1;
-  border: 1.5px solid var(--zlon-black);
-  border-radius: 4px;
-  padding: 10px 14px;
-  text-align: left;
-  background: var(--zlon-white);
-}
-
-.zlon-input-shell__label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #888;
-  display: block;
-  margin-bottom: 2px;
-}
-
-.zlon-input-shell input, 
-.zlon-input-shell select {
-  width: 100%;
-  border: none;
-  outline: none;
-  font-size: 16px;
-  font-weight: 500;
-  background: transparent;
-}
-
-/* Terracotta Primary Button */
-.zlon-continue-btn {
-  background-color: var(--zlon-primary) !important;
-  color: white !important;
-  width: 100%;
-  padding: 16px;
-  border-radius: 4px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  margin-top: 8px;
-}
-
-/* Compact 6-Digit OTP Grid - Fixed for mobile */
-.zlon-otp-row {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin: 30px 0;
-}
-
-.zlon-otp-input {
-  width: 42px !important; /* Locked width to fit screen */
-  height: 54px !important;
-  border: 1.5px solid var(--zlon-black) !important;
-  border-radius: 4px !important;
-  text-align: center;
-  font-size: 24px;
-  font-weight: 700;
-  background: var(--zlon-gray-bg);
-}
-
-/* --- Optimized Social Login Row --- */
-.zlon-social-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 32px;
-  justify-content: center;
-  /* CRITICAL: Constrain width so it doesn't stretch on Desktop */
-  width: 100%;
-  max-width: 300px; 
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.zlon-social-btn {
-  flex: 1;
-  height: 48px; /* Standard premium button height */
-  border: 1px solid #e0e0e0;
-  background: #f7f7f7;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.zlon-social-btn:hover {
-  background: #eeeeee;
-  border-color: #000000;
-}
-
-/* Fixes the "too big" icon problem */
-.zlon-social-btn svg {
-  width: 20px !important; 
-  height: 20px !important;
-  display: block;
-}
-
-/* Mobile specific adjustment for tiny screens */
-@media (max-width: 380px) {
-  .zlon-social-row {
-    gap: 8px;
-    max-width: 100%;
-  }
-  
-  .zlon-social-btn {
-    height: 44px;
-  }
-}
-
-/* --- 6. CORE APP INTERIOR --- */
-
-/* Header / Topbar */
-.zlon-topbar {
-  height: var(--zlon-header-height);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--zlon-safe-area);
-  background: rgba(255,255,255,0.8);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  border-bottom: 1px solid var(--zlon-border);
-}
-
-.zlon-location-pill {
-  background: var(--zlon-gray-bg);
-  border: 1px solid var(--zlon-border);
-  padding: 6px 12px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-/* Home Grid & List Cards */
-.zlon-scroll-view {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px var(--zlon-safe-area);
-}
-
-.zlon-list-card {
-  background: var(--zlon-white);
-  border: 1px solid var(--zlon-border);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 16px;
-}
-
-.zlon-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--zlon-primary);
-  margin-bottom: 4px;
-}
-
-.zlon-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.zlon-badge.is-success { background: #E8F5E9; color: #2E7D32; }
-.zlon-badge.is-warning { background: #FFF3E0; color: #E65100; }
-
-/* Bottom Navigation */
-.zlon-bottom-nav {
-  height: var(--zlon-nav-height);
-  border-top: 1px solid var(--zlon-border);
-  display: flex;
-  background: var(--zlon-white);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.zlon-bottom-nav__button {
-  flex: 1;
-  border: none;
-  background: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  color: #aaa;
-}
-
-.zlon-bottom-nav__button.is-active {
-  color: var(--zlon-black);
-}
-
-.zlon-bottom-nav__button span {
-  font-size: 10px;
-  font-weight: 700;
-}
-
-/* --- 7. RESPONSIVE QUERIES --- */
-@media (max-width: 360px) {
-  .zlon-otp-input {
-    width: 38px !important;
-    gap: 4px;
-  }
-}
-/* --- Quick Action Grid (Fixes the "Bad" Placeholder look) --- */
-.zlon-action-grid {
+/* --- SHARP ACTION TILES --- */
+.zlon-grid-container {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-top: 24px;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px; /* Creates sharp lines between tiles */
+  background-color: var(--zlon-black); /* Line color */
+  border: 1px solid var(--zlon-black);
 }
 
-.zlon-action-tile {
-  background: var(--zlon-gray-bg);
-  border: 1px solid var(--zlon-border);
-  border-radius: 8px;
+.zlon-tile {
+  background: var(--zlon-white);
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 16px 8px;
-  gap: 8px;
+  gap: 12px;
   cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
-.zlon-action-tile:active {
-  transform: scale(0.95);
-}
-
-.zlon-action-tile svg {
-  width: 20px;
-  height: 20px;
-  color: var(--zlon-black);
-}
-
-.zlon-action-tile span {
+.zlon-tile span {
   font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* --- UBER BUTTON --- */
+.zlon-btn-black {
+  background: var(--zlon-black);
+  color: var(--zlon-white);
+  width: 100%;
+  padding: 20px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--zlon-black);
-}
-
-/* --- Improved CTA Panel --- */
-.zlon-home-panel--cta-consumer {
-  background: var(--zlon-black) !important;
-  color: var(--zlon-white);
-  border-radius: 12px;
-  padding: 24px;
-  margin-top: 24px;
-}
-
-.zlon-home-panel--cta-consumer .zlon-eyebrow {
-  color: var(--zlon-primary);
-}
-
-.zlon-home-panel--cta-consumer p {
-  color: #ccc;
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-/* Forces all icons/images to match the Black & White theme */
-.zlon-category-icon, .zlon-social-btn img {
-  filter: grayscale(100%) contrast(1.2);
-}
-
-/* Zara-style sharp typography */
-.zlon-eyebrow, .zlon-category-label {
-  font-family: "Inter", sans-serif;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-size: 10px;
-}
-
-/* The Uber-style high-contrast card */
-.zlon-account-card {
-  border: 1px solid var(--zlon-black);
-  border-radius: 0; /* Sharp corners like Zara */
-  padding: 24px;
-  background: var(--zlon-white);
+  letter-spacing: 1px;
+  border: none;
+  margin-top: 20px;
 }
