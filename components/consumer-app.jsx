@@ -281,7 +281,7 @@ export function ConsumerApp() {
   const initialAuthState = useMemo(() => readAuthState(), []);
   const [appReady, setAppReady] = useState(false);
   const [skipAuthReveal, setSkipAuthReveal] = useState(false);
-  const [screen, setScreen] = useState('auth');
+  const [screen, setScreen] = useState('loading');
   const [authStep, setAuthStep] = useState(initialAuthState.authStep);
   const [emailMode, setEmailMode] = useState(initialAuthState.emailMode);
   const [countryCode, setCountryCode] = useState(initialAuthState.countryCode);
