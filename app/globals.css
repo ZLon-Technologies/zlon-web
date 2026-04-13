@@ -65,3 +65,77 @@ body {
   border: none;
   margin-top: 20px;
 }
+
+.zlon-auth-template-bg {
+  min-height: 100vh;
+  padding: 30px 14px 16px;
+  background-color: #efefef;
+  background-image:
+    radial-gradient(circle at 24px 24px, rgba(0, 0, 0, 0.03) 6px, transparent 7px),
+    radial-gradient(circle at 84px 84px, rgba(0, 0, 0, 0.03) 6px, transparent 7px);
+  background-size: 120px 120px;
+}
+
+.zlon-auth-continue {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px !important;
+  background: #fff;
+  color: #000;
+  padding: 13px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.zlon-social-row {
+  display: flex;
+  gap: clamp(8px, 2.5vw, 12px);
+  margin-top: 14px;
+}
+
+.zlon-social-btn {
+  flex: 1;
+  border: none;
+  border-radius: 999px !important;
+  background: #fff;
+  color: #111; /* Ensures currentColor icons (Apple/Mail) stay visible */
+  min-height: clamp(44px, 10vw, 52px);
+  padding: clamp(8px, 2.2vw, 10px) clamp(10px, 2.8vw, 14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zlon-social-btn svg {
+  width: clamp(22px, 6vw, 32px);
+  height: clamp(22px, 6vw, 32px);
+  flex-shrink: 0;
+  display: block;
+}
+
+.zlon-auth-meta-row {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.zlon-auth-link {
+  border: none;
+  background: transparent;
+  color: #c7c7c7;
+  font-size: 13px;
+}
+
+.zlon-otp-input {
+  width: 36px !important;
+  height: 48px !important;
+  border: 1px solid #fff !important;
+  border-radius: 8px !important;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}

@@ -295,7 +295,7 @@ export function ConsumerApp() {
 
   const handleEmailLogin = () => {
     console.log('Email login clicked');
-    setScreen('email');
+    setAuthStep('email');
   };
 
   const [authStep, setAuthStep] = useState(initialAuthState.authStep);
@@ -1015,45 +1015,162 @@ export function ConsumerApp() {
   }
 
   function renderAuthBody() {
+    const panelStyle = {
+      background: '#000',
+      color: '#fff',
+      borderRadius: '34px 34px 0 0',
+      padding: '28px 20px 30px',
+      marginTop: '18px'
+    };
+
+    const pillShellStyle = {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      background: '#fff',
+      borderRadius: '999px',
+      padding: '6px',
+      color: '#000'
+    };
+
+    const countryPillStyle = {
+      border: 'none',
+      borderRadius: '999px',
+      background: '#efefef',
+      padding: '10px 12px',
+      fontWeight: 700,
+      fontSize: '18px',
+      minWidth: '94px'
+    };
+
+    const phoneInputStyle = {
+      width: '100%',
+      border: 'none',
+      outline: 'none',
+      fontSize: '28px',
+      fontWeight: 600,
+      color: '#000',
+      background: 'transparent'
+    };
+
     return (
       <div className="zlon-screen zlon-screen--auth zlon-screen--auth-consumer">
-        <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-          <h1 className="zlon-splash__logo" style={{ fontSize: '48px', marginBottom: '40px' }}>ZLon.</h1>
+        <div className="zlon-auth-template-bg">
+          <h1 className="zlon-splash__logo" style={{ fontSize: '70px', marginBottom: '6px', textAlign: 'center' }}>ZLon.</h1>
+          <div style={panelStyle}>
+            {(activeAuthStep === 'phone' || activeAuthStep === 'phone-otp') && (
+              <>
+                <p style={{ textAlign: 'center', fontSize: '34px', fontWeight: 800, marginBottom: '18px' }}>
+                  Login or sign up
+                </p>
+                <div style={pillShellStyle}>
+                  <select
+                    id="country-code"
+                    value={countryCode}
+                    onChange={(event) => setCountryCode(event.target.value)}
+                    style={countryPillStyle}
+                  >
+                    {COUNTRY_OPTIONS.map((option) => (
+                      <option key={option.code} value={option.code}>{`${option.flag} ${option.code}`}</option>
+                    ))}
+                  </select>
+                  <input
+                    id="mobile-number"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel-national"
+                    placeholder="Enter Number"
+                    value={phoneInput}
+                    onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
+                    style={phoneInputStyle}
+                  />
+                </div>
+                {activeAuthStep === 'phone-otp' && (
+                  <div className="zlon-otp-row" style={{ margin: '20px 0' }}>
+                    <OtpInput
+                      value={phoneOtp}
+                      onChange={setPhoneOtp}
+                      numInputs={6}
+                      label="Phone OTP"
+                      className="zlon-otp-row__group"
+                      renderInput={(props) => <input {...props} className="zlon-otp-input" />}
+                    />
+                  </div>
+                )}
+                <button className="zlon-auth-continue" type="button" onClick={activeAuthStep === 'phone' ? handlePhoneContinue : handlePhoneVerify} disabled={busy}>
+                  Continue
+                </button>
+                <div className="zlon-social-row">
+                  <button className="zlon-social-btn" type="button" onClick={handleGoogleLogin} aria-label="Continue with Google">
+                    <GoogleIcon />
+                  </button>
+                  <button className="zlon-social-btn" type="button" onClick={handleAppleLogin} aria-label="Continue with Apple">
+                    <AppleIcon />
+                  </button>
+                  <button className="zlon-social-btn" type="button" onClick={handleEmailLogin} aria-label="Continue with Email">
+                    <MailIcon />
+                  </button>
+                </div>
+              </>
+            )}
 
-          <div style={{ textAlign: 'left', marginTop: '40px' }}>
-            <div className="zlon-input-shell" style={{ border: '2px solid black', padding: '16px' }}>
-              <label htmlFor="mobile-number" style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '1px' }}>MOBILE NUMBER</label>
-              <input
-                id="mobile-number"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel-national"
-                placeholder="+91"
-                value={phoneInput}
-                onChange={(event) => setPhoneInput(event.target.value.replace(/\D/g, ''))}
-                style={{ width: '100%', border: 'none', fontSize: '18px', fontWeight: 600, marginTop: '4px' }}
-              />
-            </div>
+            {activeAuthStep === 'email' && (
+              <>
+                <p style={{ textAlign: 'center', fontSize: '30px', fontWeight: 800, marginBottom: '16px' }}>
+                  Continue with Email
+                </p>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={emailInput}
+                  onChange={(event) => setEmailInput(event.target.value)}
+                  style={{ ...phoneInputStyle, fontSize: '20px', background: '#fff', borderRadius: '999px', padding: '12px 18px' }}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={passwordInput}
+                  onChange={(event) => setPasswordInput(event.target.value)}
+                  style={{ ...phoneInputStyle, fontSize: '20px', background: '#fff', borderRadius: '999px', padding: '12px 18px', marginTop: '10px' }}
+                />
+                <button className="zlon-auth-continue" type="button" onClick={handleEmailContinue} disabled={busy}>
+                  Continue
+                </button>
+              </>
+            )}
 
-            <button className="zlon-btn-black" type="button" onClick={handlePhoneContinue} disabled={busy}>
-              CONTINUE
-            </button>
+            {activeAuthStep === 'email-otp' && (
+              <>
+                <p style={{ textAlign: 'center', fontSize: '28px', fontWeight: 800, marginBottom: '16px' }}>
+                  Email OTP
+                </p>
+                <div className="zlon-otp-row" style={{ margin: '20px 0' }}>
+                  <OtpInput
+                    value={emailOtp}
+                    onChange={setEmailOtp}
+                    numInputs={6}
+                    label="Email OTP"
+                    className="zlon-otp-row__group"
+                    renderInput={(props) => <input {...props} className="zlon-otp-input" />}
+                  />
+                </div>
+                <button className="zlon-auth-continue" type="button" onClick={handleEmailVerify} disabled={busy}>
+                  Verify OTP
+                </button>
+              </>
+            )}
 
-            <div className="zlon-social-row" style={{ marginTop: '16px' }}>
-              <button className="zlon-social-btn" type="button" onClick={handleGoogleLogin} aria-label="Continue with Google">
-                <GoogleIcon />
+            <div className="zlon-auth-meta-row">
+              <button className="zlon-auth-link" type="button" onClick={() => window.open('mailto:support@zlon.in')}>
+                Need help?
               </button>
-              <button className="zlon-social-btn" type="button" onClick={handleAppleLogin} aria-label="Continue with Apple">
-                <AppleIcon />
-              </button>
-              <button className="zlon-social-btn" type="button" onClick={handleEmailLogin} aria-label="Continue with Email">
-                <MailIcon />
+              <button className="zlon-auth-link" type="button" onClick={() => window.location.replace(businessUrl())}>
+                For Business log in
               </button>
             </div>
           </div>
-
-          <p className={statusClassName(statusTone)} style={{ marginTop: '16px', textAlign: 'center' }}>{statusMessage}</p>
-          <p style={{ fontSize: '11px', marginTop: '30px', color: '#888' }}>
+          <p className={statusClassName(statusTone)} style={{ marginTop: '12px', textAlign: 'center' }}>{statusMessage}</p>
+          <p style={{ fontSize: '12px', marginTop: '14px', color: '#777', textAlign: 'center' }}>
             By continuing, you agree to the ZLon. Infrastructure Terms.
           </p>
         </div>
