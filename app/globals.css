@@ -8,7 +8,7 @@ Premium Salon Booking Platform
 :root {
   --zlon-white: #ffffff;
   --zlon-black: #000000;
-  --zlon-primary: #a35b4f; /* Terracotta from Screenshot 2 */
+  --zlon-primary: #000000; /* Terracotta from Screenshot 2 */
   --zlon-gray-bg: #f7f7f7;
   --zlon-border: #e0e0e0;
   --zlon-text-secondary: #666666;
@@ -40,7 +40,6 @@ html, body {
 /* --- 2. GLOBAL UTILITIES --- */
 .hide-scrollbar {
   -ms-overflow-style: none; /* IE/Edge */
-  scrollbar-width: none;    /* Firefox */
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -397,4 +396,26 @@ html, body {
   color: #ccc;
   font-size: 13px;
   margin-top: 4px;
+}
+
+/* Forces all icons/images to match the Black & White theme */
+.zlon-category-icon, .zlon-social-btn img {
+  filter: grayscale(100%) contrast(1.2);
+}
+
+/* Zara-style sharp typography */
+.zlon-eyebrow, .zlon-category-label {
+  font-family: "Inter", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+/* The Uber-style high-contrast card */
+.zlon-account-card {
+  border: 1px solid var(--zlon-black);
+  border-radius: 0; /* Sharp corners like Zara */
+  padding: 24px;
+  background: var(--zlon-white);
 }
