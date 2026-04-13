@@ -1272,71 +1272,63 @@ export function ConsumerApp() {
     const primarySalon = sortedSalons[0];
 
     return (
-      <div className="zlon-screen zlon-screen--home zlon-screen--home-consumer">
-        {renderConsumerHeader({ onBack: null, title: 'ZLon.', subtitle: 'Instant Grooming' })}
-        
-        <main className="zlon-home-grid zlon-home-grid--consumer hide-scrollbar">
-          {/* --- Premium Carousel --- */}
-          <section className="zlon-slide-panel zlon-slide-panel--consumer">
-            <div className="zlon-slide-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
-              {featuredSlides.map((slide, index) => (
-                <article key={slide.title + index} className="zlon-slide-card zlon-slide-card--consumer">
-                  <span className="zlon-consumer-slide__index">{`0${index + 1}`}</span>
-                  <p className="zlon-eyebrow">Featured Service</p>
-                  <h2>{slide.title}</h2>
-                  <p>{slide.body}</p>
-                </article>
-              ))}
-            </div>
-            <div className="zlon-slide-dots zlon-slide-dots--consumer">
-              {featuredSlides.map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className={carouselIndex === index ? 'is-active' : ''}
-                  onClick={() => setCarouselIndex(index)}
-                />
-              ))}
-            </div>
-          </section>
+      <div className="zlon-home-v2">
+        {/* HEADER */}
+        <header className="zlon-home-v2__header">
+          <button
+            className="zlon-home-v2__avatar"
+            type="button"
+            onClick={() => navigate('profile')}
+            aria-label="Open profile"
+          >
+            <ProfileIcon style={{ width: 20, height: 20 }} />
+          </button>
 
-          {/* --- Main Booking Card --- */}
-          <section className="zlon-home-panel zlon-home-panel--consumer zlon-home-panel--cta-consumer">
-            <div className="zlon-home-panel__copy">
-              <span className="zlon-eyebrow">Available Nearby</span>
-              <strong>{primarySalon ? primarySalon.name : 'Find a Stylist'}</strong>
-              <p>
-                {primarySalon
-                  ? `${getSalonLocation(primarySalon)} · ${getSalonWaitTime(primarySalon)}`
-                  : 'Search the nearest salons and book your chair in one tap.'}
+          <span className="zlon-home-v2__wordmark">ZLon.</span>
+
+          <button
+            className="zlon-home-v2__location"
+            type="button"
+            onClick={() => requestLocation({ silent: false }).then(loadSalonData)}
+            aria-label="Update location"
+          >
+            <PinIcon style={{ width: 13, height: 13 }} />
+            <span>{locationLabel === 'Location auto select' ? 'Dubai' : locationLabel}</span>
+          </button>
+        </header>
+
+        {/* MAIN AREA */}
+        <main className="zlon-home-v2__main">
+          {/* BIG BOOK NOW BUTTON */}
+          <div className="zlon-home-v2__cta-wrap">
+            <button
+              className="zlon-home-v2__book-btn"
+              type="button"
+              onClick={handleBookOpen}
+              aria-label="Book a salon appointment"
+            >
+              <span className="zlon-home-v2__book-label">Book Now</span>
+              {primarySalon && (
+                <span className="zlon-home-v2__book-sub">
+                  {getSalonLocation(primarySalon)} &middot; {getSalonWaitTime(primarySalon)}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* PROMO CARD */}
+          <div className="zlon-home-v2__promo">
+            <div className="zlon-home-v2__promo-inner">
+              <span className="zlon-home-v2__promo-tag">Offer</span>
+              <p className="zlon-home-v2__promo-title">
+                {primarySalon ? primarySalon.name : 'Premium Grooming'}
+              </p>
+              <p className="zlon-home-v2__promo-body">
+                First visit discount &mdash; up to 20% off your next session.
               </p>
             </div>
-            <button className="zlon-button zlon-button--primary zlon-button--consumer" type="button" onClick={handleBookOpen}>
-              Book Now
-            </button>
-          </section>
-
-          {/* --- Quick Actions (Replaced empty cells) --- */}
-          <section className="zlon-quick-actions">
-            <div className="zlon-action-grid">
-              <button className="zlon-action-tile" onClick={() => navigate('wallet')}>
-                <WalletIcon />
-                <span>Add Money</span>
-              </button>
-              <button className="zlon-action-tile" onClick={() => navigate('history')}>
-                <HistoryIcon />
-                <span>My Bookings</span>
-              </button>
-              <button className="zlon-action-tile" onClick={() => navigate('profile')}>
-                <SearchIcon />
-                <span>Categories</span>
-              </button>
-              <button className="zlon-action-tile" onClick={() => window.open('https://wa.me/YOUR_NUM', '_blank')}>
-                <PinIcon />
-                <span>Support</span>
-              </button>
-            </div>
-          </section>
+            <div className="zlon-home-v2__promo-arrow" aria-hidden="true">→</div>
+          </div>
         </main>
       </div>
     );
@@ -1586,15 +1578,17 @@ export function ConsumerApp() {
         {screen === 'profile' && renderProfile()}
 
         {session && (screen === 'home' || screen === 'history') && (
-          <nav className="zlon-bottom-nav zlon-bottom-nav--consumer">
-            <button className={screen === 'home' ? 'zlon-bottom-nav__button is-active' : 'zlon-bottom-nav__button'} type="button" onClick={() => navigate('home')}>
-              <HomeIcon className="zlon-icon" />
-              <span>Home</span>
-            </button>
-            <button className={screen === 'history' ? 'zlon-bottom-nav__button is-active' : 'zlon-bottom-nav__button'} type="button" onClick={() => navigate('history')}>
-              <HistoryIcon className="zlon-icon" />
-              <span>History</span>
-            </button>
+          <nav className="zlon-pill-nav">
+            <div className="zlon-pill-nav__pill">
+              <button className={screen === 'home' ? 'zlon-pill-nav__btn is-active' : 'zlon-pill-nav__btn'} type="button" onClick={() => navigate('home')}>
+                <HomeIcon style={{ width: 18, height: 18 }} />
+                <span>Home</span>
+              </button>
+              <button className={screen === 'history' ? 'zlon-pill-nav__btn is-active' : 'zlon-pill-nav__btn'} type="button" onClick={() => navigate('history')}>
+                <HistoryIcon style={{ width: 18, height: 18 }} />
+                <span>History</span>
+              </button>
+            </div>
           </nav>
         )}
 
