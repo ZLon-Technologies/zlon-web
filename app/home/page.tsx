@@ -39,6 +39,14 @@ const navItems = [
   { id: 'profile', label: 'PROFILE', icon: User },
 ];
 
+interface SearchMatch {
+  id: string;
+  name: string;
+  category: string;
+  confidence: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
 export default function HomePage() {
   const [selected, setSelected] = useState('haircut');
   const [activeNav, setActiveNav] = useState('home');
@@ -46,6 +54,12 @@ export default function HomePage() {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+
+  // AI Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -80,6 +94,46 @@ export default function HomePage() {
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+  };
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowResults(true);
+
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.results);
+      } else {
+        console.error('Search failed');
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowResults(false);
   };
 
   return (
@@ -117,11 +171,87 @@ export default function HomePage() {
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search for salons or services"
-                className="w-full pl-12 pr-4 py-4 bg-gray-200 rounded-full text-gray-700 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search services (e.g., 'fade haircut', 'beard cleanup')"
+                className="w-full pl-12 pr-10 py-4 bg-gray-200 rounded-full text-gray-700 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
               />
+              {(searchQuery.length > 0 || isSearching) && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {isSearching ? (
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </button>
+              )}
             </div>
           </div>
+
+          {/* AI Search Results */}
+          {showResults && searchResults.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold text-gray-900">
+                  {isSearching ? 'Searching...' : `Found ${searchResults.length} service${searchResults.length !== 1 ? 's' : ''}`}
+                </h2>
+                <button
+                  onClick={clearSearch}
+                  className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="space-y-2">
+                {searchResults.map((result, index) => (
+                  <div
+                    key={result.id}
+                    className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-gray-900">{result.name}</h3>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              result.confidence === 'high'
+                                ? 'bg-green-100 text-green-700'
+                                : result.confidence === 'medium'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {result.confidence} match
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 capitalize">Category: {result.category}</p>
+                        <p className="text-xs text-gray-600 mt-2">{result.reason}</p>
+                      </div>
+                      <button className="bg-gray-900 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-800 transition-colors">
+                        Book
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No Results */}
+          {showResults && searchResults.length === 0 && !isSearching && searchQuery.length >= 2 && (
+            <div className="mb-8 text-center py-8">
+              <div className="text-gray-400 mb-2">
+                <Search className="w-12 h-12 mx-auto" />
+              </div>
+              <p className="text-gray-600 font-medium">No services found for "{searchQuery}"</p>
+              <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
+            </div>
+          )}
 
           {/* Category Pills */}
           <div
