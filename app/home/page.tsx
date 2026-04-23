@@ -208,7 +208,7 @@ export default function HomePage() {
                 </button>
               </div>
               <div className="space-y-2">
-                {searchResults.map((result, index) => (
+                {searchResults.map((result) => (
                   <div
                     key={result.id}
                     className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
@@ -248,7 +248,9 @@ export default function HomePage() {
               <div className="text-gray-400 mb-2">
                 <Search className="w-12 h-12 mx-auto" />
               </div>
-              <p className="text-gray-600 font-medium">No services found for "{searchQuery}"</p>
+              <p className="text-gray-600 font-medium">
+                No services found for &quot;{searchQuery}&quot;
+              </p>
               <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
             </div>
           )}
