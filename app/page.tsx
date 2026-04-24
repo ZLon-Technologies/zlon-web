@@ -28,6 +28,7 @@ export default function Page() {
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+
   async function handlePhoneLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
