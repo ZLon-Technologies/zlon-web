@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -25,7 +26,14 @@ const ZLonAuthScreen = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       {/* Logo */}
       <div className="mb-10">
-        <h1 className="text-4xl font-extrabold tracking-tight text-black">ZLon.</h1>
+        <Image
+          src="/logo.png"
+          alt="ZLon Logo"
+          width={120}
+          height={120}
+          priority
+          className="object-contain mx-auto"
+        />
       </div>
 
       {/* Main Card */}
