@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { type FormEvent, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,21 +11,71 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
 );
 
+function getPhoneNumber(phone: string) {
+  const digitsOnly = phone.replace(/\D/g, '').slice(0, 10);
+
+  if (digitsOnly.length !== 10) {
+    return null;
+  }
+
+  return `+91${digitsOnly}`;
+}
+
 export default function Page() {
   const router = useRouter();
+  const [phone, setPhone] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const handleGoogleLogin = async () => {
+  async function handlePhoneLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedPhone = getPhoneNumber(phone);
+
+    if (!normalizedPhone) {
+      setErrorMessage('Enter a valid 10-digit phone number.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSendingOtp(true);
+
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: normalizedPhone,
+    });
+
+    setIsSendingOtp(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    router.push(`/verify-otp?phone=${encodeURIComponent(normalizedPhone)}`);
+  }
+
+  async function handleGoogleLogin(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setErrorMessage('');
+    setIsGoogleLoading(true);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/home`,
+      },
     });
+
     if (error) {
-      console.error('Google login error:', error.message);
+      setIsGoogleLoading(false);
+      setErrorMessage(error.message);
+      return;
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-      {/* Logo */}
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
       <div className="mb-10">
         <Image
           src="/logo.png"
@@ -33,55 +83,70 @@ export default function Page() {
           width={120}
           height={120}
           priority
-          className="object-contain mx-auto"
+          className="mx-auto object-contain"
         />
       </div>
 
-      {/* Main Card */}
-      <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 sm:p-10">
-        {/* Welcome Header */}
-        <h2 className="text-3xl font-bold text-black text-center mb-8">
-          Welcome Back
-        </h2>
+      <form
+        onSubmit={handlePhoneLogin}
+        className="w-full max-w-sm rounded-[2.5rem] bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-10"
+      >
+        <h2 className="mb-8 text-center text-3xl font-bold text-black">Welcome Back</h2>
 
-        {/* Phone Number Input Row */}
-        <div className="flex gap-3 mb-6">
-          <div className="w-20 bg-gray-100 text-black rounded-2xl flex items-center justify-center py-4 font-medium">
+        <div className="mb-6 flex gap-3">
+          <div className="flex w-20 items-center justify-center rounded-2xl bg-gray-100 py-4 font-medium text-black">
             +91
           </div>
           <input
             type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            value={phone}
+            onChange={(event) => {
+              setPhone(event.target.value.replace(/\D/g, '').slice(0, 10));
+              if (errorMessage) {
+                setErrorMessage('');
+              }
+            }}
             placeholder="Enter Number"
-            className="flex-1 bg-gray-100 rounded-2xl pl-5 py-4 text-black placeholder-gray-400 focus:outline-none"
+            className="flex-1 rounded-2xl bg-gray-100 py-4 pl-5 text-black placeholder-gray-400 focus:outline-none"
           />
         </div>
 
-        {/* Send OTP Button */}
-        <button className="w-full bg-black text-white font-semibold py-4 rounded-2xl hover:bg-gray-900 transition-colors">
-          Send OTP
+        <button
+          type="submit"
+          disabled={isSendingOtp || isGoogleLoading}
+          className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isSendingOtp ? 'Sending OTP...' : 'Send OTP'}
         </button>
 
-        {/* Divider */}
+        {errorMessage ? (
+          <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p>
+        ) : null}
+
         <div className="my-8 flex items-center">
-          <div className="flex-grow border-t border-gray-200"></div>
-          <span className="mx-4 text-xs font-medium text-gray-400 tracking-widest">
-            OR SIGN IN WITH
-          </span>
-          <div className="flex-grow border-t border-gray-200"></div>
+          <div className="flex-grow border-t border-gray-200" />
+          <span className="mx-4 text-xs font-medium tracking-widest text-gray-400">OR SIGN IN WITH</span>
+          <div className="flex-grow border-t border-gray-200" />
         </div>
 
-        {/* Social Login Icons */}
-        <div className="flex justify-center gap-8 mb-8">
-          {/* Google Icon */}
-          <button className="focus:outline-none" onClick={handleGoogleLogin}>
+        <div className="mb-8 flex justify-center gap-8">
+          <button
+            type="button"
+            className="focus:outline-none"
+            onClick={handleGoogleLogin}
+            disabled={isSendingOtp || isGoogleLoading}
+            aria-label="Continue with Google"
+          >
             <svg
-              className="w-10 h-10"
+              className="h-10 w-10"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                 fill="#4285F4"
               />
               <path
@@ -99,10 +164,14 @@ export default function Page() {
             </svg>
           </button>
 
-          {/* Email Icon */}
-          <button className="focus:outline-none" onClick={() => router.push('/login-email')}>
+          <button
+            type="button"
+            className="focus:outline-none"
+            onClick={() => router.push('/login-email')}
+            aria-label="Continue with email"
+          >
             <svg
-              className="w-10 h-10"
+              className="h-10 w-10"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -119,14 +188,13 @@ export default function Page() {
           </button>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-sm text-gray-600">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold text-gray-800 cursor-pointer hover:underline">
+          <Link href="/signup" className="cursor-pointer font-semibold text-gray-800 hover:underline">
             Sign Up
           </Link>
         </p>
-      </div>
+      </form>
     </div>
   );
 }

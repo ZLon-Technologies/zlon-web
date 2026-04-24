@@ -3,6 +3,12 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
+);
 
 type GenderOption = 'male' | 'female' | 'other';
 
@@ -41,7 +47,12 @@ function CalendarIcon() {
     >
       <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
       <path d="M8 3.5V7M16 3.5V7M4 10h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M8 13h.01M12 13h.01M16 13h.01M8 16h.01M12 16h.01M16 16h.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path
+        d="M8 13h.01M12 13h.01M16 13h.01M8 16h.01M12 16h.01M16 16h.01"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -133,11 +144,15 @@ function InputRow({
   label,
   placeholder,
   icon,
+  value,
+  onChange,
 }: {
   id: string;
   label: string;
   placeholder: string;
   icon: ReactNode;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <div>
@@ -148,6 +163,8 @@ function InputRow({
         <input
           id={id}
           type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           className="w-full rounded-2xl bg-gray-100 py-4 pr-14 pl-5 text-black placeholder:text-gray-400 focus:outline-none"
         />
@@ -159,7 +176,11 @@ function InputRow({
 
 export default function CreateAccountPage() {
   const router = useRouter();
+  const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState<GenderOption>('male');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const genderOptions: Array<{
     value: GenderOption;
@@ -171,13 +192,31 @@ export default function CreateAccountPage() {
     { value: 'other', label: 'Other', icon: <OtherIcon /> },
   ];
 
-  const handleCompleteProfile = () => {
-    const params = new URLSearchParams({
-      method: 'email',
-      contact: 'user@example.com',
+  const handleCompleteProfile = async () => {
+    if (!fullName.trim() || !dateOfBirth.trim()) {
+      setErrorMessage('Complete your name and date of birth to finish setting up your profile.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSaving(true);
+
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        full_name: fullName.trim(),
+        date_of_birth: dateOfBirth.trim(),
+        gender,
+      },
     });
 
-    router.push(`/verify-otp?${params.toString()}`);
+    setIsSaving(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    router.replace('/home');
   };
 
   return (
@@ -192,8 +231,32 @@ export default function CreateAccountPage() {
 
         <div className="mt-8 rounded-[2.5rem] bg-white px-6 py-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-8 sm:py-10">
           <div className="space-y-6">
-            <InputRow id="full-name" label="FULL NAME" placeholder="e.g. Julian Alexander" icon={<UserIcon />} />
-            <InputRow id="date-of-birth" label="DATE OF BIRTH" placeholder="mm/dd/yyyy" icon={<CalendarIcon />} />
+            <InputRow
+              id="full-name"
+              label="FULL NAME"
+              placeholder="e.g. Julian Alexander"
+              icon={<UserIcon />}
+              value={fullName}
+              onChange={(value) => {
+                setFullName(value);
+                if (errorMessage) {
+                  setErrorMessage('');
+                }
+              }}
+            />
+            <InputRow
+              id="date-of-birth"
+              label="DATE OF BIRTH"
+              placeholder="mm/dd/yyyy"
+              icon={<CalendarIcon />}
+              value={dateOfBirth}
+              onChange={(value) => {
+                setDateOfBirth(value);
+                if (errorMessage) {
+                  setErrorMessage('');
+                }
+              }}
+            />
 
             <div>
               <p className="mb-3 text-sm font-bold tracking-[0.18em] text-black">GENDER</p>
@@ -208,7 +271,9 @@ export default function CreateAccountPage() {
                       onClick={() => setGender(option.value)}
                       aria-pressed={isActive}
                       className={`flex h-24 flex-col items-center justify-center rounded-2xl border bg-white text-center transition-colors ${
-                        isActive ? 'border-black text-black shadow-[0_8px_20px_rgb(0,0,0,0.05)]' : 'border-gray-200 text-gray-500'
+                        isActive
+                          ? 'border-black text-black shadow-[0_8px_20px_rgb(0,0,0,0.05)]'
+                          : 'border-gray-200 text-gray-500'
                       }`}
                     >
                       {option.icon}
@@ -253,10 +318,13 @@ export default function CreateAccountPage() {
               <button
                 type="button"
                 onClick={handleCompleteProfile}
-                className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900"
+                disabled={isSaving}
+                className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Complete Profile -&gt;
+                {isSaving ? 'Saving Profile...' : 'Complete Profile ->'}
               </button>
+
+              {errorMessage ? <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p> : null}
             </div>
           </div>
         </div>

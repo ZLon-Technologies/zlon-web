@@ -1,7 +1,14 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
+);
 
 function EnvelopeIcon() {
   return (
@@ -44,11 +51,15 @@ function InputField({
   type,
   placeholder,
   icon,
+  value,
+  onChange,
 }: {
   id: string;
   type: string;
   placeholder: string;
   icon: ReactNode;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <div className="relative">
@@ -56,6 +67,8 @@ function InputField({
       <input
         id={id}
         type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
         className="w-full rounded-2xl bg-gray-100 py-4 pr-5 pl-12 text-black placeholder:text-gray-500 focus:outline-none"
@@ -66,27 +79,82 @@ function InputField({
 
 export default function LoginEmailPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!email.trim()) {
+      setErrorMessage('Enter your email address to receive a verification code.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    router.push(`/verify-otp?email=${encodeURIComponent(email.trim())}`);
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-white px-6 py-12">
       <div className="w-full max-w-md text-center">
         <h1 className="mb-10 text-4xl font-extrabold tracking-[-0.06em] text-black">ZLon.</h1>
 
-        <div className="rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10">
+        <form
+          onSubmit={handleEmailLogin}
+          className="rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10"
+        >
           <h2 className="mb-8 text-center text-3xl font-bold text-black">Welcome Back</h2>
 
           <div className="space-y-5">
-            <InputField id="login-email" type="email" placeholder="Enter Email" icon={<EnvelopeIcon />} />
-            <InputField id="login-password" type="password" placeholder="Enter Password" icon={<LockIcon />} />
+            <InputField
+              id="login-email"
+              type="email"
+              placeholder="Enter Email"
+              icon={<EnvelopeIcon />}
+              value={email}
+              onChange={(value) => {
+                setEmail(value);
+                if (errorMessage) {
+                  setErrorMessage('');
+                }
+              }}
+            />
+            <InputField
+              id="login-password"
+              type="password"
+              placeholder="Enter Password"
+              icon={<LockIcon />}
+              value={password}
+              onChange={setPassword}
+            />
           </div>
 
           <button
-            type="button"
-            onClick={() => router.push('/dashboard')}
-            className="mt-7 w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900"
+            type="submit"
+            disabled={isSubmitting}
+            className="mt-7 w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Continue
+            {isSubmitting ? 'Sending OTP...' : 'Continue'}
           </button>
+
+          {errorMessage ? (
+            <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p>
+          ) : null}
 
           <div className="my-8 flex items-center">
             <div className="h-px flex-1 bg-gray-200" />
@@ -113,7 +181,7 @@ export default function LoginEmailPage() {
               Forget Password
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </main>
   );

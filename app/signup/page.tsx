@@ -1,6 +1,13 @@
 'use client';
 
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
+);
 
 function BackIcon() {
   return (
@@ -44,6 +51,35 @@ function ArrowRightIcon() {
 
 export default function SignupPage() {
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSignup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!email.trim()) {
+      setErrorMessage('Enter your email address to continue.');
+      return;
+    }
+
+    setErrorMessage('');
+    setIsSubmitting(true);
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    router.push(`/verify-otp?email=${encodeURIComponent(email.trim())}`);
+  }
 
   return (
     <main className="min-h-screen bg-white px-6 py-8">
@@ -64,14 +100,23 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <div className="mt-8 rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10">
+        <form
+          onSubmit={handleSignup}
+          className="mt-8 rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10"
+        >
           <label htmlFor="signup-email" className="mb-2 block text-center text-lg font-bold text-black">
             Enter Email
           </label>
           <input
             id="signup-email"
             type="email"
-            placeholder=""
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (errorMessage) {
+                setErrorMessage('');
+              }
+            }}
             autoComplete="email"
             className="w-full rounded-2xl bg-gray-100 px-5 py-4 text-black focus:outline-none"
           />
@@ -82,7 +127,8 @@ export default function SignupPage() {
           <input
             id="signup-password"
             type="password"
-            placeholder=""
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
             autoComplete="new-password"
             className="w-full rounded-2xl bg-gray-100 px-5 py-4 text-black focus:outline-none"
           />
@@ -93,14 +139,16 @@ export default function SignupPage() {
           </p>
 
           <button
-            type="button"
-            onClick={() => router.push('/create-account')}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900"
+            type="submit"
+            disabled={isSubmitting}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <span>Continue</span>
+            <span>{isSubmitting ? 'Sending OTP...' : 'Continue'}</span>
             <ArrowRightIcon />
           </button>
-        </div>
+
+          {errorMessage ? <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p> : null}
+        </form>
 
         <p className="mt-6 text-center text-base text-gray-500">
           Already a member?{' '}

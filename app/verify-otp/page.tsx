@@ -9,6 +9,12 @@ import {
   useState,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
+);
 
 const OTP_LENGTH = 6;
 
@@ -56,10 +62,38 @@ function VerifyOtpContent() {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [otp, setOtp] = useState(() => Array.from({ length: OTP_LENGTH }, () => ''));
   const [secondsLeft, setSecondsLeft] = useState(24);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
-  const method = searchParams.get('method') === 'phone' ? 'phone' : 'email';
-  const contact = searchParams.get('contact') ?? (method === 'phone' ? '+91 98765 43210' : 'user@example.com');
-  const contactLabel = method === 'phone' ? 'phone number' : 'email address';
+  const queryEmail =
+    searchParams.get('email') ??
+    (searchParams.get('method') === 'email' ? searchParams.get('contact') : null);
+  const queryPhone =
+    searchParams.get('phone') ??
+    (searchParams.get('method') === 'phone' ? searchParams.get('contact') : null);
+
+  const verificationDetails = queryPhone
+    ? {
+        email: null,
+        phone: queryPhone,
+        contact: queryPhone,
+        contactLabel: 'phone number',
+      }
+    : queryEmail
+      ? {
+          email: queryEmail,
+          phone: null,
+          contact: queryEmail,
+          contactLabel: 'email address',
+        }
+      : {
+          email: null,
+          phone: null,
+          contact: '',
+          contactLabel: 'email address',
+        };
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
@@ -85,6 +119,14 @@ function VerifyOtpContent() {
       nextOtp[index] = nextDigit;
       return nextOtp;
     });
+
+    if (errorMessage) {
+      setErrorMessage('');
+    }
+
+    if (statusMessage) {
+      setStatusMessage('');
+    }
 
     if (nextDigit && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
@@ -115,24 +157,91 @@ function VerifyOtpContent() {
     });
 
     setOtp(nextOtp);
+    setErrorMessage('');
+    setStatusMessage('');
 
     const nextFocusIndex = Math.min(pastedOtp.length, OTP_LENGTH - 1);
     inputRefs.current[nextFocusIndex]?.focus();
   };
 
-  const handleVerify = () => {
-    if (otp.every(Boolean)) {
-      router.push('/dashboard');
+  const handleVerify = async () => {
+    const token = otp.join('');
+
+    if (!verificationDetails.contact) {
+      setErrorMessage('The verification destination is missing. Please request a new OTP.');
+      return;
     }
+
+    if (token.length !== OTP_LENGTH) {
+      setErrorMessage('Enter the full 6-digit verification code.');
+      return;
+    }
+
+    setErrorMessage('');
+    setStatusMessage('');
+    setIsVerifying(true);
+
+    const response = verificationDetails.phone
+      ? await supabase.auth.verifyOtp({
+          phone: verificationDetails.phone,
+          token,
+          type: 'sms',
+        })
+      : await supabase.auth.verifyOtp({
+          email: verificationDetails.email!,
+          token,
+          type: 'email',
+        });
+
+    setIsVerifying(false);
+
+    if (response.error) {
+      setErrorMessage(response.error.message);
+      return;
+    }
+
+    if (!response.data.session) {
+      setErrorMessage('Supabase did not return a valid session. Please request a new code and try again.');
+      return;
+    }
+
+    const user = response.data.user ?? response.data.session.user;
+    const hasCompletedProfile = Boolean(
+      user?.user_metadata?.full_name ||
+        user?.user_metadata?.name ||
+        user?.user_metadata?.first_name
+    );
+
+    router.replace(hasCompletedProfile ? '/home' : '/create-account');
   };
 
-  const handleResend = () => {
-    if (secondsLeft > 0) {
+  const handleResend = async () => {
+    if (secondsLeft > 0 || !verificationDetails.contact) {
+      return;
+    }
+
+    setErrorMessage('');
+    setStatusMessage('');
+    setIsResending(true);
+
+    const response = verificationDetails.phone
+      ? await supabase.auth.signInWithOtp({
+          phone: verificationDetails.phone,
+        })
+      : await supabase.auth.signInWithOtp({
+          email: verificationDetails.email!,
+        });
+
+    setIsResending(false);
+
+    if (response.error) {
+      setErrorMessage(response.error.message);
       return;
     }
 
     setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
     setSecondsLeft(24);
+    setStatusMessage(`A new verification code was sent to ${verificationDetails.contact}.`);
     inputRefs.current[0]?.focus();
   };
 
@@ -141,7 +250,8 @@ function VerifyOtpContent() {
       <div className="w-full max-w-md rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10">
         <h1 className="mb-3 text-center text-3xl font-bold text-black">Verify OTP</h1>
         <p className="mb-8 text-center text-sm leading-6 text-gray-500">
-          We&apos;ve sent a 6-digit verification code to your registered {contactLabel} at {contact}
+          We&apos;ve sent a 6-digit verification code to your registered {verificationDetails.contactLabel} at{' '}
+          {verificationDetails.contact || 'your account'}
         </p>
 
         <div className="mb-8 flex justify-center gap-3">
@@ -166,22 +276,28 @@ function VerifyOtpContent() {
         <button
           type="button"
           onClick={handleVerify}
-          className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900"
+          disabled={isVerifying || isResending}
+          className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Verify
+          {isVerifying ? 'Verifying...' : 'Verify'}
         </button>
+
+        {errorMessage ? <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p> : null}
+        {statusMessage ? <p className="mt-4 text-center text-sm text-green-600">{statusMessage}</p> : null}
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Did not receive code?{' '}
           <button
             type="button"
             onClick={handleResend}
-            disabled={secondsLeft > 0}
+            disabled={secondsLeft > 0 || isResending || isVerifying || !verificationDetails.contact}
             className={`font-semibold underline-offset-4 ${
-              secondsLeft > 0 ? 'cursor-default text-gray-700' : 'text-black hover:underline'
+              secondsLeft > 0 || isResending || isVerifying || !verificationDetails.contact
+                ? 'cursor-default text-gray-700'
+                : 'text-black hover:underline'
             }`}
           >
-            Resend
+            {isResending ? 'Resending...' : 'Resend'}
           </button>{' '}
           in <span className="font-semibold text-black">{secondsLeft}s</span>
         </p>
