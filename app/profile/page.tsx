@@ -6,5 +6,9 @@ export const metadata: Metadata = {
 };
 
 export default function ProfilePage() {
-  return <EditProfileScreen />;
+  return (
+    <div className="max-w-md mx-auto min-h-screen bg-white shadow-sm">
+      <EditProfileScreen />
+    </div>
+  );
 }

@@ -58,8 +58,8 @@ export const metadata: Metadata = {
 
 export default function BookingPage() {
   return (
-    <div className="bg-[#f7f6f3] text-neutral-950">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col">
+    <div className="max-w-md mx-auto min-h-screen bg-white shadow-sm">
+      <div className="flex min-h-screen flex-col bg-[#f7f6f3] text-neutral-950">
         <header className="border-b border-black/6 px-6 py-8">
           <button
             type="button"
