@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Search, MapPin, Star, Home, Calendar, Wallet, User, Scissors, Sparkles, Wind } from 'lucide-react';
+import Image from 'next/image';
+import { Search, MapPin, Star, Scissors, Sparkles, Wind } from 'lucide-react';
+import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
 const categories = [
   { id: 'haircut', label: 'Haircut', icon: Scissors },
@@ -32,13 +34,6 @@ const salons = [
   },
 ];
 
-const navItems = [
-  { id: 'home', label: 'HOME', icon: Home },
-  { id: 'booking', label: 'BOOKING', icon: Calendar },
-  { id: 'wallet', label: 'WALLET', icon: Wallet },
-  { id: 'profile', label: 'PROFILE', icon: User },
-];
-
 interface SearchMatch {
   id: string;
   name: string;
@@ -49,7 +44,6 @@ interface SearchMatch {
 
 export default function HomePage() {
   const [selected, setSelected] = useState('haircut');
-  const [activeNav, setActiveNav] = useState('home');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -300,11 +294,14 @@ export default function HomePage() {
 
             <div className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
               <div className="flex gap-4">
-                <div className="w-20 h-20 rounded-xl bg-gray-300 flex-shrink-0 overflow-hidden">
-                  <img
+                <div className="relative w-20 h-20 rounded-xl bg-gray-300 flex-shrink-0 overflow-hidden">
+                  <Image
                     src="https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=200&h=200&fit=crop"
                     alt="The Grooming Society"
-                    className="w-full h-full object-cover"
+                    fill
+                    unoptimized
+                    sizes="80px"
+                    className="object-cover"
                   />
                 </div>
 
@@ -329,10 +326,13 @@ export default function HomePage() {
                 <div key={salon.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
                   {/* Image Container */}
                   <div className="relative h-56 overflow-hidden bg-gray-300">
-                    <img
+                    <Image
                       src={salon.image}
                       alt={salon.name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      fill
+                      unoptimized
+                      sizes="(max-width: 768px) 100vw, 448px"
+                      className="object-cover hover:scale-105 transition-transform duration-300"
                     />
 
                     {/* Badge - Luxury Experience */}
@@ -393,37 +393,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-around">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveNav(item.id)}
-                className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all ${
-                  isActive ? 'bg-gray-100' : 'hover:bg-gray-50'
-                }`}
-              >
-                <Icon
-                  className={`w-6 h-6 transition-colors ${
-                    isActive ? 'text-gray-900' : 'text-gray-600'
-                  }`}
-                />
-                <span
-                  className={`text-xs font-bold transition-colors ${
-                    isActive ? 'text-gray-900' : 'text-gray-600'
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <MobileBottomNav />
     </div>
   );
 }
