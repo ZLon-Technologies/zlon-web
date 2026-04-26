@@ -3,13 +3,8 @@
 import React, { type FormEvent, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
-);
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 function getPhoneNumber(phone: string) {
   const digitsOnly = phone.replace(/\D/g, '').slice(0, 10);
@@ -21,8 +16,19 @@ function getPhoneNumber(phone: string) {
   return `+91${digitsOnly}`;
 }
 
+function getSafeRedirectPath(pathname: string | null, fallback: string) {
+  if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//')) {
+    return fallback;
+  }
+
+  return pathname;
+}
+
 export default function Page() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createSupabaseBrowserClient();
+  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
   const [phone, setPhone] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
@@ -53,7 +59,9 @@ export default function Page() {
       return;
     }
 
-    router.push(`/verify-otp?phone=${encodeURIComponent(normalizedPhone)}`);
+    router.push(
+      `/verify-otp?phone=${encodeURIComponent(normalizedPhone)}&next=${encodeURIComponent(nextPath)}`
+    );
   }
 
   async function handleGoogleLogin(event: React.MouseEvent<HTMLButtonElement>) {
@@ -61,10 +69,13 @@ export default function Page() {
     setErrorMessage('');
     setIsGoogleLoading(true);
 
+    const callbackUrl = new URL('/auth/callback', window.location.origin);
+    callbackUrl.searchParams.set('next', nextPath);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/home`,
+        redirectTo: callbackUrl.toString(),
       },
     });
 

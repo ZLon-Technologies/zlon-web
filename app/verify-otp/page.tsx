@@ -9,14 +9,17 @@ import {
   useState,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
-);
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const OTP_LENGTH = 6;
+
+function getSafeRedirectPath(pathname: string | null, fallback: string) {
+  if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//')) {
+    return fallback;
+  }
+
+  return pathname;
+}
 
 function SecureVerificationBadge() {
   return (
@@ -59,6 +62,8 @@ function VerifyOtpFallback() {
 function VerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const supabase = createSupabaseBrowserClient();
+  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [otp, setOtp] = useState(() => Array.from({ length: OTP_LENGTH }, () => ''));
   const [secondsLeft, setSecondsLeft] = useState(24);
@@ -212,7 +217,11 @@ function VerifyOtpContent() {
         user?.user_metadata?.first_name
     );
 
-    router.replace(hasCompletedProfile ? '/home' : '/create-account');
+    router.replace(
+      hasCompletedProfile
+        ? nextPath
+        : `/create-account?next=${encodeURIComponent(nextPath)}`
+    );
   };
 
   const handleResend = async () => {

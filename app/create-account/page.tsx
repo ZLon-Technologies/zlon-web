@@ -2,13 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!
-);
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type GenderOption = 'male' | 'female' | 'other';
 
@@ -174,8 +169,19 @@ function InputRow({
   );
 }
 
+function getSafeRedirectPath(pathname: string | null, fallback: string) {
+  if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//')) {
+    return fallback;
+  }
+
+  return pathname;
+}
+
 export default function CreateAccountPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createSupabaseBrowserClient();
+  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState<GenderOption>('male');
@@ -216,7 +222,7 @@ export default function CreateAccountPage() {
       return;
     }
 
-    router.replace('/home');
+    router.replace(nextPath);
   };
 
   return (
