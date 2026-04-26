@@ -70,7 +70,7 @@ export default function BookingPage() {
           </button>
         </header>
 
-        <main className="flex-1 space-y-4 px-4 py-4 pb-24">
+        <main className="flex-1 space-y-4 px-4 py-4 pb-20">
           <section className="overflow-hidden rounded-[1.75rem] bg-white shadow-[0_16px_34px_rgba(15,23,42,0.15)]">
             <div
               className="relative h-72 overflow-hidden rounded-[1.75rem] bg-cover bg-center"

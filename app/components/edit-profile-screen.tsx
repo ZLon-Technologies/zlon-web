@@ -96,7 +96,7 @@ export function EditProfileScreen() {
         </button>
       </header>
 
-      <main className="flex-1 px-4 py-4 pb-24">
+      <main className="flex-1 px-4 py-4 pb-20">
         <section className="text-center">
           <div className="relative mx-auto flex h-36 w-36 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,_#ffb98a_18%,_#f29d67_28%,_#17212b_29%,_#17212b_100%)] shadow-[0_16px_32px_rgba(15,23,42,0.14)] ring-4 ring-white">
             <div className="absolute inset-x-6 bottom-0 h-16 rounded-t-[999px] bg-[#253443]" />

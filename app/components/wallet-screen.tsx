@@ -145,7 +145,7 @@ export function WalletScreen() {
         </button>
       </header>
 
-      <main className="flex-1 space-y-4 px-4 py-4 pb-24">
+      <main className="flex-1 space-y-4 px-4 py-4 pb-20">
         <section className="rounded-[1.75rem] bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.12),_transparent_30%),linear-gradient(135deg,#020202_0%,#171717_55%,#111827_100%)] p-5 text-white shadow-[0_16px_34px_rgba(0,0,0,0.18)]">
           <div className="flex items-start justify-between gap-3">
             <div>

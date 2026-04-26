@@ -23,11 +23,8 @@ export function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="sticky bottom-0 z-20 px-3 pb-3 safe-area-pb">
-      <nav
-        aria-label="Primary navigation"
-        className="rounded-[1.5rem] border border-black/5 bg-white/95 p-2 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur"
-      >
+    <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 bg-white border-t border-black/10">
+      <nav aria-label="Primary navigation" className="px-2 py-2">
         <ul className="grid grid-cols-4 gap-2">
           {navigationItems.map(({ href, label, icon: Icon }) => {
             const active = isActiveRoute(pathname, href);
