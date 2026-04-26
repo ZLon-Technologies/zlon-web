@@ -2,36 +2,15 @@
 
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Search, MapPin, Star, Scissors, Sparkles, Wind } from 'lucide-react';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
+import { salons } from '../lib/salons';
 
 const categories = [
   { id: 'haircut', label: 'Haircut', icon: Scissors },
   { id: 'beard', label: 'Beard', icon: Sparkles },
   { id: 'facial', label: 'Facial', icon: Wind },
-];
-
-const salons = [
-  {
-    id: 1,
-    image: 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=600&h=400&fit=crop',
-    name: 'Velvet & Vine',
-    distance: '1.2 km',
-    location: 'Indiranagar',
-    rating: 4.8,
-    price: 300,
-    services: ['HAIR', 'SKIN', 'BEARD'],
-  },
-  {
-    id: 2,
-    image: 'https://images.unsplash.com/photo-1633681926022-ec8b1bc32b99?w=600&h=400&fit=crop',
-    name: 'The Modern Man',
-    distance: '2.4 km',
-    location: 'Domlur',
-    rating: 4.6,
-    price: 450,
-    services: ['HAIR', 'BEARD', 'SKINCARE'],
-  },
 ];
 
 interface SearchMatch {
@@ -382,9 +361,12 @@ export default function HomePage() {
                     <div className="flex-1"></div>
 
                     {/* Book Now Button */}
-                    <button className="w-full bg-gray-900 text-white font-bold py-3 rounded-full hover:bg-gray-800 active:bg-gray-950 transition-all text-sm">
+                    <Link
+                      href={`/salon/${salon.id}`}
+                      className="block w-full rounded-full bg-gray-900 py-3 text-center text-sm font-bold text-white transition-all hover:bg-gray-800 active:bg-gray-950"
+                    >
                       Book Now
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ))}
