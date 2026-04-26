@@ -23,10 +23,10 @@ export function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="sticky bottom-0 z-20 px-4 pb-4 safe-area-pb">
+    <div className="sticky bottom-0 z-20 px-3 pb-3 safe-area-pb">
       <nav
         aria-label="Primary navigation"
-        className="rounded-[2rem] border border-black/5 bg-white/95 p-3 shadow-[0_-18px_45px_rgba(15,23,42,0.08)] backdrop-blur"
+        className="rounded-[1.5rem] border border-black/5 bg-white/95 p-2 shadow-[0_-10px_24px_rgba(15,23,42,0.08)] backdrop-blur"
       >
         <ul className="grid grid-cols-4 gap-2">
           {navigationItems.map(({ href, label, icon: Icon }) => {
@@ -36,15 +36,15 @@ export function MobileBottomNav() {
               <li key={href}>
                 <Link
                   href={href}
-                  className={`flex h-20 flex-col items-center justify-center rounded-[1.5rem] transition-all ${
+                  className={`flex h-16 flex-col items-center justify-center rounded-[1.25rem] transition-all ${
                     active
                       ? 'bg-neutral-200 text-black'
                       : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
                   }`}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <Icon className="h-7 w-7" strokeWidth={2.1} />
-                  <span className="mt-2 text-xs font-semibold uppercase tracking-[0.18em]">
+                  <Icon size={20} strokeWidth={2.1} />
+                  <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em]">
                     {label}
                   </span>
                 </Link>

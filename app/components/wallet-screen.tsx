@@ -63,7 +63,7 @@ const initialTransactions: Transaction[] = [
 ];
 
 const surfaceClass =
-  'rounded-[2rem] border border-black/10 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.08)]';
+  'rounded-[1.5rem] border border-black/10 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -134,190 +134,185 @@ export function WalletScreen() {
   }
 
   return (
-    <div className="bg-[#f7f6f3] text-neutral-950">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col">
-        <header className="border-b border-black/6 px-6 py-8">
-          <button
-            type="button"
-            aria-label="Wallet information"
-            className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-black bg-white text-black"
-          >
-            <Info className="h-6 w-6" strokeWidth={2.3} />
-          </button>
-        </header>
+    <div className="flex min-h-screen flex-col bg-[#f7f6f3] text-neutral-950">
+      <header className="border-b border-black/5 px-4 py-4">
+        <button
+          type="button"
+          aria-label="Wallet information"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-black"
+        >
+          <Info size={20} strokeWidth={2.2} />
+        </button>
+      </header>
 
-        <main className="flex-1 space-y-6 px-6 pb-10 pt-6">
-          <section className="rounded-[2rem] bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.12),_transparent_30%),linear-gradient(135deg,#020202_0%,#171717_55%,#111827_100%)] p-6 text-white shadow-[0_20px_45px_rgba(0,0,0,0.2)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm uppercase tracking-[0.28em] text-white/70">
-                  Current Balance
-                </p>
-                <h1 className="mt-4 text-6xl font-semibold tracking-tight">
-                  {formatCurrency(currentBalance)}
-                </h1>
-                <p className="mt-3 max-w-xs text-sm leading-6 text-white/70">
-                  Keep funds ready for quick salon bookings, cancellations, and instant refunds.
-                </p>
-              </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
-                <Wallet className="h-6 w-6" strokeWidth={2.2} />
-              </div>
+      <main className="flex-1 space-y-4 px-4 py-4 pb-24">
+        <section className="rounded-[1.75rem] bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.12),_transparent_30%),linear-gradient(135deg,#020202_0%,#171717_55%,#111827_100%)] p-5 text-white shadow-[0_16px_34px_rgba(0,0,0,0.18)]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.22em] text-white/70">
+                Current Balance
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+                {formatCurrency(currentBalance)}
+              </h1>
+              <p className="mt-2 max-w-xs text-sm leading-5 text-white/70">
+                Keep funds ready for quick salon bookings, cancellations, and refunds.
+              </p>
             </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
+              <Wallet size={20} strokeWidth={2.1} />
+            </div>
+          </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => scrollToSection('recharge-section')}
-                className="rounded-full bg-white px-5 py-4 text-lg font-semibold text-black transition-transform hover:scale-[1.01]"
-              >
-                + Top Up
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection('history-section')}
-                className="rounded-full bg-white/18 px-5 py-4 text-lg font-semibold text-white transition-colors hover:bg-white/24"
-              >
-                History
-              </button>
-            </div>
-          </section>
-
-          <section className={`${surfaceClass} flex items-center justify-between gap-4 p-5`}>
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
-                <Star className="h-8 w-8" strokeWidth={2} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight">Earned Points</h2>
-                <p className="mt-1 text-base text-neutral-500">450 points available to redeem</p>
-              </div>
-            </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
             <button
               type="button"
-              className="rounded-full border border-black/40 px-6 py-3 text-xl font-medium text-neutral-600 transition-colors hover:bg-neutral-50"
+              onClick={() => scrollToSection('recharge-section')}
+              className="rounded-full bg-white px-4 py-3 text-sm font-semibold text-black transition-colors hover:bg-neutral-100"
             >
-              Redeem
+              + Top Up
             </button>
-          </section>
+            <button
+              type="button"
+              onClick={() => scrollToSection('history-section')}
+              className="rounded-full bg-white/15 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+            >
+              History
+            </button>
+          </div>
+        </section>
 
-          <section id="recharge-section" className={`${surfaceClass} p-5`}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-3xl font-semibold tracking-tight">Add Money</h2>
-                <p className="mt-2 text-sm leading-6 text-neutral-500">
-                  Top up your wallet instantly with preset amounts or a custom value.
-                </p>
-              </div>
-              <div className="hidden h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-700 sm:flex">
-                <CirclePlus className="h-7 w-7" strokeWidth={2} />
-              </div>
+        <section className={`${surfaceClass} flex items-center justify-between gap-3 p-4`}>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
+              <Star size={20} strokeWidth={2} />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">Earned Points</h2>
+              <p className="mt-1 text-sm text-neutral-500">450 points available to redeem</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="rounded-full border border-black/20 px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+          >
+            Redeem
+          </button>
+        </section>
+
+        <section id="recharge-section" className={`${surfaceClass} p-5`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">Add Money</h2>
+              <p className="mt-1 text-sm leading-5 text-neutral-500">
+                Top up instantly with a preset amount or your own value.
+              </p>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-700">
+              <CirclePlus size={20} strokeWidth={2} />
+            </div>
+          </div>
+
+          <form onSubmit={handleRecharge} className="mt-5 space-y-4">
+            <label htmlFor="wallet-amount" className="block text-sm font-medium text-neutral-500">
+              Recharge amount
+            </label>
+            <div className="flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
+              <span className="text-lg font-semibold text-neutral-500">₹</span>
+              <input
+                id="wallet-amount"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                value={amount}
+                onChange={(event) =>
+                  setAmount(event.target.value.replace(/[^\d]/g, '').slice(0, 5))
+                }
+                placeholder="Enter amount"
+                className="w-full bg-transparent text-base font-semibold text-neutral-950 outline-none placeholder:text-neutral-400"
+              />
             </div>
 
-            <form onSubmit={handleRecharge} className="mt-6 space-y-5">
-              <label htmlFor="wallet-amount" className="block text-sm font-medium text-neutral-500">
-                Recharge amount
-              </label>
-              <div className="flex items-center gap-3 rounded-[1.75rem] bg-[#f4f3f0] px-4 py-4 ring-1 ring-black/5">
-                <span className="text-2xl font-semibold text-neutral-500">₹</span>
-                <input
-                  id="wallet-amount"
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  step="1"
-                  value={amount}
-                  onChange={(event) =>
-                    setAmount(event.target.value.replace(/[^\d]/g, '').slice(0, 5))
-                  }
-                  placeholder="Enter amount"
-                  className="w-full bg-transparent text-2xl font-semibold text-neutral-950 outline-none placeholder:text-neutral-400"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                {presetAmounts.map((presetAmount) => {
-                  const selected = amount === String(presetAmount);
-
-                  return (
-                    <button
-                      key={presetAmount}
-                      type="button"
-                      onClick={() => setAmount(String(presetAmount))}
-                      aria-pressed={selected}
-                      className={`rounded-full border px-4 py-3 text-base font-semibold transition-all ${
-                        selected
-                          ? 'border-black bg-black text-white'
-                          : 'border-black/10 bg-white text-neutral-700 hover:bg-neutral-50'
-                      }`}
-                    >
-                      ₹{presetAmount}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                type="submit"
-                disabled={!rechargeAmount}
-                className="w-full rounded-full bg-black px-5 py-4 text-lg font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Recharge Wallet
-              </button>
-            </form>
-          </section>
-
-          <section id="history-section" className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-4xl font-semibold tracking-tight">Transaction History</h2>
-              <button
-                type="button"
-                className="text-base font-medium text-neutral-500 transition-colors hover:text-neutral-900"
-              >
-                View All
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {transactions.map((transaction) => {
-                const { Icon, wrapperClass } = transactionIcon(
-                  transaction.kind,
-                  transaction.type
-                );
+            <div className="grid grid-cols-3 gap-3">
+              {presetAmounts.map((presetAmount) => {
+                const selected = amount === String(presetAmount);
 
                 return (
-                  <article
-                    key={transaction.id}
-                    className={`${surfaceClass} flex items-center gap-4 p-5`}
+                  <button
+                    key={presetAmount}
+                    type="button"
+                    onClick={() => setAmount(String(presetAmount))}
+                    aria-pressed={selected}
+                    className={`rounded-full border px-4 py-3 text-sm font-semibold transition-all ${
+                      selected
+                        ? 'border-black bg-black text-white'
+                        : 'border-black/10 bg-white text-neutral-700 hover:bg-neutral-50'
+                    }`}
                   >
-                    <div
-                      className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full ${wrapperClass}`}
-                    >
-                      <Icon className="h-7 w-7" strokeWidth={2.2} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-2xl font-semibold tracking-tight">
-                        {transaction.title}
-                      </h3>
-                      <p className="mt-1 text-base text-neutral-500">{transaction.meta}</p>
-                    </div>
-                    <div
-                      className={`text-2xl font-semibold tracking-tight ${
-                        transaction.type === 'credit' ? 'text-emerald-600' : 'text-neutral-950'
-                      }`}
-                    >
-                      {transaction.type === 'credit' ? '+' : '-'}
-                      {formatCurrency(transaction.amount).replace('₹', '₹')}
-                    </div>
-                  </article>
+                    ₹{presetAmount}
+                  </button>
                 );
               })}
             </div>
-          </section>
-        </main>
 
-        <MobileBottomNav />
-      </div>
+            <button
+              type="submit"
+              disabled={!rechargeAmount}
+              className="w-full rounded-full bg-black px-5 py-4 text-base font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Recharge Wallet
+            </button>
+          </form>
+        </section>
+
+        <section id="history-section" className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold tracking-tight">Transaction History</h2>
+            <button
+              type="button"
+              className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+            >
+              View All
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {transactions.map((transaction) => {
+              const { Icon, wrapperClass } = transactionIcon(
+                transaction.kind,
+                transaction.type
+              );
+
+              return (
+                <article key={transaction.id} className={`${surfaceClass} flex items-center gap-3 p-4`}>
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${wrapperClass}`}
+                  >
+                    <Icon size={20} strokeWidth={2.1} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-base font-semibold tracking-tight">
+                      {transaction.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-neutral-500">{transaction.meta}</p>
+                  </div>
+                  <div
+                    className={`text-base font-semibold tracking-tight ${
+                      transaction.type === 'credit' ? 'text-emerald-600' : 'text-neutral-950'
+                    }`}
+                  >
+                    {transaction.type === 'credit' ? '+' : '-'}
+                    {formatCurrency(transaction.amount)}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+
+      <MobileBottomNav />
     </div>
   );
 }

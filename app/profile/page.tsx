@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-white shadow-sm">
+    <div className="max-w-md mx-auto w-full min-h-screen bg-white relative">
       <EditProfileScreen />
     </div>
   );

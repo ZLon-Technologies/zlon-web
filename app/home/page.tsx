@@ -331,7 +331,7 @@ export default function HomePage() {
                       alt={salon.name}
                       fill
                       unoptimized
-                      sizes="(max-width: 768px) 100vw, 448px"
+                      sizes="448px"
                       className="object-cover hover:scale-105 transition-transform duration-300"
                     />
 
