@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { SalonDetailScreen } from '../../components/salon-detail-screen';
-import { getSalonById } from '../../lib/salons';
+import { SelectServicesScreen } from '../../components/select-services-screen';
+import { getSalonById } from '../../lib/booking-flow';
 
 export const metadata: Metadata = {
-  title: 'Salon Detail',
+  title: 'Services',
 };
 
-interface SalonDetailPageProps {
+interface SalonServicesPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function SalonDetailPage({ params }: SalonDetailPageProps) {
+export default async function SalonServicesPage({ params }: SalonServicesPageProps) {
   const { id } = await params;
   const salon = getSalonById(id);
 
@@ -19,5 +19,5 @@ export default async function SalonDetailPage({ params }: SalonDetailPageProps) 
     notFound();
   }
 
-  return <SalonDetailScreen salon={salon} />;
+  return <SelectServicesScreen salon={salon} />;
 }

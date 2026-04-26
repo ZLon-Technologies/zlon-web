@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Search, MapPin, Star, Scissors, Sparkles, Wind } from 'lucide-react';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
-import { salons } from '../lib/salons';
+import { salons } from '../lib/booking-flow';
 
 const categories = [
   { id: 'haircut', label: 'Haircut', icon: Scissors },
