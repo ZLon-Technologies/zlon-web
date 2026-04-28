@@ -1,7 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { Suspense, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -177,7 +176,7 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
   return pathname;
 }
 
-export default function CreateAccountPage() {
+function CreateAccountPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
@@ -341,5 +340,13 @@ export default function CreateAccountPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function CreateAccountPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateAccountPageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { type FormEvent, useState } from 'react';
+import React, { Suspense, type FormEvent, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -24,7 +24,7 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
   return pathname;
 }
 
-export default function Page() {
+function LandingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
@@ -208,5 +208,13 @@ export default function Page() {
         </p>
       </form>
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LandingPageContent />
+    </Suspense>
   );
 }

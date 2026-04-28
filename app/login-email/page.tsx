@@ -1,7 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useState, type FormEvent } from 'react';
+import { Suspense, useState, type FormEvent, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -80,7 +79,7 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
   return pathname;
 }
 
-export default function LoginEmailPage() {
+function LoginEmailPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
@@ -192,5 +191,13 @@ export default function LoginEmailPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+export default function LoginEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginEmailPageContent />
+    </Suspense>
   );
 }
