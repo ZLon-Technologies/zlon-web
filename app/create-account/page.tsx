@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense, useState, type ReactNode } from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -177,7 +176,15 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
   return pathname;
 }
 
-function CreateAccountClient() {
+function CreateAccountFallback() {
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      Loading...
+    </div>
+  );
+}
+
+function CreateAccountPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
@@ -344,14 +351,10 @@ function CreateAccountClient() {
   );
 }
 
-const CreateAccountPage = dynamic(() => Promise.resolve(CreateAccountClientWithSuspense), { ssr: false });
-
-function CreateAccountClientWithSuspense() {
+export default function CreateAccountPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <CreateAccountClient />
+    <Suspense fallback={<CreateAccountFallback />}>
+      <CreateAccountPageContent />
     </Suspense>
   );
 }
-
-export default CreateAccountPage;
