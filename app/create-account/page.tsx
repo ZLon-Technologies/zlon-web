@@ -176,15 +176,7 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
   return pathname;
 }
 
-function CreateAccountFallback() {
-  return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center">
-      Loading...
-    </div>
-  );
-}
-
-function CreateAccountPageContent() {
+function CreateAccountForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
@@ -351,10 +343,10 @@ function CreateAccountPageContent() {
   );
 }
 
-export default function CreateAccountPage() {
+export default function Page() {
   return (
-    <Suspense fallback={<CreateAccountFallback />}>
-      <CreateAccountPageContent />
+    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>}>
+      <CreateAccountForm />
     </Suspense>
   );
 }
