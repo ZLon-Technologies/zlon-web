@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Search, MapPin, Star, Scissors, Sparkles, Wind } from 'lucide-react';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
 import { UserLocation } from '../components/user-location';
-import { salons } from '../lib/booking-flow';
 
 const categories = [
   { id: 'haircut', label: 'Haircut', icon: Scissors },
@@ -22,8 +22,40 @@ interface SearchMatch {
   reason: string;
 }
 
+interface SalonRecord {
+  id: string | number;
+  name: string | null;
+  image?: string | null;
+  image_url?: string | null;
+  distance?: string | null;
+  location?: string | null;
+  rating?: number | string | null;
+  price?: number | string | null;
+  starting_price?: number | string | null;
+  services?: string[] | null;
+}
+
+const FALLBACK_SALON_IMAGE =
+  'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
+
+function getNumericValue(value: number | string | null | undefined) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  return null;
+}
+
 export default function HomePage() {
   const [selected, setSelected] = useState('haircut');
+  const [salons, setSalons] = useState<SalonRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -34,6 +66,44 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let isMounted = true;
+
+    async function fetchSalons() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const { data, error: salonsError } = await supabase.from('salons').select('*');
+
+        if (salonsError) {
+          throw salonsError;
+        }
+
+        if (isMounted) {
+          setSalons((data ?? []) as SalonRecord[]);
+        }
+      } catch (fetchError) {
+        if (isMounted) {
+          setError(
+            fetchError instanceof Error ? fetchError.message : 'Unable to load salons right now.'
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchSalons();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -295,77 +365,103 @@ export default function HomePage() {
           {/* Recommended Salons */}
           <div>
             <h2 className="text-xl font-bold text-gray-900 mb-4">Recommended Salons</h2>
-            <div className="space-y-4">
-              {salons.map((salon) => (
-                <div key={salon.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Image Container */}
-                  <div className="relative h-56 overflow-hidden bg-gray-300">
-                    <Image
-                      src={salon.image}
-                      alt={salon.name}
-                      fill
-                      unoptimized
-                      sizes="448px"
-                      className="object-cover hover:scale-105 transition-transform duration-300"
-                    />
+            {isLoading ? (
+              <p className="text-sm text-gray-500">Loading salons...</p>
+            ) : error ? (
+              <p className="text-sm text-red-500">{error}</p>
+            ) : salons.length === 0 ? (
+              <p className="text-sm text-gray-500">No salons available right now.</p>
+            ) : (
+              <div className="space-y-4">
+                {salons.map((salon) => {
+                  const salonId = String(salon.id);
+                  const salonName = salon.name ?? 'Unnamed Salon';
+                  const salonImage = salon.image ?? salon.image_url ?? FALLBACK_SALON_IMAGE;
+                  const rating = getNumericValue(salon.rating);
+                  const price = getNumericValue(salon.price ?? salon.starting_price);
+                  const serviceTags = Array.isArray(salon.services) ? salon.services : [];
+                  const locationLabel =
+                    [
+                      salon.distance ? `${salon.distance} away` : null,
+                      salon.location ?? null,
+                    ]
+                      .filter(Boolean)
+                      .join(' • ') || 'Location unavailable';
 
-                    {/* Badge - Luxury Experience */}
-                    <div className="absolute bottom-0 left-0 bg-black/60 text-white text-xs font-semibold px-3 py-1.5">
-                      LUXURY EXPERIENCE
-                    </div>
+                  return (
+                    <div key={salonId} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+                      {/* Image Container */}
+                      <div className="relative h-56 overflow-hidden bg-gray-300">
+                        <Image
+                          src={salonImage}
+                          alt={salonName}
+                          fill
+                          unoptimized
+                          sizes="448px"
+                          className="object-cover hover:scale-105 transition-transform duration-300"
+                        />
 
-                    {/* Rating Badge */}
-                    <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md">
-                      <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
-                      <span className="font-bold text-gray-900 text-sm">{salon.rating}</span>
-                    </div>
-                  </div>
+                        {/* Badge - Luxury Experience */}
+                        <div className="absolute bottom-0 left-0 bg-black/60 text-white text-xs font-semibold px-3 py-1.5">
+                          LUXURY EXPERIENCE
+                        </div>
 
-                  {/* Content */}
-                  <div className="p-4 flex flex-col h-full">
-                    {/* Salon Name */}
-                    <h3 className="font-bold text-gray-900 text-base mb-1">{salon.name}</h3>
+                        {/* Rating Badge */}
+                        <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md">
+                          <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
+                          <span className="font-bold text-gray-900 text-sm">
+                            {rating !== null ? rating.toFixed(1) : 'New'}
+                          </span>
+                        </div>
+                      </div>
 
-                    {/* Location */}
-                    <div className="flex items-start gap-1 mb-4 text-xs text-gray-600">
-                      <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <span>
-                        {salon.distance} away • {salon.location}
-                      </span>
-                    </div>
+                      {/* Content */}
+                      <div className="p-4 flex flex-col h-full">
+                        {/* Salon Name */}
+                        <h3 className="font-bold text-gray-900 text-base mb-1">{salonName}</h3>
 
-                    {/* Price */}
-                    <div className="flex items-baseline gap-1 mb-4">
-                      <span className="text-xs text-gray-500">Starts from</span>
-                      <span className="text-xl font-bold text-gray-900">₹{salon.price}</span>
-                    </div>
+                        {/* Location */}
+                        <div className="flex items-start gap-1 mb-4 text-xs text-gray-600">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                          <span>{locationLabel}</span>
+                        </div>
 
-                    {/* Service Tags */}
-                    <div className="flex gap-2 mb-4">
-                      {salon.services.map((service) => (
-                        <span
-                          key={service}
-                          className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full"
+                        {/* Price */}
+                        <div className="flex items-baseline gap-1 mb-4">
+                          <span className="text-xs text-gray-500">Starts from</span>
+                          <span className="text-xl font-bold text-gray-900">
+                            {price !== null ? `₹${price}` : 'Contact'}
+                          </span>
+                        </div>
+
+                        {/* Service Tags */}
+                        <div className="flex gap-2 mb-4">
+                          {serviceTags.map((service) => (
+                            <span
+                              key={service}
+                              className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full"
+                            >
+                              {service}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Spacer */}
+                        <div className="flex-1"></div>
+
+                        {/* Book Now Button */}
+                        <Link
+                          href={`/salon/${salonId}`}
+                          className="block w-full rounded-full bg-gray-900 py-3 text-center text-sm font-bold text-white transition-all hover:bg-gray-800 active:bg-gray-950"
                         >
-                          {service}
-                        </span>
-                      ))}
+                          Book Now
+                        </Link>
+                      </div>
                     </div>
-
-                    {/* Spacer */}
-                    <div className="flex-1"></div>
-
-                    {/* Book Now Button */}
-                    <Link
-                      href={`/salon/${salon.id}`}
-                      className="block w-full rounded-full bg-gray-900 py-3 text-center text-sm font-bold text-white transition-all hover:bg-gray-800 active:bg-gray-950"
-                    >
-                      Book Now
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -374,4 +470,3 @@ export default function HomePage() {
     </div>
   );
 }
-
