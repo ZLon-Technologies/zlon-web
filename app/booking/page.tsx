@@ -6,6 +6,7 @@ import {
   Info,
   MapPin,
   MessageSquareMore,
+  Phone,
   Scissors,
 } from 'lucide-react';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
@@ -27,6 +28,7 @@ const booking = {
   totalPrice: 1200,
   barberName: 'Alex Mercer',
   barberTitle: 'Senior Stylist',
+  barberPhone: '+919876543210',
   services: [
     { id: 'classic-haircut', name: 'Classic Haircut', duration: '45 mins', price: 900 },
     { id: 'beard-finish', name: 'Beard Finish', duration: '15 mins', price: 300 },
@@ -35,6 +37,8 @@ const booking = {
 
 const surfaceClass =
   'rounded-[1.5rem] border border-black/10 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]';
+const professionalActionClass =
+  'flex h-10 w-10 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -126,13 +130,22 @@ export default function BookingPage() {
               </h2>
               <p className="mt-1 text-sm text-neutral-500">{booking.barberTitle}</p>
             </div>
-            <button
-              type="button"
-              aria-label="Message stylist"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200"
-            >
-              <MessageSquareMore size={20} strokeWidth={2.1} />
-            </button>
+            <div className="flex items-center gap-3">
+              <a
+                href={`tel:${booking.barberPhone}`}
+                aria-label="Call stylist"
+                className={professionalActionClass}
+              >
+                <Phone size={20} strokeWidth={2.1} />
+              </a>
+              <button
+                type="button"
+                aria-label="Message stylist"
+                className={professionalActionClass}
+              >
+                <MessageSquareMore size={20} strokeWidth={2.1} />
+              </button>
+            </div>
           </section>
 
           <section className={`${surfaceClass} flex items-center gap-3 p-4`}>
