@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, MapPin, Rocket, Star, Scissors, Sparkles, Wind } from 'lucide-react';
+import { Crosshair, MapPin, Rocket, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
@@ -97,8 +97,11 @@ export default function HomePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  useEffect(() => {
+  const requestCurrentLocation = (showFallbackAlert = false) => {
     if (!navigator.geolocation) {
+      if (showFallbackAlert) {
+        window.alert('Please enable location permissions');
+      }
       return;
     }
 
@@ -109,15 +112,46 @@ export default function HomePage() {
           lng: position.coords.longitude,
           displayText: 'Current Location',
         });
+        setIsLocationModalOpen(false);
       },
       () => {
-        setUserLocation({
-          lat: null,
-          lng: null,
-          displayText: 'Select Location',
-        });
+        if (showFallbackAlert) {
+          window.alert('Please enable location permissions');
+        }
       }
     );
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function syncGrantedLocation() {
+      if (!navigator.geolocation || !navigator.permissions?.query) {
+        return;
+      }
+
+      try {
+        const permissionStatus = await navigator.permissions.query({
+          name: 'geolocation' as PermissionName,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (permissionStatus.state === 'granted') {
+          requestCurrentLocation();
+        }
+      } catch (permissionError) {
+        console.error('Unable to read geolocation permissions:', permissionError);
+      }
+    }
+
+    syncGrantedLocation();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -643,6 +677,14 @@ export default function HomePage() {
                 placeholder="Try Indiranagar, Koramangala..."
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
               />
+              <button
+                type="button"
+                onClick={() => requestCurrentLocation(true)}
+                className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-zinc-300 transition-colors hover:text-white"
+              >
+                <Crosshair size={16} />
+                <span>Use my current location</span>
+              </button>
               <div className="mt-5 flex gap-3">
                 <button
                   type="button"

@@ -2,7 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, CalendarDays, Clock3, Sunrise, SunMedium, Moon, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  Moon,
+  SunMedium,
+  Sunrise,
+} from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, formatDuration, formatLongDate } from '../lib/booking-flow';
 
@@ -111,7 +119,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   }
 
   return (
-    <div className="max-w-md mx-auto w-full min-h-screen bg-white relative pb-24">
+    <div className="relative min-h-screen w-full overflow-x-hidden bg-white pb-28">
       <header className="border-b border-neutral-100 bg-white">
         <div className="flex items-center gap-3 px-4 py-4">
           <button
@@ -122,44 +130,44 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           >
             <ArrowLeft size={24} />
           </button>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-950">
+          <h1 className="text-xl font-semibold tracking-tight text-neutral-950">
             Select Date &amp; Time
           </h1>
         </div>
       </header>
 
-      <main className="px-4 pb-10 pt-6">
-        <section className="rounded-[2rem] bg-white p-6 shadow-[0_18px_38px_rgba(15,23,42,0.06)] ring-1 ring-neutral-100">
+      <main className="p-4 pb-32">
+        <section className="rounded-[2rem] bg-white p-4 shadow-[0_18px_38px_rgba(15,23,42,0.06)] ring-1 ring-neutral-100">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Selected Service
           </p>
-          <div className="mt-5 flex items-start justify-between gap-4">
+          <div className="mt-4 flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-[2.15rem] font-semibold leading-tight tracking-tight text-neutral-950">
+              <h2 className="text-xl font-semibold leading-tight tracking-tight text-neutral-950">
                 {selectedServiceLabel}
               </h2>
-              <p className="mt-5 inline-flex items-center gap-2 text-lg text-neutral-500">
+              <p className="mt-4 inline-flex items-center gap-2 text-sm text-neutral-500">
                 <Clock3 size={18} />
                 Total duration: {formatDuration(totalDurationMinutes)}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-semibold tracking-tight text-neutral-950">
+              <p className="text-xl font-semibold tracking-tight text-neutral-950">
                 {formatCurrency(totalPrice)}
               </p>
             </div>
           </div>
         </section>
 
-        <section className="mt-8">
+        <section className="mt-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-[2rem] font-semibold tracking-tight text-neutral-950">
+            <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
               {formatLongDate(selectedDate).replace(/\s\d{1,2},\s\d{4}$/, ' 2026')}
             </h2>
             <CalendarDays size={24} className="text-neutral-500" />
           </div>
 
-          <div className="-mx-4 mt-5 overflow-x-auto px-4 pb-2">
+          <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2">
             <div className="flex min-w-max gap-4">
               {dateOptions.map((date) => {
                 const active = date.id === selectedDate;
@@ -175,8 +183,8 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                         : 'border-neutral-300 bg-white text-neutral-500'
                     }`}
                   >
-                    <span className="text-lg font-medium">{date.dayLabel}</span>
-                    <span className="mt-2 text-5xl font-semibold leading-none">
+                    <span className="text-sm font-medium">{date.dayLabel}</span>
+                    <span className="mt-2 text-3xl font-semibold leading-none">
                       {date.dayNumber}
                     </span>
                   </button>
@@ -186,11 +194,11 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           </div>
         </section>
 
-        <section className="mt-10">
-          <h3 className="text-[2rem] font-semibold tracking-tight text-neutral-950">
+        <section className="mt-8">
+          <h3 className="text-xl font-semibold tracking-tight text-neutral-950">
             Available Staff
           </h3>
-          <div className="mt-5 flex gap-6 overflow-x-auto pb-2">
+          <div className="mt-4 flex gap-5 overflow-x-auto pb-2">
             {salon.staff.map((staffMember) => {
               const selected = staffMember.id === selectedStaffId;
 
@@ -210,7 +218,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                   >
                     {staffMember.initials}
                   </div>
-                  <span className="mt-3 text-lg font-medium text-neutral-600">
+                  <span className="mt-3 text-sm font-medium text-neutral-600">
                     {staffMember.name}
                   </span>
                 </button>
@@ -219,12 +227,12 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           </div>
         </section>
 
-        <section className="mt-10 space-y-8">
+        <section className="mt-8 space-y-6">
           {slotGroups.map(({ label, icon: Icon, slots }) => (
             <div key={label}>
               <div className="mb-4 flex items-center gap-3">
                 <Icon size={18} className="text-neutral-500" />
-                <h4 className="text-xl font-semibold uppercase tracking-[0.08em] text-neutral-800">
+                <h4 className="text-base font-semibold uppercase tracking-[0.08em] text-neutral-800">
                   {label}
                 </h4>
               </div>
@@ -240,7 +248,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                       type="button"
                       disabled={disabled}
                       onClick={() => setSelectedSlot(slot.time)}
-                      className={`rounded-[1.5rem] border px-3 py-5 text-2xl font-semibold transition-colors ${
+                      className={`rounded-[1.5rem] border px-3 py-4 text-base font-semibold transition-colors ${
                         disabled
                           ? 'border-transparent bg-neutral-100 text-neutral-300'
                           : selected
@@ -258,17 +266,17 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 rounded-t-[2rem] border-t border-neutral-200 bg-white px-4 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)]">
+      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[480px] border-t border-neutral-200 bg-white p-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center justify-between gap-3 text-neutral-500">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
               Selected Slot
             </p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
+            <p className="mt-1 text-lg font-semibold tracking-tight text-neutral-900">
               {formatDateLabel(selectedDate)} • {selectedSlot || 'Pick a slot'}
             </p>
           </div>
-          <span className="rounded-full bg-neutral-100 px-4 py-2 text-base font-semibold text-neutral-500">
+          <span className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-500">
             {formatDuration(totalDurationMinutes)}
           </span>
         </div>
@@ -276,10 +284,10 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           type="button"
           onClick={handleReview}
           disabled={!selectedSlot}
-          className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-[1.5rem] bg-black px-5 py-5 text-[2rem] font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-[1.5rem] bg-black px-5 py-4 text-lg font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
           Review Booking
-          <ChevronRight size={24} />
+          <ChevronRight size={22} />
         </button>
       </div>
     </div>
