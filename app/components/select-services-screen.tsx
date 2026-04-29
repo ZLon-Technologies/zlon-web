@@ -2,31 +2,169 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Clock3, MapPin, Plus, Scissors, Sparkles, Star } from 'lucide-react';
-import type { SalonProfile } from '../lib/booking-flow';
-import { formatCurrency, formatDuration } from '../lib/booking-flow';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { formatCurrency } from '../lib/booking-flow';
 
 interface SelectServicesScreenProps {
-  salon: SalonProfile;
+  salonId: string;
 }
 
-export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
-  const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState<
-    'All Services' | 'Haircut' | 'Shaving' | 'Face care'
-  >('All Services');
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(
-    salon.menu.filter((service) => service.featured).map((service) => service.id)
-  );
+interface SalonRecord {
+  id: string | number;
+  name: string | null;
+  image?: string | null;
+  image_url?: string | null;
+  distance?: string | null;
+  location?: string | null;
+  rating?: number | string | null;
+  services?: string[] | null;
+}
 
-  const visibleServices = salon.menu.filter(
-    (service) => selectedCategory === 'All Services' || service.category === selectedCategory
+interface ServiceRecord {
+  id: string | number;
+  salon_id: string | number;
+  name: string | null;
+  price: number | string | null;
+  duration: number | string | null;
+  category?: string | null;
+  badge?: string | null;
+  description?: string | null;
+  featured?: boolean | null;
+}
+
+const FALLBACK_SALON_IMAGE =
+  'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
+
+function getNumericValue(value: number | string | null | undefined) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  return null;
+}
+
+function getServiceCategory(service: ServiceRecord) {
+  return service.category?.trim() || 'All Services';
+}
+
+function getServiceBadge(service: ServiceRecord) {
+  return service.badge?.trim() || service.category?.trim() || 'Service';
+}
+
+function getServiceDescription(service: ServiceRecord) {
+  return service.description?.trim() || 'Professional salon service tailored to your appointment.';
+}
+
+export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
+  const router = useRouter();
+  const [salon, setSalon] = useState<SalonRecord | null>(null);
+  const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('All Services');
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let isMounted = true;
+
+    async function fetchSalonDetails() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const [{ data: salonData, error: salonError }, { data: servicesData, error: servicesError }] =
+          await Promise.all([
+            supabase.from('salons').select('*').eq('id', salonId).single(),
+            supabase.from('services').select('*').eq('salon_id', salonId),
+          ]);
+
+        if (salonError) {
+          throw salonError;
+        }
+
+        if (servicesError) {
+          throw servicesError;
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextServices = (servicesData ?? []) as ServiceRecord[];
+
+        setSalon((salonData ?? null) as SalonRecord | null);
+        setServices(nextServices);
+        setSelectedServiceIds(
+          nextServices
+            .filter((service) => Boolean(service.featured))
+            .map((service) => String(service.id))
+        );
+      } catch (fetchError) {
+        if (isMounted) {
+          setError(
+            fetchError instanceof Error
+              ? fetchError.message
+              : 'Unable to load salon details right now.'
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchSalonDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [salonId]);
+
+  const categories = [
+    'All Services',
+    ...Array.from(
+      new Set(
+        services
+          .map((service) => getServiceCategory(service))
+          .filter((category) => category !== 'All Services')
+      )
+    ),
+  ];
+  const visibleServices = services.filter(
+    (service) =>
+      selectedCategory === 'All Services' || getServiceCategory(service) === selectedCategory
   );
-  const selectedServices = salon.menu.filter((service) =>
-    selectedServiceIds.includes(service.id)
+  const selectedServices = services.filter((service) =>
+    selectedServiceIds.includes(String(service.id))
   );
-  const totalPrice = selectedServices.reduce((sum, service) => sum + service.price, 0);
+  const totalPrice = selectedServices.reduce(
+    (sum, service) => sum + (getNumericValue(service.price) ?? 0),
+    0
+  );
+  const salonName = salon?.name ?? 'Salon';
+  const salonImage = salon?.image || salon?.image_url || FALLBACK_SALON_IMAGE;
+  const locationLabel =
+    [
+      salon?.distance ? `${salon.distance} away` : null,
+      salon?.location ?? null,
+    ]
+      .filter(Boolean)
+      .join(' • ') || 'Location unavailable';
+  const serviceTags =
+    Array.isArray(salon?.services) && salon.services.length > 0
+      ? salon.services
+      : categories
+          .filter((category) => category !== 'All Services')
+          .map((category) => category.toUpperCase());
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -51,7 +189,7 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
     }
 
     const query = new URLSearchParams({
-      salon: salon.id,
+      salon: String(salon?.id ?? salonId),
       services: selectedServiceIds.join(','),
     });
 
@@ -78,8 +216,8 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
         <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
           <div className="relative h-64 overflow-hidden">
             <Image
-              src={salon.image}
-              alt={salon.name}
+              src={salonImage}
+              alt={salonName}
               fill
               unoptimized
               sizes="448px"
@@ -91,7 +229,7 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
             </div>
             <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold text-neutral-950 shadow-sm">
               <Star size={16} className="fill-neutral-950 text-neutral-950" />
-              {salon.rating}
+              {salon?.rating ?? 'New'}
             </div>
           </div>
 
@@ -99,17 +237,17 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight text-neutral-950">
-                  {salon.name}
+                  {salonName}
                 </h2>
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500">
                   <MapPin size={16} />
-                  {salon.distance} away • {salon.location}
+                  {locationLabel}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {salon.services.map((tag) => (
+              {serviceTags.map((tag) => (
                 <span
                   key={tag}
                   className="rounded-md bg-neutral-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.04em] text-neutral-600"
@@ -123,7 +261,7 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
 
         <section className="-mx-4 mt-6 overflow-x-auto px-4 pb-2">
           <div className="flex min-w-max gap-3">
-            {salon.categories.map((category) => {
+            {categories.map((category) => {
               const active = selectedCategory === category;
 
               return (
@@ -153,8 +291,27 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
           </div>
 
           <div className="space-y-6">
+            {isLoading && (
+              <p className="text-base text-neutral-500">Loading services...</p>
+            )}
+
+            {!isLoading && error && (
+              <p className="text-base text-neutral-500">{error}</p>
+            )}
+
+            {!isLoading && !error && visibleServices.length === 0 && (
+              <p className="text-base text-neutral-500">No services available right now.</p>
+            )}
+
             {visibleServices.map((service) => {
-              const selected = selectedServiceIds.includes(service.id);
+              const selected = selectedServiceIds.includes(String(service.id));
+              const serviceCategory = getServiceCategory(service);
+              const usesScissors =
+                serviceCategory.toLowerCase().includes('hair') ||
+                serviceCategory.toLowerCase().includes('shav') ||
+                serviceCategory.toLowerCase().includes('beard');
+              const numericPrice = getNumericValue(service.price);
+              const numericDuration = getNumericValue(service.duration);
 
               return (
                 <article
@@ -167,9 +324,9 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.04em] text-neutral-500">
-                      {selected ? 'Selected' : service.badge}
+                      {selected ? 'Selected' : getServiceBadge(service)}
                     </span>
-                    {service.category === 'Shaving' ? (
+                    {usesScissors ? (
                       <Scissors size={22} className="text-neutral-500" />
                     ) : (
                       <Sparkles size={22} className="text-neutral-500" />
@@ -180,22 +337,26 @@ export function SelectServicesScreen({ salon }: SelectServicesScreenProps) {
                     {service.name}
                   </h4>
                   <p className="mt-3 text-base leading-8 text-neutral-500">
-                    {service.description}
+                    {getServiceDescription(service)}
                   </p>
 
                   <div className="mt-5 flex items-center gap-4 text-neutral-600">
                     <span className="text-2xl font-semibold text-neutral-950">
-                      {formatCurrency(service.price)}
+                      {numericPrice !== null
+                        ? formatCurrency(numericPrice)
+                        : service.price || 'Price on request'}
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-base">
                       <Clock3 size={16} />
-                      {formatDuration(service.durationMinutes)}
+                      {numericDuration !== null
+                        ? `${numericDuration} min`
+                        : service.duration || 'Duration unavailable'}
                     </span>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => toggleService(service.id)}
+                    onClick={() => toggleService(String(service.id))}
                     className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-4 text-xl font-semibold transition-colors ${
                       selected
                         ? 'bg-neutral-500 text-white'

@@ -3,10 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, MapPin, Star, Scissors, Sparkles, Wind } from 'lucide-react';
+import { Search, MapPin, Rocket, Star, Scissors, Sparkles, Wind } from 'lucide-react';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
-import { UserLocation } from '../components/user-location';
 
 const categories = [
   { id: 'haircut', label: 'Haircut', icon: Scissors },
@@ -25,14 +24,17 @@ interface SearchMatch {
 interface SalonRecord {
   id: string | number;
   name: string | null;
-  image?: string | null;
-  image_url?: string | null;
-  distance?: string | null;
+  imageUrl?: string | null;
   location?: string | null;
-  rating?: number | string | null;
   price?: number | string | null;
-  starting_price?: number | string | null;
-  services?: string[] | null;
+  lat?: number | string | null;
+  lng?: number | string | null;
+}
+
+interface UserLocationState {
+  lat: number | null;
+  lng: number | null;
+  displayText: string;
 }
 
 const FALLBACK_SALON_IMAGE =
@@ -51,11 +53,39 @@ function getNumericValue(value: number | string | null | undefined) {
   return null;
 }
 
+function calculateDistanceInKilometers(
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number
+) {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const latitudeDelta = toRadians(endLat - startLat);
+  const longitudeDelta = toRadians(endLng - startLng);
+  const haversineValue =
+    Math.sin(latitudeDelta / 2) * Math.sin(latitudeDelta / 2) +
+    Math.cos(toRadians(startLat)) *
+      Math.cos(toRadians(endLat)) *
+      Math.sin(longitudeDelta / 2) *
+      Math.sin(longitudeDelta / 2);
+  const centralAngle = 2 * Math.atan2(Math.sqrt(haversineValue), Math.sqrt(1 - haversineValue));
+
+  return earthRadiusKm * centralAngle;
+}
+
 export default function HomePage() {
   const [selected, setSelected] = useState('haircut');
   const [salons, setSalons] = useState<SalonRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<UserLocationState>({
+    lat: null,
+    lng: null,
+    displayText: 'Select Location',
+  });
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [manualLocationInput, setManualLocationInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -66,6 +96,29 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          displayText: 'Current Location',
+        });
+      },
+      () => {
+        setUserLocation({
+          lat: null,
+          lng: null,
+          displayText: 'Select Location',
+        });
+      }
+    );
+  }, []);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -180,6 +233,54 @@ export default function HomePage() {
     setShowResults(false);
   };
 
+  const nearbySalons = salons.filter((salon) => {
+    const salonLat = getNumericValue(salon.lat);
+    const salonLng = getNumericValue(salon.lng);
+
+    if (
+      userLocation.lat === null ||
+      userLocation.lng === null ||
+      salonLat === null ||
+      salonLng === null
+    ) {
+      return false;
+    }
+
+    return (
+      calculateDistanceInKilometers(userLocation.lat, userLocation.lng, salonLat, salonLng) <= 5
+    );
+  });
+
+  const handleManualLocationSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const nextLocation = manualLocationInput.trim();
+
+    if (!nextLocation) {
+      return;
+    }
+
+    const matchedSalon = salons.find((salon) => {
+      const salonLocation = salon.location?.toLowerCase().trim();
+      const normalizedInput = nextLocation.toLowerCase();
+
+      if (!salonLocation) {
+        return false;
+      }
+
+      return salonLocation.includes(normalizedInput) || normalizedInput.includes(salonLocation);
+    });
+    const matchedLat = getNumericValue(matchedSalon?.lat);
+    const matchedLng = getNumericValue(matchedSalon?.lng);
+
+    setUserLocation({
+      lat: matchedLat,
+      lng: matchedLng,
+      displayText: nextLocation,
+    });
+    setIsLocationModalOpen(false);
+  };
+
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col max-w-md mx-auto">
       <style>{`
@@ -198,7 +299,21 @@ export default function HomePage() {
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="text-4xl font-black tracking-tight text-gray-700">ZLon.</div>
-            <UserLocation />
+            <div className="flex items-center gap-2 text-right">
+              <div className="text-xs text-gray-500 leading-tight">
+                <div className="flex flex-col items-end">
+                  <span className="font-medium text-gray-700">{userLocation.displayText}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLocationModalOpen(true)}
+                aria-label="Choose location"
+                className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-gray-100"
+              >
+                <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -369,20 +484,53 @@ export default function HomePage() {
               <p className="text-sm text-gray-500">Loading salons...</p>
             ) : error ? (
               <p className="text-sm text-red-500">{error}</p>
-            ) : salons.length === 0 ? (
-              <p className="text-sm text-gray-500">No salons available right now.</p>
+            ) : nearbySalons.length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="relative mb-6 flex h-32 w-32 items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border border-gray-200 bg-[radial-gradient(circle_at_top,_#ffffff_0%,_#f3f4f6_70%,_#e5e7eb_100%)]" />
+                  <div className="absolute inset-4 rounded-full border border-dashed border-gray-300" />
+                  <div className="absolute left-5 top-7 h-2.5 w-2.5 rounded-full bg-gray-300" />
+                  <div className="absolute bottom-7 right-6 h-3 w-3 rounded-full bg-gray-900" />
+                  <Rocket className="relative h-10 w-10 -rotate-12 text-gray-900" />
+                </div>
+                <h3 className="text-2xl font-bold tracking-tight text-gray-900">
+                  Oops! We haven&apos;t reached your neighborhood yet.
+                </h3>
+                <p className="mt-3 max-w-xs text-sm leading-6 text-gray-500">
+                  We are expanding fast, try searching another area!
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsLocationModalOpen(true)}
+                  className="mt-6 rounded-full bg-gray-900 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-gray-800"
+                >
+                  Try Another Area
+                </button>
+              </div>
             ) : (
               <div className="space-y-4">
-                {salons.map((salon) => {
+                {nearbySalons.map((salon) => {
                   const salonId = String(salon.id);
                   const salonName = salon.name ?? 'Unnamed Salon';
-                  const salonImage = salon.image ?? salon.image_url ?? FALLBACK_SALON_IMAGE;
-                  const rating = getNumericValue(salon.rating);
-                  const price = getNumericValue(salon.price ?? salon.starting_price);
-                  const serviceTags = Array.isArray(salon.services) ? salon.services : [];
+                  const salonImage = salon.imageUrl ?? FALLBACK_SALON_IMAGE;
+                  const price = getNumericValue(salon.price);
+                  const salonLat = getNumericValue(salon.lat);
+                  const salonLng = getNumericValue(salon.lng);
+                  const distanceFromUser =
+                    userLocation.lat !== null &&
+                    userLocation.lng !== null &&
+                    salonLat !== null &&
+                    salonLng !== null
+                      ? calculateDistanceInKilometers(
+                          userLocation.lat,
+                          userLocation.lng,
+                          salonLat,
+                          salonLng
+                        )
+                      : null;
                   const locationLabel =
                     [
-                      salon.distance ? `${salon.distance} away` : null,
+                      distanceFromUser !== null ? `${distanceFromUser.toFixed(1)} km away` : null,
                       salon.location ?? null,
                     ]
                       .filter(Boolean)
@@ -409,9 +557,7 @@ export default function HomePage() {
                         {/* Rating Badge */}
                         <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md">
                           <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
-                          <span className="font-bold text-gray-900 text-sm">
-                            {rating !== null ? rating.toFixed(1) : 'New'}
-                          </span>
+                          <span className="font-bold text-gray-900 text-sm">New</span>
                         </div>
                       </div>
 
@@ -436,14 +582,14 @@ export default function HomePage() {
 
                         {/* Service Tags */}
                         <div className="flex gap-2 mb-4">
-                          {serviceTags.map((service) => (
-                            <span
-                              key={service}
-                              className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full"
-                            >
-                              {service}
+                          <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
+                            NEARBY
+                          </span>
+                          {salon.location && (
+                            <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
+                              {salon.location}
                             </span>
-                          ))}
+                          )}
                         </div>
 
                         {/* Spacer */}
@@ -465,6 +611,57 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {isLocationModalOpen && (
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/70 px-4 pb-24 pt-6">
+          <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-black p-6 text-white shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">
+                  Change Area
+                </p>
+                <h3 className="mt-2 text-2xl font-bold tracking-tight">Search your location</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLocationModalOpen(false)}
+                className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-gray-300 transition-colors hover:bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+
+            <form onSubmit={handleManualLocationSave} className="mt-6">
+              <label htmlFor="manual-location" className="mb-3 block text-sm text-gray-300">
+                Enter a neighborhood, area, or landmark
+              </label>
+              <input
+                id="manual-location"
+                type="text"
+                value={manualLocationInput}
+                onChange={(event) => setManualLocationInput(event.target.value)}
+                placeholder="Try Indiranagar, Koramangala..."
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+              />
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsLocationModalOpen(false)}
+                  className="flex-1 rounded-full border border-white/10 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-full bg-white px-4 py-3 text-sm font-bold text-black transition-colors hover:bg-gray-200"
+                >
+                  Update Location
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <MobileBottomNav />
     </div>
