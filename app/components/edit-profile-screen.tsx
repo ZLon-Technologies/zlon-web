@@ -49,7 +49,7 @@ const quickLinks: QuickLinkItem[] = [
     description: 'Hassle-free wallet payments',
   },
   {
-    href: '/profile#privacy',
+    href: '/privacy-settings',
     icon: Shield,
     title: 'Privacy Settings',
     description: 'Manage personal data and security',

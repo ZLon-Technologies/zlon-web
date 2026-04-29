@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Crosshair, MapPin, Rocket, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { bookingHistoryEntries } from '../lib/booking-history';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
 const categories = [
@@ -96,6 +97,8 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const userHistory = bookingHistoryEntries;
+  const latestBooking = userHistory[0] ?? null;
 
   const requestCurrentLocation = (showFallbackAlert = false) => {
     if (!navigator.geolocation) {
@@ -477,39 +480,44 @@ export default function HomePage() {
           </div>
 
           {/* Quick Rebook */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Quick Rebook</h2>
-              <button className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
-                VIEW ALL
-              </button>
-            </div>
+          {userHistory && userHistory.length > 0 && latestBooking ? (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Quick Rebook</h2>
+                <Link
+                  href="/booking-history"
+                  className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  VIEW ALL
+                </Link>
+              </div>
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
-              <div className="flex gap-4">
-                <div className="relative w-20 h-20 rounded-xl bg-gray-300 flex-shrink-0 overflow-hidden">
-                  <Image
-                    src="https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=200&h=200&fit=crop"
-                    alt="The Grooming Society"
-                    fill
-                    unoptimized
-                    sizes="80px"
-                    className="object-cover"
-                  />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    Last visited 12 days ago
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                <div className="flex gap-4">
+                  <div className="relative w-20 h-20 rounded-xl bg-gray-300 flex-shrink-0 overflow-hidden">
+                    <Image
+                      src={latestBooking.image}
+                      alt={latestBooking.salonName}
+                      fill
+                      unoptimized
+                      sizes="80px"
+                      className="object-cover"
+                    />
                   </div>
-                  <h3 className="font-bold text-gray-900 text-sm mb-1 line-clamp-2">
-                    The Grooming Society
-                  </h3>
-                  <p className="text-xs text-gray-600">Classic Haircut + Beard Trim</p>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      {latestBooking.visitedLabel}
+                    </div>
+                    <h3 className="font-bold text-gray-900 text-sm mb-1 line-clamp-2">
+                      {latestBooking.salonName}
+                    </h3>
+                    <p className="text-xs text-gray-600">{latestBooking.serviceName}</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
           {/* Recommended Salons */}
           <div>
