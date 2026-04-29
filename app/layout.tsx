@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.className} h-full antialiased`}>
       <body className="min-h-screen bg-zinc-100">
-        <div className="min-h-screen bg-white max-w-[480px] mx-auto shadow-2xl relative overflow-x-hidden">
+        <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative overflow-x-hidden shadow-2xl">
           {children}
         </div>
       </body>

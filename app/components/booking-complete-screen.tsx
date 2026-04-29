@@ -29,7 +29,7 @@ export function BookingCompleteScreen({
   );
 
   return (
-    <div className="max-w-md mx-auto w-full min-h-screen bg-white flex flex-col items-center justify-center p-6">
+    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm text-center">
         <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full bg-black shadow-[0_28px_60px_rgba(15,23,42,0.22)] ring-4 ring-neutral-300/60">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white">

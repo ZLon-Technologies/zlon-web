@@ -119,7 +119,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-white pb-28">
+    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative overflow-x-hidden pb-28">
       <header className="border-b border-neutral-100 bg-white">
         <div className="flex items-center gap-3 px-4 py-4">
           <button
@@ -266,7 +266,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         </section>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[480px] border-t border-neutral-200 bg-white p-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+      <div className="fixed bottom-0 left-0 right-0 z-20 w-full max-w-sm mx-auto border-t border-neutral-200 bg-white p-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center justify-between gap-3 text-neutral-500">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">

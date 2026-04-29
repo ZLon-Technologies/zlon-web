@@ -319,7 +319,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex flex-col max-w-md mx-auto">
+    <div className="w-full max-w-sm mx-auto min-h-screen bg-gray-50 relative flex flex-col">
       <style>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
@@ -656,7 +656,7 @@ export default function HomePage() {
 
       {isLocationModalOpen && (
         <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/70 px-4 pb-24 pt-6">
-          <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-black p-6 text-white shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
+          <div className="w-full max-w-sm rounded-[2rem] border border-white/10 bg-black p-6 text-white shadow-[0_24px_60px_rgba(0,0,0,0.4)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">

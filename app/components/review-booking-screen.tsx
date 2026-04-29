@@ -53,7 +53,7 @@ export function ReviewBookingScreen({
   }
 
   return (
-    <div className="max-w-md mx-auto w-full min-h-screen bg-gray-50 relative pb-24">
+    <div className="w-full max-w-sm mx-auto min-h-screen bg-gray-50 relative pb-24">
       <header className="border-b border-neutral-200 bg-white">
         <div className="flex items-center gap-3 px-4 py-4">
           <button
@@ -70,7 +70,7 @@ export function ReviewBookingScreen({
         </div>
       </header>
 
-      <main className="space-y-6 px-4 pb-10 pt-6">
+      <main className="space-y-6 px-4 py-6 pb-32">
         <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.06)]">
           <div className="relative h-64">
             <Image
@@ -251,7 +251,7 @@ export function ReviewBookingScreen({
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 border-t border-neutral-200 bg-white px-4 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)]">
+      <div className="fixed bottom-0 left-0 right-0 z-20 w-full max-w-sm mx-auto border-t border-neutral-200 bg-white px-4 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <button
           type="button"
           onClick={handleConfirmBooking}

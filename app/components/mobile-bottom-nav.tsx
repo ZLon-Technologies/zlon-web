@@ -23,7 +23,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-md -translate-x-1/2 bg-white border-t border-black/10">
+    <div className="fixed bottom-0 left-0 right-0 z-20 w-full max-w-sm mx-auto bg-white border-t border-black/10">
       <nav aria-label="Primary navigation" className="px-2 py-2">
         <ul className="grid grid-cols-4 gap-2">
           {navigationItems.map(({ href, label, icon: Icon }) => {

@@ -26,7 +26,7 @@ export default function BookingHistoryPage() {
   }
 
   return (
-    <div className="w-full max-w-[480px] mx-auto min-h-screen bg-white relative pb-32">
+    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative pb-32">
       <div className="flex min-h-screen flex-col bg-[#f7f6f3] text-neutral-950">
         <header className="border-b border-black/5 bg-white px-4 py-4">
           <div className="flex items-center justify-between gap-3">
@@ -135,7 +135,7 @@ export default function BookingHistoryPage() {
           </section>
         </main>
 
-        <div className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-[480px] border-t border-neutral-200 bg-white p-4 [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+        <div className="fixed bottom-0 left-0 right-0 z-20 w-full max-w-sm mx-auto border-t border-neutral-200 bg-white p-4 [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
           <Link
             href="/home"
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-black px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-95"
