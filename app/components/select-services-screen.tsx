@@ -197,24 +197,24 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative pb-24">
+    <div className="w-full min-h-screen bg-white relative pb-24">
       <header className="border-b border-neutral-100 bg-white">
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button
             type="button"
             onClick={handleBack}
             aria-label="Go back"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
           >
-            <ArrowLeft size={24} />
+            <ArrowLeft size={20} />
           </button>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-950">SERVICES</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-neutral-950">SERVICES</h1>
         </div>
       </header>
 
-      <main className="px-4 pt-4 pb-32">
+      <main className="px-4 pt-3 pb-32">
         <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
-          <div className="relative h-64 overflow-hidden">
+          <div className="relative h-56 overflow-hidden">
             <Image
               src={salonImage}
               alt={salonName}
@@ -224,23 +224,23 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
               className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-            <div className="absolute bottom-4 left-4 rounded-full bg-black/55 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
+            <div className="absolute bottom-3 left-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
               Luxury Experience
             </div>
-            <div className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold text-neutral-950 shadow-sm">
-              <Star size={16} className="fill-neutral-950 text-neutral-950" />
+            <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-neutral-950 shadow-sm">
+              <Star size={14} className="fill-neutral-950 text-neutral-950" />
               {salon?.rating ?? 'New'}
             </div>
           </div>
 
-          <div className="p-5">
+          <div className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-neutral-950">
+                <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
                   {salonName}
                 </h2>
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500">
-                  <MapPin size={16} />
+                  <MapPin size={14} />
                   {locationLabel}
                 </p>
               </div>
@@ -250,7 +250,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
               {serviceTags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-md bg-neutral-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.04em] text-neutral-600"
+                  className="rounded-md bg-neutral-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.04em] text-neutral-600"
                 >
                   {tag}
                 </span>
@@ -269,7 +269,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
                   key={category}
                   type="button"
                   onClick={() => setSelectedCategory(category)}
-                  className={`rounded-full px-5 py-3 text-base font-semibold transition-colors ${
+                  className={`rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
                     active
                       ? 'bg-black text-white shadow-[0_10px_24px_rgba(0,0,0,0.16)]'
                       : 'bg-white text-neutral-500'
@@ -282,25 +282,25 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
           </div>
         </section>
 
-        <section className="mt-8">
+        <section className="mt-6">
           <div className="mb-5 flex items-center gap-3">
             <div className="h-1 w-7 rounded-full bg-neutral-400" />
-            <h3 className="text-2xl font-semibold tracking-tight text-neutral-950">
+            <h3 className="text-xl font-semibold tracking-tight text-neutral-950">
               Popular Services
             </h3>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {isLoading && (
-              <p className="text-base text-neutral-500">Loading services...</p>
+              <p className="text-sm text-neutral-500">Loading services...</p>
             )}
 
             {!isLoading && error && (
-              <p className="text-base text-neutral-500">{error}</p>
+              <p className="text-sm text-neutral-500">{error}</p>
             )}
 
             {!isLoading && !error && visibleServices.length === 0 && (
-              <p className="text-base text-neutral-500">No services available right now.</p>
+              <p className="text-sm text-neutral-500">No services available right now.</p>
             )}
 
             {visibleServices.map((service) => {
@@ -316,38 +316,38 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
               return (
                 <article
                   key={service.id}
-                  className={`rounded-[2rem] border p-6 transition-colors ${
+                  className={`rounded-[2rem] border p-4 transition-colors ${
                     selected
                       ? 'border-neutral-400 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.06)]'
                       : 'border-transparent bg-white'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.04em] text-neutral-500">
                       {selected ? 'Selected' : getServiceBadge(service)}
                     </span>
                     {usesScissors ? (
-                      <Scissors size={22} className="text-neutral-500" />
+                      <Scissors size={18} className="text-neutral-500" />
                     ) : (
-                      <Sparkles size={22} className="text-neutral-500" />
+                      <Sparkles size={18} className="text-neutral-500" />
                     )}
                   </div>
 
-                  <h4 className="mt-5 text-[2rem] font-semibold leading-tight tracking-tight text-neutral-950">
+                  <h4 className="mt-4 text-xl font-semibold leading-tight tracking-tight text-neutral-950">
                     {service.name}
                   </h4>
-                  <p className="mt-3 text-base leading-8 text-neutral-500">
+                  <p className="mt-2 text-sm leading-6 text-neutral-500">
                     {getServiceDescription(service)}
                   </p>
 
-                  <div className="mt-5 flex items-center gap-4 text-neutral-600">
-                    <span className="text-2xl font-semibold text-neutral-950">
+                  <div className="mt-4 flex items-center gap-3 text-neutral-600">
+                    <span className="text-xl font-semibold text-neutral-950">
                       {numericPrice !== null
                         ? formatCurrency(numericPrice)
                         : service.price || 'Price on request'}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 text-base">
-                      <Clock3 size={16} />
+                    <span className="inline-flex items-center gap-1.5 text-sm">
+                      <Clock3 size={14} />
                       {numericDuration !== null
                         ? `${numericDuration} min`
                         : service.duration || 'Duration unavailable'}
@@ -357,13 +357,13 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
                   <button
                     type="button"
                     onClick={() => toggleService(String(service.id))}
-                    className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-4 text-xl font-semibold transition-colors ${
+                    className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors ${
                       selected
                         ? 'bg-neutral-500 text-white'
                         : 'bg-black text-white hover:bg-neutral-900'
                     }`}
                   >
-                    {selected ? <Check size={20} /> : <Plus size={20} />}
+                    {selected ? <Check size={18} /> : <Plus size={18} />}
                     {selected ? 'Added' : 'Add Service'}
                   </button>
                 </article>
@@ -372,32 +372,32 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
           </div>
         </section>
 
-        <section className="mt-10 rounded-[2rem] border border-neutral-200 bg-gradient-to-b from-white to-[#f7fbff] p-6 shadow-[0_16px_34px_rgba(148,163,184,0.12)]">
+        <section className="mt-8 rounded-[2rem] border border-neutral-200 bg-gradient-to-b from-white to-[#f7fbff] p-4 shadow-[0_16px_34px_rgba(148,163,184,0.12)]">
           <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-amber-600">
             Limited Offer
           </p>
-          <h3 className="mt-4 text-[2rem] font-semibold leading-tight tracking-tight text-neutral-950">
+          <h3 className="mt-3 text-xl font-semibold leading-tight tracking-tight text-neutral-950">
             The Gentleman&apos;s Combo
           </h3>
-          <p className="mt-3 text-lg leading-8 text-neutral-500">
+          <p className="mt-2 text-sm leading-6 text-neutral-500">
             Bundle Haircut &amp; Beard Trim for a luxury experience and save 15%.
           </p>
           <button
             type="button"
-            className="mx-auto mt-8 block rounded-full bg-[#d8b247] px-7 py-4 text-xl font-semibold text-white shadow-[0_14px_28px_rgba(216,178,71,0.24)]"
+            className="mx-auto mt-5 block rounded-full bg-[#d8b247] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(216,178,71,0.24)]"
           >
             Claim Offer
           </button>
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 w-full max-w-sm mx-auto border-t border-neutral-200 bg-white px-4 py-4 shadow-[0_-16px_30px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
-        <div className="flex items-center gap-4">
+      <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-4 py-3 shadow-[0_-16px_30px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+        <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm text-neutral-500">
               {selectedServices.length} Service{selectedServices.length === 1 ? '' : 's'} Selected
             </p>
-            <p className="mt-1 text-xl font-semibold tracking-tight text-neutral-950">
+            <p className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
               Subtotal: {formatCurrency(totalPrice)}
             </p>
           </div>
@@ -405,7 +405,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
             type="button"
             onClick={handleContinue}
             disabled={selectedServices.length === 0}
-            className="inline-flex items-center justify-center rounded-[1.5rem] bg-black px-7 py-4 text-xl font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center justify-center rounded-[1.5rem] bg-black px-5 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           >
             Continue
           </button>

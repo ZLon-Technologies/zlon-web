@@ -53,26 +53,26 @@ export function ReviewBookingScreen({
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-gray-50 relative pb-24">
+    <div className="w-full min-h-screen bg-gray-50 relative pb-24">
       <header className="border-b border-neutral-200 bg-white">
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button
             type="button"
             onClick={handleBack}
             aria-label="Go back"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
           >
-            <ArrowLeft size={24} />
+            <ArrowLeft size={20} />
           </button>
-          <h1 className="text-2xl font-semibold tracking-tight text-neutral-950">
+          <h1 className="text-xl font-semibold tracking-tight text-neutral-950">
             Review Booking
           </h1>
         </div>
       </header>
 
-      <main className="space-y-6 px-4 py-6 pb-32">
+      <main className="space-y-5 px-4 py-4 pb-32">
         <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.06)]">
-          <div className="relative h-64">
+          <div className="relative h-56">
             <Image
               src={salon.image}
               alt={salon.name}
@@ -81,30 +81,30 @@ export function ReviewBookingScreen({
               sizes="448px"
               className="object-cover"
             />
-            <div className="absolute bottom-4 left-4 rounded-full bg-black/55 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
+            <div className="absolute bottom-3 left-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
               Selected Venue
             </div>
           </div>
 
-          <div className="p-5">
-            <h2 className="text-2xl font-semibold tracking-tight text-neutral-950">
+          <div className="p-4">
+            <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
               {salon.name}
             </h2>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500">
-              <MapPin size={16} />
+              <MapPin size={14} />
               {salon.distance} away • {salon.location}
             </p>
 
-            <div className="mt-5 space-y-4">
-              <div className="flex items-center gap-4 rounded-[1.5rem] bg-neutral-50 p-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm">
-                  <Scissors size={22} />
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-3 rounded-[1.5rem] bg-neutral-50 p-3.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+                  <Scissors size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-400">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">
                     Service
                   </p>
-                  <p className="text-xl font-semibold text-neutral-950">
+                  <p className="text-base font-semibold text-neutral-950">
                     {selectedServices.length === 1
                       ? selectedServices[0].name
                       : `${selectedServices.length} Services Selected`}
@@ -112,15 +112,15 @@ export function ReviewBookingScreen({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 rounded-[1.5rem] bg-neutral-50 p-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm">
-                  <CalendarDays size={22} />
+              <div className="flex items-center gap-3 rounded-[1.5rem] bg-neutral-50 p-3.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+                  <CalendarDays size={18} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.12em] text-neutral-400">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">
                     Appointment
                   </p>
-                  <p className="text-xl font-semibold text-neutral-950">
+                  <p className="text-base font-semibold text-neutral-950">
                     {formatDateLabel(selectedDate)} at {selectedSlot}
                   </p>
                 </div>
@@ -129,7 +129,7 @@ export function ReviewBookingScreen({
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-neutral-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+        <section className="rounded-[2rem] border border-neutral-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
           <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Selected Services
           </h3>
@@ -137,15 +137,15 @@ export function ReviewBookingScreen({
             {selectedServices.map((service) => (
               <div
                 key={service.id}
-                className="flex items-start justify-between gap-4 rounded-[1.25rem] bg-neutral-50 px-4 py-4"
+                className="flex items-start justify-between gap-3 rounded-[1.25rem] bg-neutral-50 px-3 py-3"
               >
                 <div>
-                  <p className="text-base font-semibold text-neutral-950">{service.name}</p>
+                  <p className="text-sm font-semibold text-neutral-950">{service.name}</p>
                   <p className="mt-1 text-sm text-neutral-500">
                     {service.durationMinutes} min • {service.category}
                   </p>
                 </div>
-                <span className="text-base font-semibold text-neutral-950">
+                <span className="text-sm font-semibold text-neutral-950">
                   {formatCurrency(service.price)}
                 </span>
               </div>
@@ -153,11 +153,11 @@ export function ReviewBookingScreen({
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-neutral-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+        <section className="rounded-[2rem] border border-neutral-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
           <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Price Breakdown
           </h3>
-          <div className="mt-5 space-y-4 text-base text-neutral-600">
+          <div className="mt-4 space-y-3 text-sm text-neutral-600">
             <div className="flex items-center justify-between">
               <span>Subtotal</span>
               <span className="font-semibold text-neutral-950">{formatCurrency(subtotal)}</span>
@@ -173,14 +173,14 @@ export function ReviewBookingScreen({
               </span>
             </div>
             <div className="h-px bg-neutral-200" />
-            <div className="flex items-center justify-between text-xl font-semibold text-neutral-950">
+            <div className="flex items-center justify-between text-lg font-semibold text-neutral-950">
               <span>Total Amount</span>
               <span>{formatCurrency(total)}</span>
             </div>
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-neutral-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+        <section className="rounded-[2rem] border border-neutral-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
           <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Payment Method
           </h3>
@@ -188,23 +188,23 @@ export function ReviewBookingScreen({
             <button
               type="button"
               onClick={() => setPaymentMethod('wallet')}
-              className={`flex w-full items-center gap-4 rounded-[1.5rem] border px-4 py-4 text-left transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-[1.5rem] border px-3 py-3 text-left transition-colors ${
                 paymentMethod === 'wallet'
                   ? 'border-black bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.8)]'
                   : 'border-neutral-200 bg-white'
               }`}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100">
-                <Wallet size={24} className="text-neutral-700" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
+                <Wallet size={18} className="text-neutral-700" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xl font-semibold text-neutral-950">Wallet</p>
+                <p className="text-base font-semibold text-neutral-950">Wallet</p>
                 <p className="mt-1 text-sm text-neutral-500">
                   Balance available • Instant confirmation
                 </p>
               </div>
               <div
-                className={`h-6 w-6 rounded-full border-2 ${
+                className={`h-5 w-5 rounded-full border-2 ${
                   paymentMethod === 'wallet' ? 'border-black bg-black' : 'border-neutral-300'
                 }`}
               />
@@ -213,23 +213,23 @@ export function ReviewBookingScreen({
             <button
               type="button"
               onClick={() => setPaymentMethod('pay-at-salon')}
-              className={`flex w-full items-center gap-4 rounded-[1.5rem] border px-4 py-4 text-left transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-[1.5rem] border px-3 py-3 text-left transition-colors ${
                 paymentMethod === 'pay-at-salon'
                   ? 'border-black bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.8)]'
                   : 'border-neutral-200 bg-white'
               }`}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100">
-                <Store size={24} className="text-neutral-700" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
+                <Store size={18} className="text-neutral-700" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xl font-semibold text-neutral-950">Pay at Salon</p>
+                <p className="text-base font-semibold text-neutral-950">Pay at Salon</p>
                 <p className="mt-1 text-sm text-neutral-500">
                   Settle up after your service
                 </p>
               </div>
               <div
-                className={`h-6 w-6 rounded-full border-2 ${
+                className={`h-5 w-5 rounded-full border-2 ${
                   paymentMethod === 'pay-at-salon'
                     ? 'border-black bg-black'
                     : 'border-neutral-300'
@@ -239,10 +239,10 @@ export function ReviewBookingScreen({
           </div>
         </section>
 
-        <section className="rounded-[1.5rem] bg-neutral-200 px-4 py-4 text-neutral-700">
+        <section className="rounded-[1.5rem] bg-neutral-200 px-3 py-3 text-neutral-700">
           <div className="flex items-start gap-3">
-            <Info size={22} className="mt-0.5 shrink-0" />
-            <p className="text-base leading-7">
+            <Info size={18} className="mt-0.5 shrink-0" />
+            <p className="text-sm leading-6">
               Flexibility is key. You can reschedule or cancel your appointment free
               of charge up to <span className="font-semibold text-neutral-950">2 hours</span>{' '}
               before your scheduled slot.
@@ -251,14 +251,14 @@ export function ReviewBookingScreen({
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 w-full max-w-sm mx-auto border-t border-neutral-200 bg-white px-4 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+      <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-4 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <button
           type="button"
           onClick={handleConfirmBooking}
-          className="inline-flex w-full items-center justify-center gap-3 rounded-[1.5rem] bg-black px-5 py-5 text-xl font-semibold text-white"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3.5 text-sm font-semibold text-white"
         >
           Confirm Booking {formatCurrency(total)}
-          <ChevronRight size={24} />
+          <ChevronRight size={18} />
         </button>
       </div>
     </div>

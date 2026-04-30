@@ -119,18 +119,18 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative overflow-x-hidden pb-28">
+    <div className="w-full min-h-screen bg-white relative overflow-x-hidden pb-28">
       <header className="border-b border-neutral-100 bg-white">
-        <div className="flex items-center gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-3">
           <button
             type="button"
             onClick={handleBack}
             aria-label="Go back"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
           >
-            <ArrowLeft size={24} />
+            <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-950">
+          <h1 className="text-lg font-semibold tracking-tight text-neutral-950">
             Select Date &amp; Time
           </h1>
         </div>
@@ -141,34 +141,34 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Selected Service
           </p>
-          <div className="mt-4 flex items-start justify-between gap-4">
+          <div className="mt-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-xl font-semibold leading-tight tracking-tight text-neutral-950">
+              <h2 className="text-lg font-semibold leading-tight tracking-tight text-neutral-950">
                 {selectedServiceLabel}
               </h2>
-              <p className="mt-4 inline-flex items-center gap-2 text-sm text-neutral-500">
-                <Clock3 size={18} />
+              <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-neutral-500">
+                <Clock3 size={16} />
                 Total duration: {formatDuration(totalDurationMinutes)}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xl font-semibold tracking-tight text-neutral-950">
+              <p className="text-lg font-semibold tracking-tight text-neutral-950">
                 {formatCurrency(totalPrice)}
               </p>
             </div>
           </div>
         </section>
 
-        <section className="mt-6">
+        <section className="mt-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
+            <h2 className="text-lg font-semibold tracking-tight text-neutral-950">
               {formatLongDate(selectedDate).replace(/\s\d{1,2},\s\d{4}$/, ' 2026')}
             </h2>
-            <CalendarDays size={24} className="text-neutral-500" />
+            <CalendarDays size={20} className="text-neutral-500" />
           </div>
 
           <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2">
-            <div className="flex min-w-max gap-4">
+            <div className="flex min-w-max gap-3">
               {dateOptions.map((date) => {
                 const active = date.id === selectedDate;
 
@@ -177,14 +177,14 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                     key={date.id}
                     type="button"
                     onClick={() => setSelectedDate(date.id)}
-                    className={`flex h-32 w-28 shrink-0 flex-col items-center justify-center rounded-[2rem] border text-center transition-colors ${
+                    className={`flex h-28 w-24 shrink-0 flex-col items-center justify-center rounded-[1.5rem] border text-center transition-colors ${
                       active
                         ? 'border-black bg-black text-white shadow-[0_16px_34px_rgba(0,0,0,0.16)]'
                         : 'border-neutral-300 bg-white text-neutral-500'
                     }`}
                   >
-                    <span className="text-sm font-medium">{date.dayLabel}</span>
-                    <span className="mt-2 text-3xl font-semibold leading-none">
+                    <span className="text-xs font-medium">{date.dayLabel}</span>
+                    <span className="mt-2 text-2xl font-semibold leading-none">
                       {date.dayNumber}
                     </span>
                   </button>
@@ -194,11 +194,11 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           </div>
         </section>
 
-        <section className="mt-8">
-          <h3 className="text-xl font-semibold tracking-tight text-neutral-950">
+        <section className="mt-6">
+          <h3 className="text-lg font-semibold tracking-tight text-neutral-950">
             Available Staff
           </h3>
-          <div className="mt-4 flex gap-5 overflow-x-auto pb-2">
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
             {salon.staff.map((staffMember) => {
               const selected = staffMember.id === selectedStaffId;
 
@@ -210,7 +210,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                   className="flex shrink-0 flex-col items-center"
                 >
                   <div
-                    className={`flex h-20 w-20 items-center justify-center rounded-full text-xl font-semibold shadow-sm ring-2 transition-colors ${
+                    className={`flex h-16 w-16 items-center justify-center rounded-full text-base font-semibold shadow-sm ring-2 transition-colors ${
                       selected
                         ? `${staffMember.colorClass} ring-black`
                         : `${staffMember.colorClass} ring-transparent`
@@ -218,7 +218,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                   >
                     {staffMember.initials}
                   </div>
-                  <span className="mt-3 text-sm font-medium text-neutral-600">
+                  <span className="mt-2 text-xs font-medium text-neutral-600">
                     {staffMember.name}
                   </span>
                 </button>
@@ -227,17 +227,17 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           </div>
         </section>
 
-        <section className="mt-8 space-y-6">
+        <section className="mt-6 space-y-5">
           {slotGroups.map(({ label, icon: Icon, slots }) => (
             <div key={label}>
-              <div className="mb-4 flex items-center gap-3">
-                <Icon size={18} className="text-neutral-500" />
-                <h4 className="text-base font-semibold uppercase tracking-[0.08em] text-neutral-800">
+              <div className="mb-3 flex items-center gap-2.5">
+                <Icon size={16} className="text-neutral-500" />
+                <h4 className="text-sm font-semibold uppercase tracking-[0.08em] text-neutral-800">
                   {label}
                 </h4>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 {slots.map((slot) => {
                   const disabled = slot.state === 'booked';
                   const selected = selectedSlot === slot.time;
@@ -248,7 +248,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                       type="button"
                       disabled={disabled}
                       onClick={() => setSelectedSlot(slot.time)}
-                      className={`rounded-[1.5rem] border px-3 py-4 text-base font-semibold transition-colors ${
+                      className={`rounded-[1.25rem] border px-2.5 py-3 text-sm font-semibold transition-colors ${
                         disabled
                           ? 'border-transparent bg-neutral-100 text-neutral-300'
                           : selected
@@ -266,17 +266,17 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 w-full max-w-sm mx-auto border-t border-neutral-200 bg-white p-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+      <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white p-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center justify-between gap-3 text-neutral-500">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
               Selected Slot
             </p>
-            <p className="mt-1 text-lg font-semibold tracking-tight text-neutral-900">
+            <p className="mt-1 text-base font-semibold tracking-tight text-neutral-900">
               {formatDateLabel(selectedDate)} • {selectedSlot || 'Pick a slot'}
             </p>
           </div>
-          <span className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-semibold text-neutral-500">
+          <span className="rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-500">
             {formatDuration(totalDurationMinutes)}
           </span>
         </div>
@@ -284,10 +284,10 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           type="button"
           onClick={handleReview}
           disabled={!selectedSlot}
-          className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-[1.5rem] bg-black px-5 py-4 text-lg font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
           Review Booking
-          <ChevronRight size={22} />
+          <ChevronRight size={18} />
         </button>
       </div>
     </div>

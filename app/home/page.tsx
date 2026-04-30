@@ -26,6 +26,7 @@ interface SalonRecord {
   id: string | number;
   name: string | null;
   imageUrl?: string | null;
+  image_url?: string | null;
   location?: string | null;
   price?: number | string | null;
   lat?: number | string | null;
@@ -40,6 +41,40 @@ interface UserLocationState {
 
 const FALLBACK_SALON_IMAGE =
   'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
+
+function getStringValue(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function getSafeSalonRecord(rawSalon: Record<string, unknown>): SalonRecord | null {
+  const id = rawSalon.id;
+
+  if (typeof id !== 'string' && typeof id !== 'number') {
+    return null;
+  }
+
+  return {
+    id,
+    name: getStringValue(rawSalon.name),
+    imageUrl:
+      getStringValue(rawSalon.imageUrl) ??
+      getStringValue(rawSalon.image_url) ??
+      getStringValue(rawSalon.image),
+    image_url:
+      getStringValue(rawSalon.image_url) ??
+      getStringValue(rawSalon.imageUrl) ??
+      getStringValue(rawSalon.image),
+    location: getStringValue(rawSalon.location),
+    price:
+      typeof rawSalon.price === 'number' || typeof rawSalon.price === 'string'
+        ? rawSalon.price
+        : null,
+    lat:
+      typeof rawSalon.lat === 'number' || typeof rawSalon.lat === 'string' ? rawSalon.lat : null,
+    lng:
+      typeof rawSalon.lng === 'number' || typeof rawSalon.lng === 'string' ? rawSalon.lng : null,
+  };
+}
 
 function getNumericValue(value: number | string | null | undefined) {
   if (typeof value === 'number') {
@@ -83,7 +118,7 @@ export default function HomePage() {
   const [userLocation, setUserLocation] = useState<UserLocationState>({
     lat: null,
     lng: null,
-    displayText: 'Select Location',
+    displayText: 'Current Location',
   });
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [manualLocationInput, setManualLocationInput] = useState('');
@@ -97,8 +132,8 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const userHistory = bookingHistoryEntries;
-  const latestBooking = userHistory[0] ?? null;
+  const bookings = bookingHistoryEntries;
+  const latestBooking = bookings?.[0] ?? null;
 
   const requestCurrentLocation = (showFallbackAlert = false) => {
     if (!navigator.geolocation) {
@@ -173,7 +208,10 @@ export default function HomePage() {
         }
 
         if (isMounted) {
-          setSalons((data ?? []) as SalonRecord[]);
+          const nextSalons = ((data ?? []) as Array<Record<string, unknown>>)
+            .map(getSafeSalonRecord)
+            .filter((salon): salon is SalonRecord => Boolean(salon));
+          setSalons(nextSalons);
         }
       } catch (fetchError) {
         if (isMounted) {
@@ -287,6 +325,54 @@ export default function HomePage() {
       calculateDistanceInKilometers(userLocation.lat, userLocation.lng, salonLat, salonLng) <= 5
     );
   });
+  const detectedNeighborhood = (() => {
+    const currentLat = userLocation.lat;
+    const currentLng = userLocation.lng;
+
+    if (currentLat === null || currentLng === null || userLocation.displayText !== 'Current Location') {
+      return null;
+    }
+
+    return salons.reduce<string | null>((nearestLocation, salon) => {
+      const salonLat = getNumericValue(salon.lat);
+      const salonLng = getNumericValue(salon.lng);
+
+      if (salonLat === null || salonLng === null || !salon.location?.trim()) {
+        return nearestLocation;
+      }
+
+      if (!nearestLocation) {
+        return salon.location;
+      }
+
+      const nearestSalon = salons.find((candidate) => candidate.location === nearestLocation);
+      const nearestSalonLat = getNumericValue(nearestSalon?.lat);
+      const nearestSalonLng = getNumericValue(nearestSalon?.lng);
+
+      if (nearestSalonLat === null || nearestSalonLng === null) {
+        return salon.location;
+      }
+
+      const nextDistance = calculateDistanceInKilometers(
+        currentLat,
+        currentLng,
+        salonLat,
+        salonLng
+      );
+      const currentDistance = calculateDistanceInKilometers(
+        currentLat,
+        currentLng,
+        nearestSalonLat,
+        nearestSalonLng
+      );
+
+      return nextDistance < currentDistance ? salon.location : nearestLocation;
+    }, null);
+  })();
+  const locationDisplayLabel =
+    userLocation.displayText !== 'Current Location'
+      ? userLocation.displayText.trim()
+      : detectedNeighborhood?.trim() || 'Current Location';
 
   const handleManualLocationSave = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -319,7 +405,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-gray-50 relative flex flex-col">
+    <div className="w-full min-h-screen bg-gray-50 relative flex flex-col">
       <style>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
@@ -334,23 +420,24 @@ export default function HomePage() {
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="text-4xl font-black tracking-tight text-gray-700">ZLon.</div>
-            <div className="flex items-center gap-2 text-right">
-              <div className="text-xs text-gray-500 leading-tight">
-                <div className="flex flex-col items-end">
-                  <span className="font-medium text-gray-700">{userLocation.displayText}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsLocationModalOpen(true)}
-                aria-label="Choose location"
-                className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-gray-100"
-              >
-                <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0" />
-              </button>
-            </div>
+          <div className="flex items-center justify-between gap-4">
+            <Image
+              src="/logo.png"
+              alt="ZLon"
+              width={96}
+              height={40}
+              priority
+              className="h-auto w-24 shrink-0 object-contain"
+            />
+            <button
+              type="button"
+              onClick={() => setIsLocationModalOpen(true)}
+              aria-label="Choose location"
+              className="flex items-center gap-2 rounded-full px-3 py-2 text-left transition-colors hover:bg-gray-100"
+            >
+              <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
+              <span className="text-xs font-medium text-gray-700">{locationDisplayLabel}</span>
+            </button>
           </div>
         </div>
 
@@ -480,7 +567,7 @@ export default function HomePage() {
           </div>
 
           {/* Quick Rebook */}
-          {userHistory && userHistory.length > 0 && latestBooking ? (
+          {bookings && bookings.length > 0 && latestBooking ? (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Quick Rebook</h2>
@@ -521,6 +608,20 @@ export default function HomePage() {
 
           {/* Recommended Salons */}
           <div>
+            <Link
+              href="/ai-stylist"
+              className="mb-5 flex items-center gap-4 rounded-[1.5rem] bg-gray-900 px-4 py-4 text-white shadow-[0_16px_36px_rgba(17,24,39,0.16)] transition-transform hover:scale-[0.99]"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-base font-bold text-white">ZLon AI Stylist</h2>
+                <p className="mt-1 text-sm text-white/70">
+                  Find your perfect cut based on your face shape.
+                </p>
+              </div>
+            </Link>
             <h2 className="text-xl font-bold text-gray-900 mb-4">Recommended Salons</h2>
             {isLoading ? (
               <p className="text-sm text-gray-500">Loading salons...</p>
@@ -580,41 +681,37 @@ export default function HomePage() {
 
                   return (
                     <div key={salonId} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                      {/* Image Container */}
-                      <div className="relative h-56 overflow-hidden bg-gray-300">
-                        <Image
-                          src={salonImage}
-                          alt={salonName}
-                          fill
-                          unoptimized
-                          sizes="448px"
-                          className="object-cover hover:scale-105 transition-transform duration-300"
-                        />
+                      <Link href={`/salon-profile/${salonId}`} className="block">
+                        <div className="relative h-56 overflow-hidden bg-gray-300">
+                          <Image
+                            src={salonImage}
+                            alt={salonName}
+                            fill
+                            unoptimized
+                            sizes="448px"
+                            className="object-cover hover:scale-105 transition-transform duration-300"
+                          />
 
-                        {/* Badge - Luxury Experience */}
-                        <div className="absolute bottom-0 left-0 bg-black/60 text-white text-xs font-semibold px-3 py-1.5">
-                          LUXURY EXPERIENCE
+                          <div className="absolute bottom-0 left-0 bg-black/60 text-white text-xs font-semibold px-3 py-1.5">
+                            LUXURY EXPERIENCE
+                          </div>
+
+                          <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md">
+                            <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
+                            <span className="font-bold text-gray-900 text-sm">New</span>
+                          </div>
                         </div>
 
-                        {/* Rating Badge */}
-                        <div className="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center gap-1 shadow-md">
-                          <Star className="w-4 h-4 fill-gray-900 text-gray-900" />
-                          <span className="font-bold text-gray-900 text-sm">New</span>
+                        <div className="px-4 pb-0 pt-4">
+                          <h3 className="font-bold text-gray-900 text-base mb-1">{salonName}</h3>
+                          <div className="flex items-start gap-1 text-xs text-gray-600">
+                            <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                            <span>{locationLabel}</span>
+                          </div>
                         </div>
-                      </div>
+                      </Link>
 
-                      {/* Content */}
-                      <div className="p-4 flex flex-col h-full">
-                        {/* Salon Name */}
-                        <h3 className="font-bold text-gray-900 text-base mb-1">{salonName}</h3>
-
-                        {/* Location */}
-                        <div className="flex items-start gap-1 mb-4 text-xs text-gray-600">
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                          <span>{locationLabel}</span>
-                        </div>
-
-                        {/* Price */}
+                      <div className="p-4 pt-4 flex flex-col h-full">
                         <div className="flex items-baseline gap-1 mb-4">
                           <span className="text-xs text-gray-500">Starts from</span>
                           <span className="text-xl font-bold text-gray-900">
@@ -640,6 +737,7 @@ export default function HomePage() {
                         {/* Book Now Button */}
                         <Link
                           href={`/salon/${salonId}`}
+                          onClick={(event) => event.stopPropagation()}
                           className="block w-full rounded-full bg-gray-900 py-3 text-center text-sm font-bold text-white transition-all hover:bg-gray-800 active:bg-gray-950"
                         >
                           Book Now
