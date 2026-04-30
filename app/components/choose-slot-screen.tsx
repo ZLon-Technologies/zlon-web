@@ -12,7 +12,13 @@ import {
   Sunrise,
 } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
-import { formatCurrency, formatDateLabel, formatDuration, formatLongDate } from '../lib/booking-flow';
+import {
+  formatCurrency,
+  formatDateLabel,
+  formatDuration,
+  formatLongDate,
+  serializeSelectedServices,
+} from '../lib/booking-flow';
 
 interface ChooseSlotScreenProps {
   salon: SalonProfile;
@@ -30,12 +36,33 @@ interface SlotOption {
   state: 'available' | 'booked';
 }
 
-const dateOptions: DateOption[] = [
-  { id: '2026-10-23', dayLabel: 'MON', dayNumber: '23' },
-  { id: '2026-10-24', dayLabel: 'TUE', dayNumber: '24' },
-  { id: '2026-10-25', dayLabel: 'WED', dayNumber: '25' },
-  { id: '2026-10-26', dayLabel: 'THU', dayNumber: '26' },
-];
+function formatDateId(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentMonthDateOptions(): DateOption[] {
+  const today = new Date();
+  const cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+  const finalDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const options: DateOption[] = [];
+
+  while (cursor <= finalDayOfMonth) {
+    options.push({
+      id: formatDateId(cursor),
+      dayLabel: new Intl.DateTimeFormat('en-US', { weekday: 'short' })
+        .format(cursor)
+        .toUpperCase(),
+      dayNumber: String(cursor.getDate()),
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return options;
+}
 
 const slotGroups: Array<{
   label: string;
@@ -79,17 +106,21 @@ const slotGroups: Array<{
 
 export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenProps) {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(dateOptions[0].id);
+  const [dateOptions] = useState<DateOption[]>(getCurrentMonthDateOptions);
+  const [selectedDate, setSelectedDate] = useState(() => formatDateId(new Date()));
   const [selectedStaffId, setSelectedStaffId] = useState(salon.staff[0]?.id ?? '');
   const [selectedSlot, setSelectedSlot] = useState('10:00 AM');
 
+  const hasSelectedServices = selectedServices.length > 0;
   const totalDurationMinutes = selectedServices.reduce(
     (sum, service) => sum + service.durationMinutes,
     0
   );
   const totalPrice = selectedServices.reduce((sum, service) => sum + service.price, 0);
   const selectedServiceLabel =
-    selectedServices.length === 1
+    selectedServices.length === 0
+      ? 'No service selected'
+      : selectedServices.length === 1
       ? selectedServices[0].name
       : `${selectedServices[0]?.name} +${selectedServices.length - 1} more`;
 
@@ -103,13 +134,16 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   }
 
   function handleReview() {
-    if (!selectedSlot) {
+    if (!selectedSlot || !hasSelectedServices) {
       return;
     }
 
     const query = new URLSearchParams({
       salon: salon.id,
       services: selectedServices.map((service) => service.id).join(','),
+      cart: serializeSelectedServices(selectedServices),
+      totalPrice: String(totalPrice),
+      totalDuration: String(totalDurationMinutes),
       date: selectedDate,
       slot: selectedSlot,
       staff: selectedStaffId,
@@ -162,12 +196,12 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         <section className="mt-5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-tight text-neutral-950">
-              {formatLongDate(selectedDate).replace(/\s\d{1,2},\s\d{4}$/, ' 2026')}
+              {formatLongDate(selectedDate)}
             </h2>
             <CalendarDays size={20} className="text-neutral-500" />
           </div>
 
-          <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2">
+          <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex min-w-max gap-3">
               {dateOptions.map((date) => {
                 const active = date.id === selectedDate;
@@ -198,7 +232,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
           <h3 className="text-lg font-semibold tracking-tight text-neutral-950">
             Available Staff
           </h3>
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-2">
+          <div className="mt-3 flex gap-3 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {salon.staff.map((staffMember) => {
               const selected = staffMember.id === selectedStaffId;
 
@@ -207,10 +241,10 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                   key={staffMember.id}
                   type="button"
                   onClick={() => setSelectedStaffId(staffMember.id)}
-                  className="flex shrink-0 flex-col items-center"
+                  className="flex flex-shrink-0 shrink-0 flex-col items-center"
                 >
                   <div
-                    className={`flex h-16 w-16 items-center justify-center rounded-full text-base font-semibold shadow-sm ring-2 transition-colors ${
+                    className={`flex h-16 w-16 flex-shrink-0 shrink-0 items-center justify-center rounded-full text-base font-semibold shadow-sm ring-2 transition-colors ${
                       selected
                         ? `${staffMember.colorClass} ring-black`
                         : `${staffMember.colorClass} ring-transparent`
@@ -283,7 +317,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         <button
           type="button"
           onClick={handleReview}
-          disabled={!selectedSlot}
+          disabled={!selectedSlot || !hasSelectedServices}
           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
           Review Booking

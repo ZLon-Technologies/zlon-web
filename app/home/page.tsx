@@ -432,15 +432,15 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
+        <div className="bg-white border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
             <Image
               src="/logo.png"
               alt="ZLon"
               width={96}
-              height={40}
+              height={32}
               priority
-              className="h-auto w-24 shrink-0 object-contain"
+              className="h-8 w-auto shrink-0 object-contain"
             />
             <button
               type="button"

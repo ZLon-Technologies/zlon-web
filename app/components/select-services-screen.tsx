@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Clock3, MapPin, Plus, Scissors, Sparkles, Star } from 'lucide-react';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { formatCurrency } from '../lib/booking-flow';
+import type { SalonService } from '../lib/booking-flow';
+import { formatCurrency, serializeSelectedServices } from '../lib/booking-flow';
 
 interface SelectServicesScreenProps {
   salonId: string;
@@ -60,6 +61,21 @@ function getServiceBadge(service: ServiceRecord) {
 
 function getServiceDescription(service: ServiceRecord) {
   return service.description?.trim() || 'Professional salon service tailored to your appointment.';
+}
+
+function mapServiceRecordToBookingService(service: ServiceRecord): SalonService {
+  const category = getServiceCategory(service);
+
+  return {
+    id: String(service.id),
+    name: service.name?.trim() || 'Salon Service',
+    category,
+    badge: getServiceBadge(service),
+    description: getServiceDescription(service),
+    durationMinutes: getNumericValue(service.duration) ?? 0,
+    price: getNumericValue(service.price) ?? 0,
+    featured: Boolean(service.featured),
+  };
 }
 
 export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
@@ -146,8 +162,10 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   const selectedServices = services.filter((service) =>
     selectedServiceIds.includes(String(service.id))
   );
-  const totalPrice = selectedServices.reduce(
-    (sum, service) => sum + (getNumericValue(service.price) ?? 0),
+  const selectedBookingServices = selectedServices.map(mapServiceRecordToBookingService);
+  const totalPrice = selectedBookingServices.reduce((sum, service) => sum + service.price, 0);
+  const totalDuration = selectedBookingServices.reduce(
+    (sum, service) => sum + service.durationMinutes,
     0
   );
   const salonName = salon?.name ?? 'Salon';
@@ -191,6 +209,9 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
     const query = new URLSearchParams({
       salon: String(salon?.id ?? salonId),
       services: selectedServiceIds.join(','),
+      cart: serializeSelectedServices(selectedBookingServices),
+      totalPrice: String(totalPrice),
+      totalDuration: String(totalDuration),
     });
 
     router.push(`/booking/choose-slot?${query.toString()}`);

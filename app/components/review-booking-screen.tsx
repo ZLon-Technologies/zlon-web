@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, ChevronRight } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
-import { formatCurrency, formatDateLabel } from '../lib/booking-flow';
+import { formatCurrency, formatDateLabel, serializeSelectedServices } from '../lib/booking-flow';
 
 interface ReviewBookingScreenProps {
   salon: SalonProfile;
@@ -25,10 +25,15 @@ export function ReviewBookingScreen({
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
 
+  const hasSelectedServices = selectedServices.length > 0;
   const subtotal = selectedServices.reduce((sum, service) => sum + service.price, 0);
   const taxes = Math.round(subtotal * 0.18);
-  const platformFee = 30;
+  const platformFee = hasSelectedServices ? 30 : 0;
   const total = subtotal + taxes + platformFee;
+  const totalDuration = selectedServices.reduce(
+    (sum, service) => sum + service.durationMinutes,
+    0
+  );
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -40,9 +45,16 @@ export function ReviewBookingScreen({
   }
 
   function handleConfirmBooking() {
+    if (!hasSelectedServices) {
+      return;
+    }
+
     const query = new URLSearchParams({
       salon: salon.id,
       services: selectedServices.map((service) => service.id).join(','),
+      cart: serializeSelectedServices(selectedServices),
+      totalPrice: String(subtotal),
+      totalDuration: String(totalDuration),
       date: selectedDate,
       slot: selectedSlot,
       payment: paymentMethod,
@@ -105,7 +117,9 @@ export function ReviewBookingScreen({
                     Service
                   </p>
                   <p className="text-base font-semibold text-neutral-950">
-                    {selectedServices.length === 1
+                    {selectedServices.length === 0
+                      ? 'No service selected'
+                      : selectedServices.length === 1
                       ? selectedServices[0].name
                       : `${selectedServices.length} Services Selected`}
                   </p>
@@ -134,6 +148,12 @@ export function ReviewBookingScreen({
             Selected Services
           </h3>
           <div className="mt-4 space-y-3">
+            {!hasSelectedServices && (
+              <p className="rounded-[1.25rem] bg-neutral-50 px-3 py-3 text-sm text-neutral-500">
+                No services selected. Please go back and choose a service.
+              </p>
+            )}
+
             {selectedServices.map((service) => (
               <div
                 key={service.id}
@@ -194,7 +214,7 @@ export function ReviewBookingScreen({
                   : 'border-neutral-200 bg-white'
               }`}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
                 <Wallet size={18} className="text-neutral-700" />
               </div>
               <div className="min-w-0 flex-1">
@@ -204,7 +224,7 @@ export function ReviewBookingScreen({
                 </p>
               </div>
               <div
-                className={`h-5 w-5 rounded-full border-2 ${
+                className={`h-5 w-5 shrink-0 rounded-full border-2 ${
                   paymentMethod === 'wallet' ? 'border-black bg-black' : 'border-neutral-300'
                 }`}
               />
@@ -219,7 +239,7 @@ export function ReviewBookingScreen({
                   : 'border-neutral-200 bg-white'
               }`}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
                 <Store size={18} className="text-neutral-700" />
               </div>
               <div className="min-w-0 flex-1">
@@ -229,7 +249,7 @@ export function ReviewBookingScreen({
                 </p>
               </div>
               <div
-                className={`h-5 w-5 rounded-full border-2 ${
+                className={`h-5 w-5 shrink-0 rounded-full border-2 ${
                   paymentMethod === 'pay-at-salon'
                     ? 'border-black bg-black'
                     : 'border-neutral-300'
@@ -255,7 +275,8 @@ export function ReviewBookingScreen({
         <button
           type="button"
           onClick={handleConfirmBooking}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3.5 text-sm font-semibold text-white"
+          disabled={!hasSelectedServices}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3.5 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
           Confirm Booking {formatCurrency(total)}
           <ChevronRight size={18} />

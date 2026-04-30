@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { ChooseSlotScreen } from '../../components/choose-slot-screen';
-import { getSalonById, getServicesForSalon } from '../../lib/booking-flow';
+import { getSalonById, getServicesForSalon, parseSelectedServices } from '../../lib/booking-flow';
 
 export const metadata: Metadata = {
   title: 'Choose Slot',
@@ -10,6 +10,9 @@ interface ChooseSlotPageProps {
   searchParams: Promise<{
     salon?: string;
     services?: string;
+    cart?: string;
+    totalPrice?: string;
+    totalDuration?: string;
   }>;
 }
 
@@ -20,7 +23,9 @@ export default async function ChooseSlotPage({ searchParams }: ChooseSlotPagePro
     .split(',')
     .map((serviceId) => serviceId.trim())
     .filter(Boolean);
-  const selectedServices = getServicesForSalon(salon, selectedServiceIds);
+  const cartServices = parseSelectedServices(params.cart);
+  const selectedServices =
+    cartServices.length > 0 ? cartServices : getServicesForSalon(salon, selectedServiceIds);
 
   return <ChooseSlotScreen salon={salon} selectedServices={selectedServices} />;
 }

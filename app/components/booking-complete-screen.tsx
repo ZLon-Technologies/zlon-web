@@ -1,5 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { Check, MapPin } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, formatDuration } from '../lib/booking-flow';
@@ -10,8 +13,11 @@ interface BookingCompleteScreenProps {
   selectedDate: string;
   selectedSlot: string;
   total: number;
-  bookingId: string;
   paymentMethod: 'wallet' | 'pay-at-salon';
+}
+
+function createBookingId() {
+  return `ZL-${Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, '0')}`;
 }
 
 export function BookingCompleteScreen({
@@ -20,13 +26,21 @@ export function BookingCompleteScreen({
   selectedDate,
   selectedSlot,
   total,
-  bookingId,
   paymentMethod,
 }: BookingCompleteScreenProps) {
+  const [bookingId, setBookingId] = useState('');
   const totalDuration = selectedServices.reduce(
     (sum, service) => sum + service.durationMinutes,
     0
   );
+
+  useEffect(() => {
+    const timerId = window.setTimeout(() => {
+      setBookingId(createBookingId());
+    }, 0);
+
+    return () => window.clearTimeout(timerId);
+  }, []);
 
   return (
     <div className="w-full min-h-screen bg-white relative flex flex-col items-center justify-center p-4">
@@ -41,7 +55,8 @@ export function BookingCompleteScreen({
           Booking Confirmed!
         </h1>
         <p className="mt-3 text-base leading-7 text-neutral-500">
-          Booking ID <span className="font-semibold text-neutral-950">{bookingId}</span>
+          Booking ID{' '}
+          <span className="font-semibold text-neutral-950">{bookingId || 'Generating...'}</span>
         </p>
         <p className="mt-1 text-base leading-7 text-neutral-500">
           {formatDateLabel(selectedDate)} at {selectedSlot}

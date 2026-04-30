@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { BookingCompleteScreen } from '../../components/booking-complete-screen';
-import { generateBookingId, getSalonById, getServicesForSalon } from '../../lib/booking-flow';
+import { getSalonById, getServicesForSalon, parseSelectedServices } from '../../lib/booking-flow';
 
 export const metadata: Metadata = {
   title: 'Booking Complete',
@@ -10,6 +10,9 @@ interface BookingCompletePageProps {
   searchParams: Promise<{
     salon?: string;
     services?: string;
+    cart?: string;
+    totalPrice?: string;
+    totalDuration?: string;
     date?: string;
     slot?: string;
     total?: string;
@@ -26,13 +29,12 @@ export default async function BookingCompletePage({
     .split(',')
     .map((serviceId) => serviceId.trim())
     .filter(Boolean);
-  const selectedServices = getServicesForSalon(salon, selectedServiceIds);
+  const cartServices = parseSelectedServices(params.cart);
+  const selectedServices =
+    cartServices.length > 0 ? cartServices : getServicesForSalon(salon, selectedServiceIds);
   const total =
     Number(params.total) ||
     selectedServices.reduce((sum, service) => sum + service.price, 0);
-  const bookingId = generateBookingId(
-    `${salon.id}-${params.date ?? '2026-10-23'}-${params.slot ?? '10:00 AM'}-${total}`
-  );
 
   return (
     <BookingCompleteScreen
@@ -41,7 +43,6 @@ export default async function BookingCompletePage({
       selectedDate={params.date ?? '2026-10-23'}
       selectedSlot={params.slot ?? '10:00 AM'}
       total={total}
-      bookingId={bookingId}
       paymentMethod={params.payment ?? 'wallet'}
     />
   );

@@ -21,9 +21,12 @@ export function UserLocation() {
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationName('Select Location');
-      setLoading(false);
-      return;
+      const timerId = window.setTimeout(() => {
+        setLocationName('Select Location');
+        setLoading(false);
+      }, 0);
+
+      return () => window.clearTimeout(timerId);
     }
 
     navigator.geolocation.getCurrentPosition(

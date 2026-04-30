@@ -8,8 +8,8 @@ export interface SalonStaff {
 export interface SalonService {
   id: string;
   name: string;
-  category: 'Haircut' | 'Shaving' | 'Face care';
-  badge: 'Hair' | 'Shaving' | 'Skincare';
+  category: string;
+  badge: string;
   description: string;
   durationMinutes: number;
   price: number;
@@ -161,13 +161,105 @@ export function getSalonById(id: string) {
 }
 
 export function getServicesForSalon(salon: SalonProfile, serviceIds: string[]) {
-  const requestedServices = salon.menu.filter((service) => serviceIds.includes(service.id));
-
-  if (requestedServices.length > 0) {
-    return requestedServices;
+  if (serviceIds.length === 0) {
+    return [];
   }
 
-  return salon.menu.filter((service) => service.featured).slice(0, 1);
+  const requestedServices = salon.menu.filter((service) => serviceIds.includes(service.id));
+
+  return requestedServices;
+}
+
+function getSingleSearchParam(value: string | string[] | null | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? '';
+  }
+
+  return value ?? '';
+}
+
+function getSafeNumber(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : 0;
+  }
+
+  return 0;
+}
+
+function getSafeString(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback;
+}
+
+function normalizeCartService(service: unknown): SalonService | null {
+  if (!service || typeof service !== 'object') {
+    return null;
+  }
+
+  const rawService = service as Record<string, unknown>;
+  const id = getSafeString(rawService.id, '');
+  const name = getSafeString(rawService.name, '');
+
+  if (!id || !name) {
+    return null;
+  }
+
+  const category = getSafeString(rawService.category, 'Service');
+
+  return {
+    id,
+    name,
+    category,
+    badge: getSafeString(rawService.badge, category),
+    description: getSafeString(
+      rawService.description,
+      'Professional salon service tailored to your appointment.'
+    ),
+    durationMinutes: getSafeNumber(rawService.durationMinutes),
+    price: getSafeNumber(rawService.price),
+    featured: Boolean(rawService.featured),
+  };
+}
+
+export function serializeSelectedServices(services: SalonService[]) {
+  return JSON.stringify(
+    services.map((service) => ({
+      id: service.id,
+      name: service.name,
+      category: service.category,
+      badge: service.badge,
+      description: service.description,
+      durationMinutes: service.durationMinutes,
+      price: service.price,
+      featured: Boolean(service.featured),
+    }))
+  );
+}
+
+export function parseSelectedServices(value: string | string[] | null | undefined) {
+  const cartValue = getSingleSearchParam(value);
+
+  if (!cartValue) {
+    return [];
+  }
+
+  try {
+    const parsedValue = JSON.parse(cartValue);
+
+    if (!Array.isArray(parsedValue)) {
+      return [];
+    }
+
+    return parsedValue
+      .map(normalizeCartService)
+      .filter((service): service is SalonService => Boolean(service));
+  } catch {
+    return [];
+  }
 }
 
 export function formatCurrency(value: number) {
@@ -196,15 +288,4 @@ export function formatLongDate(dateValue: string) {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(dateValue));
-}
-
-export function generateBookingId(seed: string) {
-  let hash = 0;
-
-  for (let index = 0; index < seed.length; index += 1) {
-    hash = (hash << 5) - hash + seed.charCodeAt(index);
-    hash |= 0;
-  }
-
-  return `ZL-${Math.abs(hash).toString(36).toUpperCase().slice(0, 6).padEnd(6, '0')}`;
 }
