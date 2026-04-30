@@ -3,10 +3,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Crosshair, MapPin, Rocket, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
+import { Crosshair, MapPin, MessageSquare, Rocket, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
 import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { ChatBot } from '@/components/ChatBot';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
 const categories = [
@@ -124,6 +125,7 @@ export default function HomePage() {
     displayText: 'Current Location',
   });
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [manualLocationInput, setManualLocationInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -433,7 +435,7 @@ export default function HomePage() {
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-4">
             <Image
               src="/logo.png"
               alt="ZLon"
@@ -442,15 +444,27 @@ export default function HomePage() {
               priority
               className="h-8 w-auto shrink-0 object-contain"
             />
-            <button
-              type="button"
-              onClick={() => setIsLocationModalOpen(true)}
-              aria-label="Choose location"
-              className="flex items-center gap-2 rounded-full px-3 py-2 text-left transition-colors hover:bg-gray-100"
-            >
-              <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
-              <span className="text-xs font-medium text-gray-700">{locationDisplayLabel}</span>
-            </button>
+            <div className="flex min-w-0 items-center justify-end gap-4">
+              <button
+                type="button"
+                onClick={() => setIsLocationModalOpen(true)}
+                aria-label="Choose location"
+                className="flex min-w-0 items-center gap-2 rounded-full px-3 py-2 text-left transition-colors hover:bg-gray-100"
+              >
+                <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
+                <span className="max-w-[8.5rem] truncate text-xs font-medium text-gray-700">
+                  {locationDisplayLabel}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
+                aria-label="Open customer support chat"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 hover:text-black"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -834,6 +848,7 @@ export default function HomePage() {
       )}
 
       <MobileBottomNav />
+      <ChatBot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }
