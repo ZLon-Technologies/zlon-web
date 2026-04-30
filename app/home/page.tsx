@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Crosshair, MapPin, MessageSquare, Rocket, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
+import { Crosshair, MapPin, MessageSquare, Rocket, ScanFace, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
 import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -442,7 +442,7 @@ export default function HomePage() {
               width={96}
               height={32}
               priority
-              className="h-8 w-auto shrink-0 object-contain"
+              className="h-8 w-auto shrink-0 origin-left scale-[1.3] object-contain"
             />
             <div className="flex min-w-0 items-center justify-end gap-4">
               <button
@@ -640,7 +640,7 @@ export default function HomePage() {
               className="mb-5 flex items-center gap-4 rounded-[1.5rem] bg-gray-900 px-4 py-4 text-white shadow-[0_16px_36px_rgba(17,24,39,0.16)] transition-transform hover:scale-[0.99]"
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
-                <Sparkles className="h-5 w-5" />
+                <ScanFace className="h-5 w-5" />
               </div>
               <div className="min-w-0">
                 <h2 className="text-base font-bold text-white">ZLon AI Stylist</h2>
