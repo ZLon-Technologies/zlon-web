@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, CalendarDays, Plus } from 'lucide-react';
-import { bookingHistoryEntries, bookingHistorySummary } from '../lib/booking-history';
+import type { BookingRecord } from '../lib/booking-records';
+import { mapBookingRows } from '../lib/booking-records';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -15,14 +17,63 @@ function formatCurrency(value: number) {
 }
 
 export default function BookingHistoryPage() {
-  const [history, setHistory] = useState(bookingHistoryEntries);
-  const [totalAppointments, setTotalAppointments] = useState(
-    bookingHistorySummary.totalAppointments
-  );
+  const [history, setHistory] = useState<BookingRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let isMounted = true;
+
+    async function fetchBookingHistory() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const [{ data: bookingData, error: bookingsError }, { data: salonData, error: salonsError }] =
+          await Promise.all([supabase.from('bookings').select('*'), supabase.from('salons').select('*')]);
+
+        if (bookingsError) {
+          throw bookingsError;
+        }
+
+        if (isMounted) {
+          setHistory(
+            mapBookingRows(
+              (bookingData ?? []) as Array<Record<string, unknown>>,
+              salonsError ? [] : ((salonData ?? []) as Array<Record<string, unknown>>)
+            )
+          );
+        }
+
+        if (salonsError) {
+          console.error('Unable to load salon details for booking history:', salonsError);
+        }
+      } catch (fetchError) {
+        if (isMounted) {
+          setError(
+            fetchError instanceof Error
+              ? fetchError.message
+              : 'Unable to load booking history right now.'
+          );
+          setHistory([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchBookingHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function handleClearHistory() {
     setHistory([]);
-    setTotalAppointments(0);
   }
 
   return (
@@ -58,7 +109,7 @@ export default function BookingHistoryPage() {
                   Total Appointments
                 </p>
                 <p className="mt-3 text-4xl font-semibold tracking-tight text-neutral-950">
-                  {totalAppointments}
+                  {history.length}
                 </p>
               </div>
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 text-neutral-700">
@@ -75,7 +126,18 @@ export default function BookingHistoryPage() {
               <span className="text-sm text-neutral-500">{history.length} visits</span>
             </div>
 
-            {history.length === 0 ? (
+            {isLoading ? (
+              <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-12 text-center">
+                <p className="text-base font-semibold text-neutral-900">Loading booking history...</p>
+              </div>
+            ) : error ? (
+              <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-12 text-center">
+                <p className="text-base font-semibold text-neutral-900">
+                  Unable to load booking history.
+                </p>
+                <p className="mt-2 text-sm text-neutral-500">{error}</p>
+              </div>
+            ) : history.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-12 text-center">
                 <p className="text-base font-semibold text-neutral-900">No booking history yet.</p>
                 <p className="mt-2 text-sm text-neutral-500">

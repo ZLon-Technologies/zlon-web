@@ -4,8 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Crosshair, MapPin, Rocket, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
+import type { BookingRecord } from '../lib/booking-records';
+import { mapBookingRows } from '../lib/booking-records';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { bookingHistoryEntries } from '../lib/booking-history';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
 const categories = [
@@ -113,6 +114,8 @@ function calculateDistanceInKilometers(
 export default function HomePage() {
   const [selected, setSelected] = useState('haircut');
   const [salons, setSalons] = useState<SalonRecord[]>([]);
+  const [salonRows, setSalonRows] = useState<Array<Record<string, unknown>>>([]);
+  const [bookingRows, setBookingRows] = useState<Array<Record<string, unknown>>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocationState>({
@@ -132,7 +135,7 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const bookings = bookingHistoryEntries;
+  const bookings: BookingRecord[] = mapBookingRows(bookingRows, salonRows);
   const latestBooking = bookings?.[0] ?? null;
 
   const requestCurrentLocation = (showFallbackAlert = false) => {
@@ -201,17 +204,27 @@ export default function HomePage() {
       setError(null);
 
       try {
-        const { data, error: salonsError } = await supabase.from('salons').select('*');
+        const [{ data: salonData, error: salonsError }, { data: bookingData, error: bookingsError }] =
+          await Promise.all([supabase.from('salons').select('*'), supabase.from('bookings').select('*')]);
 
         if (salonsError) {
           throw salonsError;
         }
 
         if (isMounted) {
-          const nextSalons = ((data ?? []) as Array<Record<string, unknown>>)
+          const nextSalonRows = (salonData ?? []) as Array<Record<string, unknown>>;
+          const nextSalons = nextSalonRows
             .map(getSafeSalonRecord)
             .filter((salon): salon is SalonRecord => Boolean(salon));
+          setSalonRows(nextSalonRows);
           setSalons(nextSalons);
+          setBookingRows(
+            bookingsError ? [] : ((bookingData ?? []) as Array<Record<string, unknown>>)
+          );
+        }
+
+        if (bookingsError) {
+          console.error('Unable to load recent bookings for quick rebook:', bookingsError);
         }
       } catch (fetchError) {
         if (isMounted) {
@@ -627,6 +640,15 @@ export default function HomePage() {
               <p className="text-sm text-gray-500">Loading salons...</p>
             ) : error ? (
               <p className="text-sm text-red-500">{error}</p>
+            ) : salons.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+                <p className="text-base font-semibold text-gray-900">
+                  No salons found in your area yet.
+                </p>
+                <p className="mt-2 text-sm text-gray-500">
+                  We&apos;re adding more salons soon. Check back again shortly.
+                </p>
+              </div>
             ) : nearbySalons.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
                 <div className="relative mb-6 flex h-32 w-32 items-center justify-center">
