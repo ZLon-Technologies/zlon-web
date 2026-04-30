@@ -108,32 +108,32 @@ export function AIFaceScannerScreen() {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-black text-white relative pb-24">
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(115,115,115,0.18),_transparent_32%),linear-gradient(180deg,_#09090b_0%,_#000000_100%)]">
-        <header className="px-4 pt-5">
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-sm">
+    <div className="w-full min-h-screen relative bg-white">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(115,115,115,0.18),_transparent_32%),linear-gradient(180deg,_#09090b_0%,_#000000_100%)] pb-20 text-white">
+        <header className="px-3 pt-4">
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-sm">
             <Link
               href="/home"
               aria-label="Go back"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
+              className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </Link>
             <div className="text-center">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/45">
                 AI Stylist
               </p>
-              <h1 className="mt-1 text-lg font-semibold tracking-tight text-white">
+              <h1 className="mt-1 text-base font-semibold tracking-tight text-white">
                 Face Scanner
               </h1>
             </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/70">
-              <Sparkles size={18} />
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white/70">
+              <Sparkles size={16} />
             </div>
           </div>
         </header>
 
-        <main className="space-y-5 px-4 pb-10 pt-4">
+        <main className="space-y-4 px-3 pb-8 pt-3">
           <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-[0_20px_60px_rgba(0,0,0,0.55)]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.14),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.04)_0%,_rgba(0,0,0,0.3)_100%)]" />
 
@@ -148,16 +148,16 @@ export function AIFaceScannerScreen() {
               />
 
               <div className="pointer-events-none absolute inset-0 border-[1.5px] border-white/10" />
-              <div className="pointer-events-none absolute inset-5 rounded-[1.5rem] border border-white/15" />
+              <div className="pointer-events-none absolute inset-4 rounded-[1.5rem] border border-white/15" />
 
-              <div className="absolute left-4 top-4 rounded-full border border-white/10 bg-black/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70 backdrop-blur-sm">
+              <div className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/70 backdrop-blur-sm">
                 Live Preview
               </div>
 
               {!isModelLoaded ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/65 backdrop-blur-sm">
-                  <div className="flex flex-col items-center gap-4 text-center">
-                    <div className="h-11 w-11 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white" />
                     <div>
                       <p className="text-sm font-semibold text-white">Loading AI Model...</p>
                       <p className="mt-1 text-xs text-white/55">
@@ -170,11 +170,11 @@ export function AIFaceScannerScreen() {
 
               {isScanning ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/55 backdrop-blur-[2px]">
-                  <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-center shadow-[0_18px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white">
-                      <ScanFace size={24} />
+                  <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-center shadow-[0_18px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white">
+                      <ScanFace size={20} />
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-white">Analyzing face shape</p>
+                    <p className="mt-2.5 text-sm font-semibold text-white">Analyzing face shape</p>
                     <p className="mt-1 text-xs text-white/60">
                       Hold steady for a clean read
                     </p>
@@ -183,35 +183,35 @@ export function AIFaceScannerScreen() {
               ) : null}
 
               {scanResult ? (
-                <div className="absolute inset-x-4 bottom-4 rounded-[1.5rem] border border-white/10 bg-black/65 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+                <div className="absolute inset-x-3 bottom-3 rounded-[1.5rem] border border-white/10 bg-black/65 p-3 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
                         AI Match Found
                       </p>
-                      <h2 className="mt-2 text-xl font-semibold tracking-tight text-white">
+                      <h2 className="mt-1.5 text-lg font-semibold tracking-tight text-white">
                         {scanResult.bestCut}
                       </h2>
                     </div>
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white">
-                      <Crown size={20} />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white">
+                      <Crown size={18} />
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                         Face Shape
                       </p>
-                      <p className="mt-2 text-base font-semibold text-white">
+                      <p className="mt-1.5 text-sm font-semibold text-white">
                         {scanResult.faceShape}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-white/45">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">
                         Style Pick
                       </p>
-                      <p className="mt-2 text-base font-semibold text-white">Premium Match</p>
+                      <p className="mt-1.5 text-sm font-semibold text-white">Premium Match</p>
                     </div>
                   </div>
                 </div>
@@ -219,33 +219,33 @@ export function AIFaceScannerScreen() {
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white">
-                {isPaywallBlocked ? <LockKeyhole size={22} /> : <Camera size={22} />}
+          <section className="rounded-[1.75rem] border border-white/10 bg-white/5 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white">
+                {isPaywallBlocked ? <LockKeyhole size={18} /> : <Camera size={18} />}
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
                   Scanner Access
                 </p>
 
                 {isPaywallBlocked ? (
                   <>
-                    <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">
+                    <h2 className="mt-1.5 text-base font-semibold tracking-tight text-white">
                       Unlock AI Stylist
                     </h2>
                     <p className="mt-2 text-sm leading-6 text-white/70">
                       Unlock AI Stylist: Pay ₹47 or Complete 3 Bookings/Month (Current:{' '}
                       {monthlyBookings}/3)
                     </p>
-                    <div className="mt-4 rounded-2xl border border-amber-300/15 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                    <div className="mt-3 rounded-2xl border border-amber-300/15 bg-amber-300/10 px-3 py-2.5 text-sm text-amber-100">
                       Face scanning stays locked until the paywall is cleared.
                     </div>
                   </>
                 ) : (
                   <>
-                    <h2 className="mt-2 text-lg font-semibold tracking-tight text-white">
+                    <h2 className="mt-1.5 text-base font-semibold tracking-tight text-white">
                       Ready for your AI style read
                     </h2>
                     <p className="mt-2 text-sm leading-6 text-white/70">
@@ -255,9 +255,9 @@ export function AIFaceScannerScreen() {
                       type="button"
                       onClick={handleScanFace}
                       disabled={!isModelLoaded || isScanning}
-                      className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-5 py-4 text-base font-semibold text-black transition-transform hover:scale-[0.99] disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-black/60"
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-black transition-transform hover:scale-[0.99] disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-black/60"
                     >
-                      <ScanFace size={20} />
+                      <ScanFace size={18} />
                       {isScanning ? 'Scanning...' : 'Scan My Face'}
                     </button>
                   </>

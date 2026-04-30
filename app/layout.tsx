@@ -25,8 +25,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.className} h-full antialiased`}>
-      <body className="min-h-screen bg-zinc-100">
-        <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative overflow-x-hidden shadow-2xl">
+      <body className="min-h-screen bg-white">
+        <div className="w-full min-h-screen bg-white relative overflow-x-hidden">
           {children}
         </div>
       </body>
