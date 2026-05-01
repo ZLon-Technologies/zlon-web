@@ -183,6 +183,7 @@ export default function HomePage() {
   const [salons, setSalons] = useState<SalonRecord[]>([]);
   const [salonRows, setSalonRows] = useState<Array<Record<string, unknown>>>([]);
   const [bookingRows, setBookingRows] = useState<Array<Record<string, unknown>>>([]);
+  const [aiScannerAccess, setAiScannerAccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocationState>({
@@ -276,13 +277,19 @@ export default function HomePage() {
         const { data: authData } = await supabase.auth.getUser();
         const userId = authData.user?.id ?? null;
 
-        const [{ data: salonData, error: salonsError }, { data: bookingData, error: bookingsError }] =
-          await Promise.all([
-            supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT),
-            userId
-              ? supabase.from('bookings').select('*').eq('customer_id', userId)
-              : Promise.resolve({ data: [], error: null }),
-          ]);
+        const [
+          { data: salonData, error: salonsError },
+          { data: bookingData, error: bookingsError },
+          { data: profileData }
+        ] = await Promise.all([
+          supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT),
+          userId
+            ? supabase.from('bookings').select('*').eq('customer_id', userId)
+            : Promise.resolve({ data: [], error: null }),
+          userId
+            ? supabase.from('profiles').select('full_name, email, ai_scanner_access').eq('id', userId).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+        ]);
 
         if (salonsError) {
           throw salonsError;
@@ -298,6 +305,7 @@ export default function HomePage() {
           setBookingRows(
             bookingsError ? [] : ((bookingData ?? []) as Array<Record<string, unknown>>)
           );
+          setAiScannerAccess(!!profileData?.ai_scanner_access);
         }
 
         if (bookingsError) {
@@ -746,14 +754,28 @@ export default function HomePage() {
           {/* Recommended Salons */}
           <div>
             <Link
-              href="/ai-stylist"
-              className="mb-5 flex items-center gap-4 rounded-[1.5rem] bg-gray-900 px-4 py-4 text-white shadow-[0_16px_36px_rgba(17,24,39,0.16)] transition-transform hover:scale-[0.99]"
+              href={aiScannerAccess ? '/ai-stylist' : '#'}
+              onClick={(e) => {
+                if (!aiScannerAccess) {
+                  e.preventDefault();
+                }
+              }}
+              className={`mb-5 flex items-center gap-4 rounded-[1.5rem] bg-gray-900 px-4 py-4 text-white shadow-[0_16px_36px_rgba(17,24,39,0.16)] transition-transform ${
+                aiScannerAccess ? 'hover:scale-[0.99]' : 'opacity-70 cursor-not-allowed'
+              }`}
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white">
                 <ScanFace className="h-5 w-5" />
               </div>
-              <div className="min-w-0">
-                <h2 className="text-base font-bold text-white">ZLon AI Stylist</h2>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold text-white">ZLon AI Stylist</h2>
+                  {!aiScannerAccess && (
+                    <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/90">
+                      Beta / Coming Soon
+                    </span>
+                  )}
+                </div>
                 <p className="mt-1 text-sm text-white/70">
                   Find your perfect cut based on your face shape.
                 </p>
