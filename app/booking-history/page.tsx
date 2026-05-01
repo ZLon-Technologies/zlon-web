@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, CalendarDays, Plus } from 'lucide-react';
 import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
+import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 function formatCurrency(value: number) {
@@ -31,7 +32,10 @@ export default function BookingHistoryPage() {
 
       try {
         const [{ data: bookingData, error: bookingsError }, { data: salonData, error: salonsError }] =
-          await Promise.all([supabase.from('bookings').select('*'), supabase.from('salons').select('*')]);
+          await Promise.all([
+            supabase.from('bookings').select('*'),
+            supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT),
+          ]);
 
         if (bookingsError) {
           throw bookingsError;

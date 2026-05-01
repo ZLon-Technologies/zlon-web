@@ -7,6 +7,7 @@ import { ArrowLeft, Check, Clock3, MapPin, Plus, Scissors, Sparkles, Star } from
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { SalonService } from '../lib/booking-flow';
 import { formatCurrency, serializeSelectedServices } from '../lib/booking-flow';
+import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
 
 interface SelectServicesScreenProps {
   salonId: string;
@@ -16,6 +17,7 @@ interface SalonRecord {
   id: string | number;
   name: string | null;
   image?: string | null;
+  imageUrl?: string | null;
   image_url?: string | null;
   distance?: string | null;
   location?: string | null;
@@ -98,7 +100,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
       try {
         const [{ data: salonData, error: salonError }, { data: servicesData, error: servicesError }] =
           await Promise.all([
-            supabase.from('salons').select('*').eq('id', salonId).single(),
+            supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT).eq('id', salonId).single(),
             supabase.from('services').select('*').eq('salon_id', salonId),
           ]);
 
@@ -169,7 +171,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
     0
   );
   const salonName = salon?.name ?? 'Salon';
-  const salonImage = salon?.image || salon?.image_url || FALLBACK_SALON_IMAGE;
+  const salonImage = salon?.image || salon?.image_url || salon?.imageUrl || FALLBACK_SALON_IMAGE;
   const locationLabel =
     [
       salon?.distance ? `${salon.distance} away` : null,

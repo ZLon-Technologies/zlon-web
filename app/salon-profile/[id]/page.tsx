@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
 import { salons as localSalons } from '../../lib/booking-flow';
 
 export const metadata: Metadata = {
@@ -99,7 +100,11 @@ export default async function SalonProfilePage({ params }: SalonProfilePageProps
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { data } = await supabase.from('salons').select('*').eq('id', id).maybeSingle();
+    const { data } = await supabase
+      .from('salons')
+      .select(CUSTOMER_SAFE_SALON_SELECT)
+      .eq('id', id)
+      .maybeSingle();
     remoteSalon =
       data && typeof data === 'object' && !Array.isArray(data)
         ? getSafeSalonRow(data as Record<string, unknown>)

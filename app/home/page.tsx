@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Crosshair, MapPin, MessageSquare, Rocket, ScanFace, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
 import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
+import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { ChatBot } from '@/components/ChatBot';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
@@ -84,7 +85,13 @@ function getNumericValue(value: number | string | null | undefined) {
   }
 
   if (typeof value === 'string') {
-    const parsedValue = Number(value);
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      return null;
+    }
+
+    const parsedValue = Number(trimmedValue);
     return Number.isFinite(parsedValue) ? parsedValue : null;
   }
 
@@ -207,7 +214,10 @@ export default function HomePage() {
 
       try {
         const [{ data: salonData, error: salonsError }, { data: bookingData, error: bookingsError }] =
-          await Promise.all([supabase.from('salons').select('*'), supabase.from('bookings').select('*')]);
+          await Promise.all([
+            supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT),
+            supabase.from('bookings').select('*'),
+          ]);
 
         if (salonsError) {
           throw salonsError;
@@ -748,12 +758,14 @@ export default function HomePage() {
                       </Link>
 
                       <div className="p-4 pt-4 flex flex-col h-full">
-                        <div className="flex items-baseline gap-1 mb-4">
-                          <span className="text-xs text-gray-500">Starts from</span>
-                          <span className="text-xl font-bold text-gray-900">
-                            {price !== null ? `₹${price}` : 'Contact'}
-                          </span>
-                        </div>
+                        {price !== null && (
+                          <div className="flex items-baseline gap-1 mb-4">
+                            <span className="text-xs text-gray-500">Starts from</span>
+                            <span className="text-xl font-bold text-gray-900">
+                              ₹{price}
+                            </span>
+                          </div>
+                        )}
 
                         {/* Service Tags */}
                         <div className="flex gap-2 mb-4">
