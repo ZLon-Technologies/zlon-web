@@ -84,6 +84,11 @@ function LandingPageContent() {
       setErrorMessage(error.message);
       return;
     }
+
+    // Fallback: if OAuth redirect doesn't happen within 5s, reset the button
+    window.setTimeout(() => {
+      setIsGoogleLoading(false);
+    }, 5000);
   }
 
   return (

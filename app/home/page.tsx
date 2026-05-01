@@ -114,7 +114,10 @@ function calculateDistanceInKilometers(
       Math.cos(toRadians(endLat)) *
       Math.sin(longitudeDelta / 2) *
       Math.sin(longitudeDelta / 2);
-  const centralAngle = 2 * Math.atan2(Math.sqrt(haversineValue), Math.sqrt(1 - haversineValue));
+  const centralAngle = 2 * Math.atan2(
+    Math.sqrt(haversineValue),
+    Math.sqrt(1 - Math.min(haversineValue, 1))
+  );
 
   return earthRadiusKm * centralAngle;
 }
@@ -144,6 +147,8 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const searchTimeoutRef = useRef<number | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
   const bookings: BookingRecord[] = mapBookingRows(bookingRows, salonRows);
   const latestBooking = bookings?.[0] ?? null;
 
@@ -213,10 +218,15 @@ export default function HomePage() {
       setError(null);
 
       try {
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData.user?.id ?? null;
+
         const [{ data: salonData, error: salonsError }, { data: bookingData, error: bookingsError }] =
           await Promise.all([
             supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT),
-            supabase.from('bookings').select('*'),
+            userId
+              ? supabase.from('bookings').select('*').eq('customer_id', userId)
+              : Promise.resolve({ data: [], error: null }),
           ]);
 
         if (salonsError) {
@@ -293,38 +303,62 @@ export default function HomePage() {
     setIsDragging(false);
   };
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
+
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+    }
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort();
+      searchAbortRef.current = null;
+    }
 
     if (query.length < 2) {
       setSearchResults([]);
       setShowResults(false);
+      setIsSearching(false);
       return;
     }
 
-    setIsSearching(true);
     setShowResults(true);
+    setIsSearching(true);
 
-    try {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-      });
+    searchTimeoutRef.current = window.setTimeout(async () => {
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
 
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data.results);
-      } else {
-        console.error('Search failed');
+      try {
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+          signal: controller.signal,
+        });
+
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          setSearchResults(data.results);
+        } else {
+          console.error('Search failed');
+          setSearchResults([]);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return;
+        }
+        console.error('Search error:', error);
         setSearchResults([]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+        }
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
+    }, 300);
   };
 
   const clearSearch = () => {

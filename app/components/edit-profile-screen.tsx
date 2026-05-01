@@ -1,28 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Bell,
   ChevronRight,
   Mail,
-  Mars,
   Pencil,
   Phone,
   Shield,
   UserRound,
-  Venus,
   Wallet,
 } from 'lucide-react';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from './mobile-bottom-nav';
 
-type GenderOption = 'Female' | 'Male' | 'Other';
-
-interface ProfileFormState {
+interface ProfileState {
+  id: string;
   fullName: string;
   emailAddress: string;
   phoneNumber: string;
-  gender: GenderOption;
+  gender: string;
+  avatarUrl: string;
+}
+
+interface ProfileRecord {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  gender: string | null;
+  avatar_url: string | null;
+}
+
+interface EditProfileScreenProps {
+  initialProfile: ProfileRecord | null;
 }
 
 interface QuickLinkItem {
@@ -32,14 +45,7 @@ interface QuickLinkItem {
   description: string;
 }
 
-const genderOptions: Array<{
-  label: GenderOption;
-  icon: typeof Venus;
-}> = [
-  { label: 'Female', icon: Venus },
-  { label: 'Male', icon: Mars },
-  { label: 'Other', icon: Shield },
-];
+type EditableField = 'fullName' | 'phoneNumber' | 'gender';
 
 const quickLinks: QuickLinkItem[] = [
   {
@@ -59,29 +65,137 @@ const quickLinks: QuickLinkItem[] = [
 const surfaceClass =
   'rounded-[1.5rem] border border-black/10 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]';
 
-export function EditProfileScreen() {
-  const [profile, setProfile] = useState<ProfileFormState>({
-    fullName: 'Alexandra Sterling',
-    emailAddress: 'alexandra.s@sanctuary.luxury',
-    phoneNumber: '+91 98765 43210',
-    gender: 'Female',
-  });
-  const [didSave, setDidSave] = useState(false);
+const editableFieldLabels: Record<EditableField, string> = {
+  fullName: 'Full Name',
+  phoneNumber: 'Phone Number',
+  gender: 'Gender',
+};
 
-  function updateField<K extends keyof ProfileFormState>(
-    field: K,
-    value: ProfileFormState[K]
-  ) {
-    setDidSave(false);
-    setProfile((previousProfile) => ({
-      ...previousProfile,
-      [field]: value,
-    }));
+const editableProfileColumns: Record<EditableField, 'full_name' | 'phone_number' | 'gender'> = {
+  fullName: 'full_name',
+  phoneNumber: 'phone_number',
+  gender: 'gender',
+};
+
+function normalizeProfile(profile: ProfileRecord | null): ProfileState {
+  return {
+    id: profile?.id ?? '',
+    fullName: profile?.full_name ?? '',
+    emailAddress: profile?.email ?? '',
+    phoneNumber: profile?.phone_number ?? '',
+    gender: profile?.gender ?? '',
+    avatarUrl: profile?.avatar_url ?? '',
+  };
+}
+
+function getDisplayValue(value: string) {
+  return value.trim() || 'Not set';
+}
+
+function getAvatarFilePath(userId: string, file: File) {
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const safeExtension = extension.replace(/[^a-z0-9]/g, '') || 'jpg';
+
+  return `${userId}/${Date.now()}.${safeExtension}`;
+}
+
+export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profile, setProfile] = useState<ProfileState>(() => normalizeProfile(initialProfile));
+  const [activeField, setActiveField] = useState<EditableField | null>(null);
+  const [draftValue, setDraftValue] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const currentFieldValue = activeField ? profile[activeField] : '';
+  const hasDraftChanges = activeField !== null && draftValue !== currentFieldValue;
+
+  function openFieldEditor(field: EditableField) {
+    setActiveField(field);
+    setDraftValue(profile[field]);
+    setMessage(null);
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setDidSave(true);
+  function closeFieldEditor() {
+    setActiveField(null);
+    setDraftValue('');
+    setIsSaving(false);
+  }
+
+  async function saveField() {
+    if (!activeField || !hasDraftChanges || !profile.id || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ [editableProfileColumns[activeField]]: draftValue })
+      .eq('id', profile.id);
+
+    if (error) {
+      setMessage(error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    setProfile((previousProfile) => ({
+      ...previousProfile,
+      [activeField]: draftValue,
+    }));
+    closeFieldEditor();
+    router.refresh();
+  }
+
+  async function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file || !profile.id) {
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    const supabase = createSupabaseBrowserClient();
+    const filePath = getAvatarFilePath(profile.id, file);
+    const uploadResult = await supabase.storage.from('avatars').upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+    });
+
+    if (uploadResult.error) {
+      setMessage(uploadResult.error.message);
+      setIsSaving(false);
+      event.target.value = '';
+      return;
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const avatarUrl = data.publicUrl;
+    const updateResult = await supabase
+      .from('profiles')
+      .update({ avatar_url: avatarUrl })
+      .eq('id', profile.id);
+
+    if (updateResult.error) {
+      setMessage(updateResult.error.message);
+      setIsSaving(false);
+      event.target.value = '';
+      return;
+    }
+
+    setProfile((previousProfile) => ({
+      ...previousProfile,
+      avatarUrl,
+    }));
+    setIsSaving(false);
+    event.target.value = '';
+    router.refresh();
   }
 
   return (
@@ -98,98 +212,113 @@ export function EditProfileScreen() {
 
       <main className="flex-1 px-4 py-4 pb-20">
         <section className="text-center">
-          <div className="relative mx-auto flex h-36 w-36 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,_#ffb98a_18%,_#f29d67_28%,_#17212b_29%,_#17212b_100%)] shadow-[0_16px_32px_rgba(15,23,42,0.14)] ring-4 ring-white">
-            <div className="absolute inset-x-6 bottom-0 h-16 rounded-t-[999px] bg-[#253443]" />
-            <div className="absolute left-1/2 top-11 h-16 w-16 -translate-x-1/2 rounded-full bg-[#ffbf90]" />
-            <div className="absolute left-[3.35rem] top-[2.2rem] h-10 w-14 rotate-6 rounded-[999px] bg-[#6f4328]" />
-            <div className="absolute left-[4.9rem] top-[2.55rem] h-8 w-7 rounded-full bg-[#6f4328]" />
+          <div className="relative mx-auto h-24 w-24 aspect-square overflow-hidden rounded-full border border-gray-200 bg-white shadow-[0_16px_32px_rgba(15,23,42,0.14)] ring-4 ring-white">
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatarUrl}
+                alt={profile.fullName ? `${profile.fullName} avatar` : 'Profile avatar'}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-500">
+                <UserRound size={36} strokeWidth={1.8} />
+              </div>
+            )}
             <button
               type="button"
               aria-label="Edit profile picture"
+              onClick={() => fileInputRef.current?.click()}
               className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-700 text-white shadow-lg transition-transform hover:scale-105"
             >
               <Pencil size={20} strokeWidth={2.2} />
             </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
           </div>
 
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight">The Sanctuary Member</h1>
-          <p className="mt-1 text-sm text-neutral-500">Elite Tier Membership</p>
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight">
+            {profile.fullName || 'Your Profile'}
+          </h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            {profile.emailAddress || 'Customer Profile'}
+          </p>
         </section>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <div className="mt-6 space-y-4">
           <section className={`${surfaceClass} space-y-4 p-5`}>
             <div>
-              <label htmlFor="full-name" className="block text-sm font-medium text-neutral-500">
+              <span className="block text-sm font-medium text-neutral-500">
                 Full Name
-              </label>
+              </span>
               <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
                 <UserRound size={20} className="text-neutral-500" strokeWidth={2} />
-                <input
-                  id="full-name"
-                  type="text"
-                  value={profile.fullName}
-                  onChange={(event) => updateField('fullName', event.target.value)}
-                  className="w-full bg-transparent text-base text-neutral-950 outline-none placeholder:text-neutral-400"
-                />
+                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
+                  {getDisplayValue(profile.fullName)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openFieldEditor('fullName')}
+                  aria-label="Edit full name"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white hover:text-black"
+                >
+                  <Pencil size={16} strokeWidth={2.2} />
+                </button>
               </div>
             </div>
 
             <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-neutral-500">
+              <span className="block text-sm font-medium text-neutral-500">
                 Email Address
-              </label>
+              </span>
               <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
                 <Mail size={20} className="text-neutral-500" strokeWidth={2} />
-                <input
-                  id="email-address"
-                  type="email"
-                  value={profile.emailAddress}
-                  onChange={(event) => updateField('emailAddress', event.target.value)}
-                  className="w-full bg-transparent text-base text-neutral-950 outline-none placeholder:text-neutral-400"
-                />
+                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
+                  {getDisplayValue(profile.emailAddress)}
+                </span>
               </div>
             </div>
 
             <div>
-              <label htmlFor="phone-number" className="block text-sm font-medium text-neutral-500">
+              <span className="block text-sm font-medium text-neutral-500">
                 Phone Number
-              </label>
+              </span>
               <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
                 <Phone size={20} className="text-neutral-500" strokeWidth={2} />
-                <input
-                  id="phone-number"
-                  type="tel"
-                  inputMode="tel"
-                  value={profile.phoneNumber}
-                  onChange={(event) => updateField('phoneNumber', event.target.value)}
-                  className="w-full bg-transparent text-base text-neutral-950 outline-none placeholder:text-neutral-400"
-                />
+                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
+                  {getDisplayValue(profile.phoneNumber)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openFieldEditor('phoneNumber')}
+                  aria-label="Edit phone number"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white hover:text-black"
+                >
+                  <Pencil size={16} strokeWidth={2.2} />
+                </button>
               </div>
             </div>
 
             <div>
               <span className="block text-sm font-medium text-neutral-500">Gender</span>
-              <div className="mt-3 grid grid-cols-3 gap-3">
-                {genderOptions.map(({ label, icon: Icon }) => {
-                  const selected = profile.gender === label;
-
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => updateField('gender', label)}
-                      className={`flex items-center justify-center gap-2 rounded-[1.1rem] border px-3 py-3 text-sm font-semibold transition-all ${
-                        selected
-                          ? 'border-neutral-500 bg-white text-neutral-900 shadow-sm'
-                          : 'border-black/10 bg-white text-neutral-500 hover:bg-neutral-50'
-                      }`}
-                    >
-                      <Icon size={18} strokeWidth={2} />
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
+              <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
+                <Shield size={20} className="text-neutral-500" strokeWidth={2} />
+                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
+                  {getDisplayValue(profile.gender)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openFieldEditor('gender')}
+                  aria-label="Edit gender"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white hover:text-black"
+                >
+                  <Pencil size={16} strokeWidth={2.2} />
+                </button>
               </div>
             </div>
           </section>
@@ -212,25 +341,62 @@ export function EditProfileScreen() {
               </Link>
             ))}
           </section>
-
-          <div className="pt-1">
-            <button
-              type="submit"
-              className="w-full rounded-full bg-black px-5 py-4 text-base font-semibold text-white shadow-[0_14px_28px_rgba(0,0,0,0.16)] transition-opacity hover:opacity-95"
-            >
-              Save Changes
-            </button>
-            <p
-              className={`mt-3 text-center text-sm text-neutral-500 transition-opacity ${
-                didSave ? 'opacity-100' : 'opacity-0'
-              }`}
-              aria-live="polite"
-            >
-              Changes saved locally for now. We can wire this to Supabase next.
-            </p>
-          </div>
-        </form>
+        </div>
       </main>
+
+      {message && (
+        <div className="fixed left-1/2 top-4 z-40 w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 rounded-2xl bg-black px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_16px_34px_rgba(0,0,0,0.18)]">
+          {message}
+        </div>
+      )}
+
+      {activeField && (
+        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 px-4 pb-24 pt-6">
+          <div className="w-full max-w-[448px] rounded-[2rem] border border-black/10 bg-white p-5 text-neutral-950 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+            <h2 className="text-xl font-semibold tracking-tight">
+              Edit {editableFieldLabels[activeField]}
+            </h2>
+            <label htmlFor="profile-field-editor" className="mt-4 block text-sm font-medium text-neutral-500">
+              {editableFieldLabels[activeField]}
+            </label>
+            <input
+              id="profile-field-editor"
+              type={activeField === 'phoneNumber' ? 'tel' : 'text'}
+              inputMode={activeField === 'phoneNumber' ? 'tel' : 'text'}
+              value={draftValue}
+              onChange={(event) => setDraftValue(event.target.value)}
+              className="mt-2 w-full rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 text-base text-neutral-950 outline-none ring-1 ring-black/5 placeholder:text-neutral-400"
+              autoFocus
+            />
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={closeFieldEditor}
+                disabled={!hasDraftChanges || isSaving}
+                className={`rounded-full border border-black/10 px-5 py-3 text-sm font-semibold transition-colors ${
+                  hasDraftChanges
+                    ? 'bg-white text-neutral-950 hover:bg-neutral-50'
+                    : 'cursor-not-allowed bg-neutral-100 text-neutral-400'
+                }`}
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={saveField}
+                disabled={!hasDraftChanges || isSaving}
+                className={`rounded-full px-5 py-3 text-sm font-semibold transition-opacity ${
+                  hasDraftChanges
+                    ? 'bg-black text-white hover:opacity-95'
+                    : 'cursor-not-allowed bg-neutral-200 text-neutral-400'
+                }`}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <MobileBottomNav />
     </div>

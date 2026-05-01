@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Bot, Send, X } from 'lucide-react';
 
 interface ChatMessage {
@@ -14,17 +14,16 @@ interface ChatBotProps {
   onClose: () => void;
 }
 
-const initialMessages: ChatMessage[] = [
-  {
-    id: 1,
-    role: 'assistant',
-    text: 'Welcome to ZLon concierge. Tell me what you need help with today.',
-  },
-];
-
 export function ChatBot({ isOpen, onClose }: ChatBotProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 1,
+      role: 'assistant',
+      text: 'Welcome to ZLon concierge. Tell me what you need help with today.',
+    },
+  ]);
   const [draftMessage, setDraftMessage] = useState('');
+  const messageIdRef = useRef(2);
 
   useEffect(() => {
     if (!isOpen) {
@@ -53,15 +52,18 @@ export function ChatBot({ isOpen, onClose }: ChatBotProps) {
       return;
     }
 
+    const userId = messageIdRef.current++;
+    const assistantId = messageIdRef.current++;
+
     setMessages((currentMessages) => [
       ...currentMessages,
       {
-        id: Date.now(),
+        id: userId,
         role: 'user',
         text: nextMessage,
       },
       {
-        id: Date.now() + 1,
+        id: assistantId,
         role: 'assistant',
         text: 'Thanks. A ZLon support specialist can help with bookings, payments, locations, and account questions.',
       },

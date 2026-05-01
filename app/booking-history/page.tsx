@@ -31,9 +31,14 @@ export default function BookingHistoryPage() {
       setError(null);
 
       try {
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData.user?.id ?? null;
+
         const [{ data: bookingData, error: bookingsError }, { data: salonData, error: salonsError }] =
           await Promise.all([
-            supabase.from('bookings').select('*'),
+            userId
+              ? supabase.from('bookings').select('*').eq('customer_id', userId)
+              : Promise.resolve({ data: [], error: null }),
             supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT),
           ]);
 

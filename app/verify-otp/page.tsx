@@ -71,6 +71,7 @@ function VerifyOtpContent() {
   const [statusMessage, setStatusMessage] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const isMountedRef = useRef(true);
 
   const queryEmail =
     searchParams.get('email') ??
@@ -100,8 +101,17 @@ function VerifyOtpContent() {
           contactLabel: 'email address',
         };
 
+  const hasAutoFocusedRef = useRef(false);
+
   useEffect(() => {
-    inputRefs.current[0]?.focus();
+    if (!hasAutoFocusedRef.current) {
+      hasAutoFocusedRef.current = true;
+      inputRefs.current[0]?.focus();
+    }
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -198,6 +208,10 @@ function VerifyOtpContent() {
           type: 'email',
         });
 
+    if (!isMountedRef.current) {
+      return;
+    }
+
     setIsVerifying(false);
 
     if (response.error) {
@@ -240,6 +254,10 @@ function VerifyOtpContent() {
       : await supabase.auth.signInWithOtp({
           email: verificationDetails.email!,
         });
+
+    if (!isMountedRef.current) {
+      return;
+    }
 
     setIsResending(false);
 

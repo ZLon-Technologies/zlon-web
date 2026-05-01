@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Use Claude to understand the user's intent and match to services
     const response = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1024,
       thinking: { type: 'adaptive' },
       output_config: { effort: 'medium' },
