@@ -21,8 +21,9 @@ interface SearchMatch {
   id: string;
   name: string;
   result_type: 'salon' | 'service';
-  salon_name?: string;
-  price?: number;
+  salon_id?: string | number | null;
+  salon_name?: string | null;
+  price?: number | null;
 }
 
 interface SalonRecord {
@@ -79,7 +80,7 @@ function getSafeSalonRecord(rawSalon: Record<string, unknown>): SalonRecord | nu
   };
 }
 
-function getNumericValue(value: number | string | null | undefined) {
+function getNumericValue(value: unknown) {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : null;
   }
@@ -96,6 +97,61 @@ function getNumericValue(value: number | string | null | undefined) {
   }
 
   return null;
+}
+
+function isSearchResultType(value: unknown): value is SearchMatch['result_type'] {
+  return value === 'salon' || value === 'service';
+}
+
+function getSafeSearchResult(rawResult: Record<string, unknown>): SearchMatch | null {
+  const resultType = rawResult.result_type;
+
+  if (!isSearchResultType(resultType)) {
+    return null;
+  }
+
+  const fallbackId = resultType === 'salon' ? rawResult.salon_id : rawResult.service_id;
+  const id = rawResult.id ?? rawResult.result_id ?? fallbackId;
+
+  if (typeof id !== 'string' && typeof id !== 'number') {
+    return null;
+  }
+
+  const name =
+    getStringValue(rawResult.name) ??
+    getStringValue(rawResult.result_name) ??
+    (resultType === 'salon'
+      ? getStringValue(rawResult.salon_name)
+      : getStringValue(rawResult.service_name));
+
+  if (!name) {
+    return null;
+  }
+
+  const salonId = rawResult.salon_id;
+
+  return {
+    id: String(id),
+    name,
+    result_type: resultType,
+    salon_id: typeof salonId === 'string' || typeof salonId === 'number' ? salonId : null,
+    salon_name: getStringValue(rawResult.salon_name),
+    price: getNumericValue(rawResult.price) ?? getNumericValue(rawResult.base_price),
+  };
+}
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [value, delayMs]);
+
+  return debouncedValue;
 }
 
 function calculateDistanceInKilometers(
@@ -147,7 +203,7 @@ export default function HomePage() {
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const searchTimeoutRef = useRef<number | null>(null);
+  const debouncedSearchQuery = useDebouncedValue(searchQuery.trim(), 300);
   const bookings: BookingRecord[] = mapBookingRows(bookingRows, salonRows);
   const latestBooking = bookings?.[0] ?? null;
 
@@ -302,30 +358,27 @@ export default function HomePage() {
     setIsDragging(false);
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-
-    if (searchTimeoutRef.current) {
-      window.clearTimeout(searchTimeoutRef.current);
-    }
+  useEffect(() => {
+    const query = debouncedSearchQuery.trim();
+    let isCurrentSearch = true;
 
     if (query.length < 2) {
-      setSearchResults([]);
-      setShowResults(false);
-      setIsSearching(false);
-      return;
+      return () => {
+        isCurrentSearch = false;
+      };
     }
 
-    setShowResults(true);
-    setIsSearching(true);
-
-    searchTimeoutRef.current = window.setTimeout(async () => {
+    async function searchZLon() {
       const supabase = createSupabaseBrowserClient();
 
       try {
         const { data, error } = await supabase.rpc('search_zlon', {
           search_term: query,
         });
+
+        if (!isCurrentSearch) {
+          return;
+        }
 
         if (error) {
           console.error('Search error:', error);
@@ -334,20 +387,50 @@ export default function HomePage() {
           return;
         }
 
-        setSearchResults((data ?? []) as SearchMatch[]);
+        const nextResults = ((data ?? []) as Array<Record<string, unknown>>)
+          .map(getSafeSearchResult)
+          .filter((result): result is SearchMatch => Boolean(result));
+
+        setSearchResults(nextResults);
       } catch (err) {
+        if (!isCurrentSearch) {
+          return;
+        }
+
         console.error('Search error:', err);
         setSearchResults([]);
       } finally {
-        setIsSearching(false);
+        if (isCurrentSearch) {
+          setIsSearching(false);
+        }
       }
-    }, 300);
+    }
+
+    searchZLon();
+
+    return () => {
+      isCurrentSearch = false;
+    };
+  }, [debouncedSearchQuery]);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setShowResults(query.trim().length >= 2);
+
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
   };
 
   const clearSearch = () => {
     setSearchQuery('');
     setSearchResults([]);
     setShowResults(false);
+    setIsSearching(false);
   };
 
   const nearbySalons = salons.filter((salon) => {
@@ -415,6 +498,19 @@ export default function HomePage() {
     userLocation.displayText !== 'Current Location'
       ? userLocation.displayText.trim()
       : detectedNeighborhood?.trim() || 'Current Location';
+  const groupedSearchResults = [
+    {
+      type: 'salon',
+      label: 'Salons',
+      results: searchResults.filter((result) => result.result_type === 'salon'),
+    },
+    {
+      type: 'service',
+      label: 'Services',
+      results: searchResults.filter((result) => result.result_type === 'service'),
+    },
+  ] as const;
+  const shouldShowSearchResults = showResults && searchQuery.trim().length >= 2;
 
   const handleManualLocationSave = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -504,6 +600,7 @@ export default function HomePage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
+                onFocus={() => setShowResults(searchQuery.trim().length >= 2)}
                 placeholder="Search services (e.g., 'fade haircut', 'beard cleanup')"
                 className="w-full pl-12 pr-10 py-4 bg-gray-200 rounded-full text-gray-700 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
               />
@@ -524,8 +621,8 @@ export default function HomePage() {
             </div>
 
             {/* Search Results Overlay */}
-            {showResults && (
-              <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden max-w-[480px]">
+            {shouldShowSearchResults && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
                 {isSearching ? (
                   <div className="px-4 py-3 text-sm text-gray-500">
                     Searching…
@@ -536,28 +633,30 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {['salon', 'service'].map((type) => {
-                      const group = searchResults.filter(
-                        (r) => r.result_type === type
-                      );
-                      if (group.length === 0) return null;
+                    {groupedSearchResults.map(({ type, label, results }) => {
+                      if (results.length === 0) return null;
+
                       return (
                         <div key={type}>
                           <div className="px-4 py-2 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            {type === 'salon' ? 'Salons' : 'Services'}
+                            {label}
                           </div>
-                          {group.map((result) => (
+                          {results.map((result) => (
                             <Link
                               key={`${result.result_type}-${result.id}`}
                               href={
                                 result.result_type === 'salon'
-                                  ? `/salon/${result.id}`
-                                  : `/salon/${result.id}`
+                                  ? `/salon-profile/${result.id}`
+                                  : `/salon/${result.salon_id ?? result.id}`
                               }
                               className="block px-4 py-3 text-sm text-gray-900 hover:bg-gray-50 transition-colors border-l-2 border-transparent hover:border-gray-900"
                             >
                               {result.result_type === 'service'
-                                ? `${result.name} at ${result.salon_name ?? 'ZLon'}${result.price !== undefined ? ` - ₹${result.price}` : ''}`
+                                ? `${result.name} at ${result.salon_name ?? 'ZLon'} - ${
+                                    result.price !== null && result.price !== undefined
+                                      ? `₹${result.price}`
+                                      : 'Price unavailable'
+                                  }`
                                 : result.name}
                             </Link>
                           ))}
