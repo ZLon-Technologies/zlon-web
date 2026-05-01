@@ -20,9 +20,9 @@ const categories = [
 interface SearchMatch {
   id: string;
   name: string;
-  category: string;
-  confidence: 'high' | 'medium' | 'low';
-  reason: string;
+  result_type: 'salon' | 'service';
+  salon_name?: string;
+  price?: number;
 }
 
 interface SalonRecord {
@@ -148,7 +148,6 @@ export default function HomePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchTimeoutRef = useRef<number | null>(null);
-  const searchAbortRef = useRef<AbortController | null>(null);
   const bookings: BookingRecord[] = mapBookingRows(bookingRows, salonRows);
   const latestBooking = bookings?.[0] ?? null;
 
@@ -309,10 +308,6 @@ export default function HomePage() {
     if (searchTimeoutRef.current) {
       window.clearTimeout(searchTimeoutRef.current);
     }
-    if (searchAbortRef.current) {
-      searchAbortRef.current.abort();
-      searchAbortRef.current = null;
-    }
 
     if (query.length < 2) {
       setSearchResults([]);
@@ -325,38 +320,26 @@ export default function HomePage() {
     setIsSearching(true);
 
     searchTimeoutRef.current = window.setTimeout(async () => {
-      const controller = new AbortController();
-      searchAbortRef.current = controller;
+      const supabase = createSupabaseBrowserClient();
 
       try {
-        const response = await fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query }),
-          signal: controller.signal,
+        const { data, error } = await supabase.rpc('search_zlon', {
+          search_term: query,
         });
 
-        if (controller.signal.aborted) {
+        if (error) {
+          console.error('Search error:', error);
+          setSearchResults([]);
+          setIsSearching(false);
           return;
         }
 
-        if (response.ok) {
-          const data = await response.json();
-          setSearchResults(data.results);
-        } else {
-          console.error('Search failed');
-          setSearchResults([]);
-        }
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
-        }
-        console.error('Search error:', error);
+        setSearchResults((data ?? []) as SearchMatch[]);
+      } catch (err) {
+        console.error('Search error:', err);
         setSearchResults([]);
       } finally {
-        if (!controller.signal.aborted) {
-          setIsSearching(false);
-        }
+        setIsSearching(false);
       }
     }, 300);
   };
@@ -514,7 +497,7 @@ export default function HomePage() {
 
         <div className="px-6 pt-4 pb-20">
           {/* Search Bar */}
-          <div className="mb-6">
+          <div className="mb-6 relative">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -539,69 +522,53 @@ export default function HomePage() {
                 </button>
               )}
             </div>
-          </div>
 
-          {/* AI Search Results */}
-          {showResults && searchResults.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold text-gray-900">
-                  {isSearching ? 'Searching...' : `Found ${searchResults.length} service${searchResults.length !== 1 ? 's' : ''}`}
-                </h2>
-                <button
-                  onClick={clearSearch}
-                  className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  Clear
-                </button>
-              </div>
-              <div className="space-y-2">
-                {searchResults.map((result) => (
-                  <div
-                    key={result.id}
-                    className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold text-gray-900">{result.name}</h3>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              result.confidence === 'high'
-                                ? 'bg-green-100 text-green-700'
-                                : result.confidence === 'medium'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {result.confidence} match
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500 capitalize">Category: {result.category}</p>
-                        <p className="text-xs text-gray-600 mt-2">{result.reason}</p>
-                      </div>
-                      <button className="bg-gray-900 text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-gray-800 transition-colors">
-                        Book
-                      </button>
-                    </div>
+            {/* Search Results Overlay */}
+            {showResults && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden max-w-[480px]">
+                {isSearching ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    Searching…
                   </div>
-                ))}
+                ) : searchResults.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    No exact matches found, try another term
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {['salon', 'service'].map((type) => {
+                      const group = searchResults.filter(
+                        (r) => r.result_type === type
+                      );
+                      if (group.length === 0) return null;
+                      return (
+                        <div key={type}>
+                          <div className="px-4 py-2 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            {type === 'salon' ? 'Salons' : 'Services'}
+                          </div>
+                          {group.map((result) => (
+                            <Link
+                              key={`${result.result_type}-${result.id}`}
+                              href={
+                                result.result_type === 'salon'
+                                  ? `/salon/${result.id}`
+                                  : `/salon/${result.id}`
+                              }
+                              className="block px-4 py-3 text-sm text-gray-900 hover:bg-gray-50 transition-colors border-l-2 border-transparent hover:border-gray-900"
+                            >
+                              {result.result_type === 'service'
+                                ? `${result.name} at ${result.salon_name ?? 'ZLon'}${result.price !== undefined ? ` - ₹${result.price}` : ''}`
+                                : result.name}
+                            </Link>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* No Results */}
-          {showResults && searchResults.length === 0 && !isSearching && searchQuery.length >= 2 && (
-            <div className="mb-8 text-center py-8">
-              <div className="text-gray-400 mb-2">
-                <Search className="w-12 h-12 mx-auto" />
-              </div>
-              <p className="text-gray-600 font-medium">
-                No services found for &quot;{searchQuery}&quot;
-              </p>
-              <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Category Pills */}
           <div
