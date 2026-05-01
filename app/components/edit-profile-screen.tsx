@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell,
   ChevronRight,
@@ -350,53 +351,66 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
         </div>
       )}
 
-      {activeField && (
-        <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 px-4 pb-24 pt-6">
-          <div className="w-full max-w-[448px] rounded-[2rem] border border-black/10 bg-white p-5 text-neutral-950 shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-            <h2 className="text-xl font-semibold tracking-tight">
-              Edit {editableFieldLabels[activeField]}
-            </h2>
-            <label htmlFor="profile-field-editor" className="mt-4 block text-sm font-medium text-neutral-500">
-              {editableFieldLabels[activeField]}
-            </label>
-            <input
-              id="profile-field-editor"
-              type={activeField === 'phoneNumber' ? 'tel' : 'text'}
-              inputMode={activeField === 'phoneNumber' ? 'tel' : 'text'}
-              value={draftValue}
-              onChange={(event) => setDraftValue(event.target.value)}
-              className="mt-2 w-full rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 text-base text-neutral-950 outline-none ring-1 ring-black/5 placeholder:text-neutral-400"
-              autoFocus
-            />
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={closeFieldEditor}
-                disabled={!hasDraftChanges || isSaving}
-                className={`rounded-full border border-black/10 px-5 py-3 text-sm font-semibold transition-colors ${
-                  hasDraftChanges
-                    ? 'bg-white text-neutral-950 hover:bg-neutral-50'
-                    : 'cursor-not-allowed bg-neutral-100 text-neutral-400'
-                }`}
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                onClick={saveField}
-                disabled={!hasDraftChanges || isSaving}
-                className={`rounded-full px-5 py-3 text-sm font-semibold transition-opacity ${
-                  hasDraftChanges
-                    ? 'bg-black text-white hover:opacity-95'
-                    : 'cursor-not-allowed bg-neutral-200 text-neutral-400'
-                }`}
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
+      <AnimatePresence>
+        {activeField && (
+          <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/60 px-4 pb-24 pt-6">
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{
+                type: 'spring',
+                stiffness: 300,
+                damping: 30,
+                mass: 0.8,
+              }}
+              className="w-full max-w-[448px] rounded-[2rem] border border-black/10 bg-white p-5 text-neutral-950 shadow-[0_24px_60px_rgba(0,0,0,0.24)]"
+            >
+              <h2 className="text-xl font-semibold tracking-tight">
+                Edit {editableFieldLabels[activeField]}
+              </h2>
+              <label htmlFor="profile-field-editor" className="mt-4 block text-sm font-medium text-neutral-500">
+                {editableFieldLabels[activeField]}
+              </label>
+              <input
+                id="profile-field-editor"
+                type={activeField === 'phoneNumber' ? 'tel' : 'text'}
+                inputMode={activeField === 'phoneNumber' ? 'tel' : 'text'}
+                value={draftValue}
+                onChange={(event) => setDraftValue(event.target.value)}
+                className="mt-2 w-full rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 text-base text-neutral-950 outline-none ring-1 ring-black/5 placeholder:text-neutral-400"
+                autoFocus
+              />
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={closeFieldEditor}
+                  disabled={!hasDraftChanges || isSaving}
+                  className={`rounded-full border border-black/10 px-5 py-3 text-sm font-semibold transition-colors ${
+                    hasDraftChanges
+                      ? 'bg-white text-neutral-950 hover:bg-neutral-50'
+                      : 'cursor-not-allowed bg-neutral-100 text-neutral-400'
+                  }`}
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  onClick={saveField}
+                  disabled={!hasDraftChanges || isSaving}
+                  className={`rounded-full px-5 py-3 text-sm font-semibold transition-opacity ${
+                    hasDraftChanges
+                      ? 'bg-black text-white hover:opacity-95'
+                      : 'cursor-not-allowed bg-neutral-200 text-neutral-400'
+                  }`}
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       <MobileBottomNav />
     </div>
