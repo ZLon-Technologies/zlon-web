@@ -1,227 +1,305 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import {
-  CalendarDays,
-  Clock3,
-  Info,
-  MapPin,
-  Scissors,
-} from 'lucide-react';
-import { MobileBottomNav } from '../components/mobile-bottom-nav';
+import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { BookingDetailsScreen } from './booking-details-screen';
+import type { BookedService, BookingDetails } from './booking-details-types';
 
-interface BookedService {
-  id: string;
-  name: string;
-  duration: string;
-  price: number;
-}
-
-const booking = {
-  serviceTitle: 'Classic Haircut',
-  salonName: 'ZLon. Studio',
-  location: '123 High Street, Downtown',
-  date: '2026-05-18T14:30:00+05:30',
-  timeSlot: '2:30 PM - 3:15 PM',
-  status: 'Upcoming',
-  totalPrice: 1200,
-  barberName: 'Alex Mercer',
-  barberTitle: 'Senior Stylist',
-  services: [
-    { id: 'classic-haircut', name: 'Classic Haircut', duration: '45 mins', price: 900 },
-    { id: 'beard-finish', name: 'Beard Finish', duration: '15 mins', price: 300 },
-  ] satisfies BookedService[],
-};
-
-const surfaceClass =
-  'rounded-[1.5rem] border border-black/10 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]';
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatBookingDate(dateString: string) {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date(dateString));
-}
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+type RawRow = Record<string, unknown>;
 
 export const metadata: Metadata = {
   title: 'Booking Details',
 };
 
-export default function BookingPage() {
-  return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative">
-      <div className="flex min-h-screen flex-col bg-[#f7f6f3] text-neutral-950">
-        <header className="border-b border-black/5 px-4 py-4">
-          <button
-            type="button"
-            aria-label="Booking information"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-black"
-          >
-            <Info size={20} strokeWidth={2.2} />
-          </button>
-        </header>
+function getStringValue(value: unknown) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
 
-        <main className="flex-1 space-y-4 px-4 py-4 pb-20">
-          <section className="overflow-hidden rounded-[1.75rem] bg-white shadow-[0_16px_34px_rgba(15,23,42,0.15)]">
-            <div
-              className="relative h-72 overflow-hidden rounded-[1.75rem] bg-cover bg-center"
-              style={{
-                backgroundImage:
-                  'linear-gradient(180deg, rgba(17,24,39,0.05) 10%, rgba(17,24,39,0.72) 100%), url("https://images.unsplash.com/photo-1585747860715-cd4628902d4a?auto=format&fit=crop&w=1200&q=80")',
-              }}
-            >
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12)_0%,transparent_24%,rgba(17,24,39,0.7)_100%)]" />
+function getNumericValue(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
 
-              <div className="absolute left-4 top-4">
-                <span className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-neutral-500 shadow-sm">
-                  {booking.status}
-                </span>
-              </div>
+  if (typeof value === 'string') {
+    const trimmedValue = value.trim();
 
-              <div className="absolute bottom-4 left-4 right-4">
-                <p className="text-sm text-white/85">{booking.salonName}</p>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">
-                  {booking.serviceTitle}
-                </h1>
-                <p className="mt-2 max-w-xs text-sm text-white/80">{booking.location}</p>
-              </div>
-            </div>
-          </section>
+    if (!trimmedValue) {
+      return null;
+    }
 
-          <section className={`${surfaceClass} flex items-center gap-3 p-4`}>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
-              <CalendarDays size={20} strokeWidth={2} />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-neutral-500">Date &amp; Time</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {formatBookingDate(booking.date)}
-              </h2>
-              <div className="mt-1 flex items-center gap-2 text-sm text-neutral-500">
-                <Clock3 size={18} strokeWidth={2.1} />
-                <span>
-                  {booking.timeSlot} ({booking.services[0].duration})
-                </span>
-              </div>
-            </div>
-          </section>
+    const parsedValue = Number(trimmedValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
 
-          <section className={`${surfaceClass} flex items-center gap-3 p-4`}>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,#f6c89f_12%,#de9567_24%,#111827_25%,#111827_100%)] text-sm font-semibold text-white">
-              AM
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-neutral-500">Professional</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">
-                {booking.barberName}
-              </h2>
-              <p className="mt-1 text-sm text-neutral-500">{booking.barberTitle}</p>
-            </div>
-          </section>
+  return null;
+}
 
-          <section className={`${surfaceClass} flex items-center gap-3 p-4`}>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
-              <MapPin size={20} strokeWidth={2} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-neutral-500">Location</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight">{booking.location}</h2>
-              <Link
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  booking.location
-                )}`}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-2 inline-block text-sm font-medium text-neutral-500 underline-offset-4 hover:underline"
-              >
-                Get Directions
-              </Link>
-            </div>
-            <div className="h-20 w-20 shrink-0 rounded-[1.25rem] bg-[linear-gradient(135deg,#9ecf99_0%,#80be89_35%,#8fcbbe_35%,#8fcbbe_70%,#f0b35f_70%,#d4a55f_100%)] bg-[length:200%_200%] shadow-inner" />
-          </section>
+function getFirstString(row: RawRow, keys: string[]) {
+  for (const key of keys) {
+    const value = getStringValue(row[key]);
 
-          <section className={`${surfaceClass} p-5`}>
-            <h2 className="text-xl font-semibold tracking-tight">Services Booked</h2>
-            <div className="mt-4 space-y-3">
-              {booking.services.map((service) => (
-                <div
-                  key={service.id}
-                  className="flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-neutral-700 shadow-sm">
-                    <Scissors size={18} strokeWidth={2.1} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-semibold tracking-tight">{service.name}</h3>
-                    <p className="mt-1 text-sm text-neutral-500">{service.duration}</p>
-                  </div>
-                  <div className="text-base font-semibold text-neutral-950">
-                    {formatCurrency(service.price)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+    if (value) {
+      return value;
+    }
+  }
 
-          <section className={`${surfaceClass} p-5`}>
-            <h2 className="text-xl font-semibold tracking-tight">Payment Summary</h2>
-            <div className="mt-4 space-y-4 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-neutral-500">Salon Name</span>
-                <span className="text-right font-medium text-neutral-950">{booking.salonName}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-neutral-500">Booking Status</span>
-                <span className="font-medium text-neutral-950">{booking.status}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-neutral-500">Time Slot</span>
-                <span className="text-right font-medium text-neutral-950">{booking.timeSlot}</span>
-              </div>
-              <div className="h-px bg-black/8" />
-              <div className="flex items-center justify-between gap-4 text-xl font-semibold tracking-tight">
-                <span>Total</span>
-                <span>{formatCurrency(booking.totalPrice)}</span>
-              </div>
-            </div>
-          </section>
+  return null;
+}
 
-          <div className="space-y-3 pt-1">
-            <Link
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                booking.location
-              )}`}
-              target="_blank"
-              rel="noreferrer"
-              className="block w-full rounded-full border border-black/20 px-5 py-4 text-center text-base font-semibold text-neutral-900 transition-colors hover:bg-neutral-50"
-            >
-              Get Directions
-            </Link>
-            <button
-              type="button"
-              className="w-full rounded-full bg-black px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-95"
-            >
-              Reschedule
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-full px-5 py-3 text-base font-medium text-red-600 transition-colors hover:bg-red-50"
-            >
-              Cancel Booking
-            </button>
-          </div>
-        </main>
+function getRelation(row: RawRow, keys: string[]) {
+  for (const key of keys) {
+    const value = row[key];
 
-        <MobileBottomNav />
-      </div>
-    </div>
+    if (Array.isArray(value)) {
+      const firstValue = value[0];
+
+      if (firstValue && typeof firstValue === 'object') {
+        return firstValue as RawRow;
+      }
+    }
+
+    if (value && typeof value === 'object') {
+      return value as RawRow;
+    }
+  }
+
+  return null;
+}
+
+function getDateValue(value: unknown) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+
+    if (!Number.isNaN(date.getTime())) {
+      return date;
+    }
+  }
+
+  return null;
+}
+
+function formatTitleCase(value: string | null) {
+  if (!value) {
+    return 'Upcoming';
+  }
+
+  return value
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`)
+    .join(' ');
+}
+
+function formatTime(date: Date) {
+  return new Intl.DateTimeFormat('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+}
+
+function getDurationLabel(service: RawRow | null, startDate: Date | null, endDate: Date | null) {
+  const explicitDuration = service
+    ? getFirstString(service, ['time', 'duration', 'duration_label'])
+    : null;
+
+  if (explicitDuration) {
+    return explicitDuration;
+  }
+
+  const durationMinutes = service
+    ? getNumericValue(service.duration_minutes) ?? getNumericValue(service.durationMinutes)
+    : null;
+
+  if (durationMinutes !== null) {
+    return `${durationMinutes} min`;
+  }
+
+  if (startDate && endDate) {
+    const minutes = Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 60000));
+
+    if (minutes > 0) {
+      return `${minutes} min`;
+    }
+  }
+
+  return 'Duration unavailable';
+}
+
+function getTimeSlot(startDate: Date | null, endDate: Date | null) {
+  if (startDate && endDate) {
+    return `${formatTime(startDate)} - ${formatTime(endDate)}`;
+  }
+
+  if (startDate) {
+    return formatTime(startDate);
+  }
+
+  return 'Time unavailable';
+}
+
+function toBookingDetails(row: RawRow, salon: RawRow | null, service: RawRow | null) {
+  const idValue = row.id;
+
+  if (typeof idValue !== 'string' && typeof idValue !== 'number') {
+    return null;
+  }
+
+  const startDate = getDateValue(row.start_time) ?? getDateValue(row.created_at);
+  const endDate = getDateValue(row.end_time);
+  const servicePrice =
+    getNumericValue(row.salon_revenue) ??
+    (service
+      ? getNumericValue(service.base_price) ??
+        getNumericValue(service.price) ??
+        getNumericValue(service.salon_revenue)
+      : null) ??
+    0;
+  const serviceName = (service ? getFirstString(service, ['name']) : null) ?? 'Salon Service';
+  const salonName = (salon ? getFirstString(salon, ['name']) : null) ?? 'ZLon Salon';
+  const location = (salon ? getFirstString(salon, ['location']) : null) ?? 'Location unavailable';
+  const duration = getDurationLabel(service, startDate, endDate);
+  const services: BookedService[] = [
+    {
+      id: String((service?.id as string | number | undefined) ?? row.service_id ?? idValue),
+      name: serviceName,
+      duration,
+      price: servicePrice,
+    },
+  ];
+
+  return {
+    id: String(idValue),
+    serviceTitle: serviceName,
+    salonName,
+    location,
+    date: startDate?.toISOString() ?? '',
+    timeSlot: getTimeSlot(startDate, endDate),
+    status: formatTitleCase(getFirstString(row, ['status'])),
+    totalPrice: servicePrice,
+    professionalName: 'ZLon Partner',
+    professionalTitle: `${salonName} team`,
+    services,
+  } satisfies BookingDetails;
+}
+
+async function fetchJoinedUpcomingBooking(supabase: SupabaseServerClient) {
+  const { data, error } = await supabase
+    .from('bookings')
+    .select(
+      `
+        id,
+        salon_id,
+        service_id,
+        start_time,
+        end_time,
+        status,
+        salon_revenue,
+        salons:salon_id (
+          id,
+          name,
+          location
+        ),
+        services:service_id (
+          id,
+          name,
+          time,
+          base_price
+        )
+      `
+    )
+    .neq('status', 'cancelled')
+    .gte('start_time', new Date().toISOString())
+    .order('start_time', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const row = data as RawRow;
+
+  return toBookingDetails(
+    row,
+    getRelation(row, ['salons', 'salon']),
+    getRelation(row, ['services', 'service'])
   );
+}
+
+async function fetchFallbackBookingRow(supabase: SupabaseServerClient, userId: string | null) {
+  const baseQuery = () =>
+    supabase
+      .from('bookings')
+      .select('*')
+      .neq('status', 'cancelled')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+  if (userId) {
+    const ownedResult = await baseQuery().eq('customer_id', userId).maybeSingle();
+
+    if (!ownedResult.error || !ownedResult.error.message.includes('customer_id')) {
+      return ownedResult;
+    }
+  }
+
+  return baseQuery().maybeSingle();
+}
+
+async function fetchFallbackUpcomingBooking(
+  supabase: SupabaseServerClient,
+  userId: string | null
+) {
+  const { data, error } = await fetchFallbackBookingRow(supabase, userId);
+
+  if (error || !data) {
+    return null;
+  }
+
+  const row = data as RawRow;
+  const salonId = row.salon_id;
+  const serviceId = row.service_id;
+  const [salonResult, serviceResult] = await Promise.all([
+    typeof salonId === 'string' || typeof salonId === 'number'
+      ? supabase.from('salons').select('id,name,location').eq('id', salonId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    typeof serviceId === 'string' || typeof serviceId === 'number'
+      ? supabase.from('services').select('*').eq('id', serviceId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  return toBookingDetails(
+    row,
+    salonResult.data && typeof salonResult.data === 'object'
+      ? (salonResult.data as RawRow)
+      : null,
+    serviceResult.data && typeof serviceResult.data === 'object'
+      ? (serviceResult.data as RawRow)
+      : null
+  );
+}
+
+async function getUpcomingBooking() {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getUser();
+  const userId = data.user?.id ?? null;
+
+  if (!userId) {
+    return null;
+  }
+
+  return (
+    (await fetchJoinedUpcomingBooking(supabase)) ??
+    (await fetchFallbackUpcomingBooking(supabase, userId))
+  );
+}
+
+export default async function BookingPage() {
+  const booking = await getUpcomingBooking();
+
+  return <BookingDetailsScreen booking={booking} />;
 }
