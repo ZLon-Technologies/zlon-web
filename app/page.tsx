@@ -93,6 +93,14 @@ function LandingPageContent() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-white px-6 py-12">
+      {/* Hidden SEO text — readable by search crawlers and screen readers but invisible to sighted users */}
+      <h1 className="sr-only">
+        ZLon — Premium Salon & Grooming Booking Platform
+      </h1>
+      <p className="sr-only">
+        Discover and book top-rated salons across India. From haircuts and spa treatments to full grooming sessions, ZLon lets you browse real-time availability, compare prices, and pay seamlessly with the built-in wallet — all in one app.
+      </p>
+
       <div className="mb-10">
         <Image
           src="/logo.png"
