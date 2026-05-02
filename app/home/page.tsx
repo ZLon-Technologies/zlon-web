@@ -192,6 +192,7 @@ export default function HomePage() {
     displayText: 'Current Location',
   });
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [manualLocationInput, setManualLocationInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -216,16 +217,34 @@ export default function HomePage() {
       return;
     }
 
+    setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          displayText: 'Current Location',
-        });
-        setIsLocationModalOpen(false);
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        try {
+          const response = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`);
+          const data = await response.json();
+          
+          setUserLocation({
+            lat: latitude,
+            lng: longitude,
+            displayText: data.city || 'Current Location',
+          });
+        } catch (err) {
+          console.error('Geocoding error:', err);
+          setUserLocation({
+            lat: latitude,
+            lng: longitude,
+            displayText: 'Current Location',
+          });
+        } finally {
+          setIsLocating(false);
+          setIsLocationModalOpen(false);
+        }
       },
       () => {
+        setIsLocating(false);
         if (showFallbackAlert) {
           window.alert('Please enable location permissions');
         }
@@ -502,10 +521,11 @@ export default function HomePage() {
       return nextDistance < currentDistance ? salon.location : nearestLocation;
     }, null);
   })();
-  const locationDisplayLabel =
-    userLocation.displayText !== 'Current Location'
+  const locationDisplayLabel = isLocating
+    ? 'Locating...'
+    : userLocation.displayText !== 'Current Location'
       ? userLocation.displayText.trim()
-      : detectedNeighborhood?.trim() || 'Current Location';
+      : 'Current Location';
   const groupedSearchResults = [
     {
       type: 'salon',
