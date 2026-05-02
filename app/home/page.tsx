@@ -288,39 +288,20 @@ export default function HomePage() {
     const supabase = createSupabaseBrowserClient();
     let isMounted = true;
 
-    async function fetchSalons() {
-      setIsLoading(true);
-      setError(null);
-
+    async function fetchUserData() {
       try {
         const { data: authData } = await supabase.auth.getUser();
         const userId = authData.user?.id ?? null;
 
-        const [
-          { data: salonData, error: salonsError },
-          { data: bookingData, error: bookingsError },
-          { data: profileData }
-        ] = await Promise.all([
-          supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT),
-          userId
-            ? supabase.from('bookings').select('*').eq('customer_id', userId)
-            : Promise.resolve({ data: [], error: null }),
-          userId
-            ? supabase.from('profiles').select('full_name, email, ai_scanner_access').eq('id', userId).maybeSingle()
-            : Promise.resolve({ data: null, error: null }),
-        ]);
+        if (!userId || !isMounted) return;
 
-        if (salonsError) {
-          throw salonsError;
-        }
+        const [{ data: bookingData, error: bookingsError }, { data: profileData }] =
+          await Promise.all([
+            supabase.from('bookings').select('*').eq('customer_id', userId),
+            supabase.from('profiles').select('full_name, email, ai_scanner_access').eq('id', userId).maybeSingle(),
+          ]);
 
         if (isMounted) {
-          const nextSalonRows = (salonData ?? []) as Array<Record<string, unknown>>;
-          const nextSalons = nextSalonRows
-            .map(getSafeSalonRecord)
-            .filter((salon): salon is SalonRecord => Boolean(salon));
-          setSalonRows(nextSalonRows);
-          setSalons(nextSalons);
           setBookingRows(
             bookingsError ? [] : ((bookingData ?? []) as Array<Record<string, unknown>>)
           );
@@ -329,6 +310,57 @@ export default function HomePage() {
 
         if (bookingsError) {
           console.error('Unable to load recent bookings for quick rebook:', bookingsError);
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    }
+
+    fetchUserData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let isMounted = true;
+
+    async function fetchSalons() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const categoryLabel = categories.find((c) => c.id === selected)?.label;
+        const { data: salonData, error: salonsError } = await supabase
+          .from('salons')
+          .select(`${CUSTOMER_SAFE_SALON_SELECT}, services!inner(category)`)
+          .eq('services.category', categoryLabel);
+
+        if (salonsError) {
+          throw salonsError;
+        }
+
+        if (isMounted) {
+          const rawSalonRows = (salonData ?? []) as Array<Record<string, unknown>>;
+          
+          // Deduplicate salons by ID (since inner join with services can return multiple rows per salon)
+          const uniqueSalonRows: Array<Record<string, unknown>> = [];
+          const seenIds = new Set();
+          for (const row of rawSalonRows) {
+            if (!seenIds.has(row.id)) {
+              uniqueSalonRows.push(row);
+              seenIds.add(row.id);
+            }
+          }
+
+          const nextSalons = uniqueSalonRows
+            .map(getSafeSalonRecord)
+            .filter((salon): salon is SalonRecord => Boolean(salon));
+          
+          setSalonRows(uniqueSalonRows);
+          setSalons(nextSalons);
         }
       } catch (fetchError) {
         if (isMounted) {
@@ -348,7 +380,7 @@ export default function HomePage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [selected]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -809,10 +841,10 @@ export default function HomePage() {
             ) : salons.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
                 <p className="text-base font-semibold text-gray-900">
-                  No salons found in your area yet.
+                  No salons found for this service.
                 </p>
                 <p className="mt-2 text-sm text-gray-500">
-                  We&apos;re adding more salons soon. Check back again shortly.
+                  Try another service or check back later.
                 </p>
               </div>
             ) : nearbySalons.length === 0 ? (
