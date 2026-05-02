@@ -68,15 +68,15 @@ function getSafeSalonRecord(rawSalon: Record<string, unknown>): SalonRecord | nu
       getStringValue(rawSalon.image_url) ??
       getStringValue(rawSalon.imageUrl) ??
       getStringValue(rawSalon.image),
-    location: getStringValue(rawSalon.location),
+    location: getStringValue(rawSalon.address) ?? getStringValue(rawSalon.location),
     price:
       typeof rawSalon.price === 'number' || typeof rawSalon.price === 'string'
         ? rawSalon.price
         : null,
     lat:
-      typeof rawSalon.lat === 'number' || typeof rawSalon.lat === 'string' ? rawSalon.lat : null,
+      getNumericValue(rawSalon.latitude) ?? getNumericValue(rawSalon.lat),
     lng:
-      typeof rawSalon.lng === 'number' || typeof rawSalon.lng === 'string' ? rawSalon.lng : null,
+      getNumericValue(rawSalon.longitude) ?? getNumericValue(rawSalon.lng),
   };
 }
 
@@ -335,8 +335,8 @@ export default function HomePage() {
         const categoryLabel = categories.find((c) => c.id === selected)?.label;
         const { data: salonData, error: salonsError } = await supabase
           .from('salons')
-          .select(`${CUSTOMER_SAFE_SALON_SELECT}, services!inner(category)`)
-          .eq('services.category', categoryLabel);
+          .select(CUSTOMER_SAFE_SALON_SELECT)
+          .contains('services', [categoryLabel]);
 
         if (salonsError) {
           throw salonsError;
@@ -344,22 +344,11 @@ export default function HomePage() {
 
         if (isMounted) {
           const rawSalonRows = (salonData ?? []) as Array<Record<string, unknown>>;
-          
-          // Deduplicate salons by ID (since inner join with services can return multiple rows per salon)
-          const uniqueSalonRows: Array<Record<string, unknown>> = [];
-          const seenIds = new Set();
-          for (const row of rawSalonRows) {
-            if (!seenIds.has(row.id)) {
-              uniqueSalonRows.push(row);
-              seenIds.add(row.id);
-            }
-          }
-
-          const nextSalons = uniqueSalonRows
+          const nextSalons = rawSalonRows
             .map(getSafeSalonRecord)
             .filter((salon): salon is SalonRecord => Boolean(salon));
           
-          setSalonRows(uniqueSalonRows);
+          setSalonRows(rawSalonRows);
           setSalons(nextSalons);
         }
       } catch (fetchError) {
@@ -557,7 +546,7 @@ export default function HomePage() {
     ? 'Locating...'
     : userLocation.displayText !== 'Current Location'
       ? userLocation.displayText.trim()
-      : 'Current Location';
+      : 'Select Location';
   const groupedSearchResults = [
     {
       type: 'salon',

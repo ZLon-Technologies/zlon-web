@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       systemInstruction: 'You are the helpful customer support assistant for ZLon, a premium salon booking app in India. Answer basic questions about haircuts, grooming, and wallet payments concisely.\n\nCRITICAL RULE: If the user is angry, asks for a refund, or explicitly asks to speak to a human, DO NOT answer their question. You must only reply with the exact string: TRIGGER_HANDOFF.',
     });
 
@@ -36,11 +36,15 @@ export async function POST(request: NextRequest) {
     const response = result.response.text();
 
     return NextResponse.json({ text: response });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Chat error:', error);
     return NextResponse.json(
-      { error: 'Failed to process chat' },
-      { status: 500 }
+      { 
+        error: 'Failed to process chat', 
+        details: error?.message || 'Unknown error',
+        code: error?.status || error?.code || 500
+      },
+      { status: error?.status || 500 }
     );
   }
 }
