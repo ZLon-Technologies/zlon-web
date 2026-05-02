@@ -8,7 +8,6 @@ import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { ChatBot } from '@/components/ChatBot';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
 const categories = [
@@ -193,7 +192,6 @@ export default function HomePage() {
   });
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [manualLocationInput, setManualLocationInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -628,14 +626,13 @@ export default function HomePage() {
                   {locationDisplayLabel}
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={() => setIsChatOpen(true)}
+              <Link
+                href="/customer-support"
                 aria-label="Open customer support chat"
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 hover:text-black"
               >
                 <MessageSquare className="h-5 w-5" />
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -1023,7 +1020,6 @@ export default function HomePage() {
       )}
 
       <MobileBottomNav />
-      <ChatBot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }
