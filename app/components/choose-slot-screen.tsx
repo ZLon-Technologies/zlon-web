@@ -153,9 +153,9 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   }
 
   return (
-    <div className="w-full min-h-screen bg-white relative overflow-x-hidden pb-28">
+    <div className="w-full relative overflow-x-hidden pb-28">
       <header className="border-b border-neutral-100 bg-white">
-        <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex items-center gap-3 px-5 py-3">
           <button
             type="button"
             onClick={handleBack}
@@ -170,7 +170,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         </div>
       </header>
 
-      <main className="p-4 pb-32">
+      <main className="px-5 py-4 pb-32">
         <section className="rounded-[2rem] bg-white p-4 shadow-[0_18px_38px_rgba(15,23,42,0.06)] ring-1 ring-neutral-100">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
             Selected Service
@@ -300,7 +300,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white p-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+      <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-5 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center justify-between gap-3 text-neutral-500">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">

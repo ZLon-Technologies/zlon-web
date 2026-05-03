@@ -66,14 +66,14 @@ export function BookingDetailsScreen({ booking }: BookingDetailsScreenProps) {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative">
+    <div className="w-full relative">
       {notification && (
         <div className="fixed left-1/2 top-4 z-30 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl bg-black px-4 py-3 text-center text-sm font-semibold text-white shadow-[0_16px_34px_rgba(0,0,0,0.18)]">
           {notification}
         </div>
       )}
 
-      <div className="flex min-h-screen flex-col bg-[#f7f6f3] text-neutral-950">
+      <div className="flex flex-col text-neutral-950">
         <header className="border-b border-black/5 px-4 py-4">
           <button
             type="button"

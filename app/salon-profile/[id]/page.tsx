@@ -144,7 +144,7 @@ export default async function SalonProfilePage({ params }: SalonProfilePageProps
     'A modern grooming destination with polished service, sharp detailing, and a refined in-salon experience.';
 
   return (
-    <div className="w-full min-h-screen relative bg-white pb-24">
+    <div className="w-full relative pb-24">
       <Link
         href="/home"
         aria-label="Go back"
@@ -171,7 +171,7 @@ export default async function SalonProfilePage({ params }: SalonProfilePageProps
         </div>
       </section>
 
-      <section className="p-4">
+      <section className="px-5 py-4">
         <h1 className="text-2xl font-semibold tracking-tight text-neutral-950">{salonName}</h1>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500">
           <MapPin size={16} className="shrink-0" />

@@ -101,8 +101,8 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative p-4">
-      <div className="flex min-h-[calc(100vh-2rem)] flex-col text-neutral-950">
+    <div className="w-full relative px-5 py-4">
+      <div className="flex flex-col text-neutral-950">
         <header className="flex items-center gap-3 py-2">
           <Link
             href="/privacy-settings"

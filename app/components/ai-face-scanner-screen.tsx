@@ -108,9 +108,9 @@ export function AIFaceScannerScreen() {
   }
 
   return (
-    <div className="w-full min-h-screen relative bg-white">
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(115,115,115,0.18),_transparent_32%),linear-gradient(180deg,_#09090b_0%,_#000000_100%)] pb-20 text-white">
-        <header className="px-3 pt-4">
+    <div className="w-full relative">
+      <div className="bg-[radial-gradient(circle_at_top,_rgba(115,115,115,0.18),_transparent_32%),linear-gradient(180deg,_#09090b_0%,_#000000_100%)] pb-20 text-white">
+        <header className="px-5 pt-4">
           <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-sm">
             <Link
               href="/home"
@@ -133,7 +133,7 @@ export function AIFaceScannerScreen() {
           </div>
         </header>
 
-        <main className="space-y-4 px-3 pb-8 pt-3">
+        <main className="space-y-4 px-5 pb-8 pt-3">
           <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-[0_20px_60px_rgba(0,0,0,0.55)]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.14),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.04)_0%,_rgba(0,0,0,0.3)_100%)]" />
 

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function WalletPage() {
   return (
-    <div className="w-full max-w-sm mx-auto min-h-screen bg-white relative">
+    <div className="w-full relative">
       <WalletScreen />
     </div>
   );

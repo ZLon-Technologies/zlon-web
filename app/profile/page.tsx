@@ -73,7 +73,7 @@ export default async function ProfilePage() {
   const profile = await getCurrentProfile();
 
   return (
-    <div className="w-full min-h-screen bg-white relative">
+    <div className="w-full relative">
       <EditProfileScreen initialProfile={profile} />
     </div>
   );

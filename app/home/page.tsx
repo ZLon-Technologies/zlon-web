@@ -590,7 +590,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 relative flex flex-col">
+    <div className="w-full relative flex flex-col">
       <style>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
@@ -637,7 +637,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="px-6 pt-4 pb-20">
+        <div className="px-5 pt-4 pb-20">
           {/* Search Bar */}
           <div className="mb-6 relative">
             <div className="relative">

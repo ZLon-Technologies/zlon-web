@@ -41,8 +41,8 @@ const privacyItems = [
 
 export default function PrivacySettingsPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="flex min-h-screen flex-col bg-[#f7f6f3] text-neutral-950">
+    <div className="w-full relative">
+      <div className="flex flex-col text-neutral-950">
         <header className="border-b border-black/5 bg-white px-4 py-4">
           <div className="flex items-center gap-3">
             <Link

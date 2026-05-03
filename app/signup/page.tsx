@@ -90,8 +90,8 @@ function SignupPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-6 py-8">
-      <div className="mx-auto w-full max-w-md">
+    <main className="w-full px-5 py-8">
+      <div className="w-full">
         <button
           type="button"
           onClick={() => router.back()}

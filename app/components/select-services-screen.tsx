@@ -220,9 +220,9 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   }
 
   return (
-    <div className="w-full min-h-screen bg-white relative pb-24">
+    <div className="w-full relative pb-24">
       <header className="border-b border-neutral-100 bg-white">
-        <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex items-center gap-3 px-5 py-3">
           <button
             type="button"
             onClick={handleBack}
@@ -235,7 +235,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
         </div>
       </header>
 
-      <main className="px-4 pt-3 pb-32">
+      <main className="px-5 pt-3 pb-32">
         <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
           <div className="relative h-56 overflow-hidden">
             <Image
@@ -414,7 +414,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-4 py-3 shadow-[0_-16px_30px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+      <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-5 py-3 shadow-[0_-16px_30px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm text-neutral-500">

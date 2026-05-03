@@ -117,7 +117,7 @@ function LoginEmailPageContent() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white px-6 py-12">
+    <main className="flex w-full items-center justify-center px-5 py-12">
       <div className="w-full max-w-md text-center">
         <h1 className="mb-10 text-4xl font-extrabold tracking-[-0.06em] text-black">ZLon.</h1>
 

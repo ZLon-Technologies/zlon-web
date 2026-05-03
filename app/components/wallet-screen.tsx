@@ -134,7 +134,7 @@ export function WalletScreen() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#f7f6f3] text-neutral-950">
+    <div className="flex flex-col text-neutral-950">
       <header className="border-b border-black/5 px-4 py-4">
         <button
           type="button"

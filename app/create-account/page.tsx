@@ -225,8 +225,8 @@ function CreateAccountForm() {
   };
 
   return (
-    <main className="min-h-screen bg-white px-5 py-10">
-      <div className="mx-auto w-full max-w-md">
+    <main className="px-5 py-10">
+      <div className="w-full">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-[-0.05em] text-black">Complete Your Profile</h1>
           <p className="mx-auto mt-4 max-w-sm text-lg leading-8 text-gray-500">

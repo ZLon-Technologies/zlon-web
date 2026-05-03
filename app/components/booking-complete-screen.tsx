@@ -43,7 +43,7 @@ export function BookingCompleteScreen({
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-white relative flex flex-col items-center justify-center p-4">
+    <div className="w-full relative flex flex-col items-center justify-center px-5 py-12">
       <div className="w-full text-center">
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-black shadow-[0_28px_60px_rgba(15,23,42,0.22)] ring-3 ring-neutral-300/60">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">

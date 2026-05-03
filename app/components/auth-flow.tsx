@@ -27,7 +27,7 @@ function AuthPageShell({
 }) {
   return (
     <div
-      className={`min-h-screen bg-white px-6 py-12 ${
+      className={`w-full px-5 py-12 ${
         showLogo
           ? 'flex flex-col items-center justify-center'
           : 'flex items-center justify-center'
