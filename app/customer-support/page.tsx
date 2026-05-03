@@ -118,7 +118,7 @@ export default function CustomerSupportPage() {
   };
 
   return (
-    <div className="flex flex-col w-full flex-1 h-full">
+    <div className="flex flex-col h-[100dvh] w-full relative">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function CustomerSupportPage() {
       </header>
 
       {/* Chat Messages */}
-      <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
+      <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50 pb-20">
         {messages.map((msg) => (
           <div 
             key={msg.id}
@@ -185,7 +185,7 @@ export default function CustomerSupportPage() {
       </main>
 
       {/* Input Area */}
-      <footer className="p-4 bg-white border-t border-gray-100">
+      <footer className="mt-auto p-4 bg-white border-t border-gray-100">
         {isHandoff ? (
           <div className="py-4 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
             <p className="text-sm font-bold text-gray-900">Connecting you to the salon owner...</p>
