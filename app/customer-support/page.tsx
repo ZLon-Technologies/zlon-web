@@ -118,7 +118,7 @@ export default function CustomerSupportPage() {
   };
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full flex-1 h-full">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
         <div className="flex items-center gap-3">
