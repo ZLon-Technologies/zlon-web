@@ -13,6 +13,7 @@ export interface BookingRecord {
   appointmentLabel: string;
   price: number;
   status: string;
+  sortTime: number;
 }
 
 function getStringValue(value: unknown) {
@@ -199,11 +200,5 @@ export function mapBookingRows(bookingRows: RawRow[], salonRows: RawRow[] = []) 
         },
       ];
     })
-    .sort((firstBooking, secondBooking) => secondBooking.sortTime - firstBooking.sortTime)
-    .map((bookingWithSortTime) => {
-      const { sortTime, ...booking } = bookingWithSortTime;
-      void sortTime;
-
-      return booking satisfies BookingRecord;
-    });
+    .sort((firstBooking, secondBooking) => secondBooking.sortTime - firstBooking.sortTime);
 }
