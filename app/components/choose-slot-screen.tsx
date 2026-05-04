@@ -46,13 +46,12 @@ function formatDateId(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function getCurrentMonthDateOptions(): DateOption[] {
+function getUpcomingDateOptions(): DateOption[] {
   const today = new Date();
-  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const finalDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   const options: DateOption[] = [];
 
-  while (cursor <= finalDayOfMonth) {
+  for (let i = 0; i < 30; i++) {
+    const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
     options.push({
       id: formatDateId(cursor),
       dayLabel: new Intl.DateTimeFormat('en-US', { weekday: 'short' })
@@ -60,7 +59,6 @@ function getCurrentMonthDateOptions(): DateOption[] {
         .toUpperCase(),
       dayNumber: String(cursor.getDate()),
     });
-    cursor.setDate(cursor.getDate() + 1);
   }
 
   return options;
@@ -86,39 +84,42 @@ const ALL_SLOTS = [
 
 export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenProps) {
   const router = useRouter();
-  const [dateOptions] = useState<DateOption[]>(getCurrentMonthDateOptions);
+  const [dateOptions] = useState<DateOption[]>(getUpcomingDateOptions);
   const [selectedDate, setSelectedDate] = useState(() => formatDateId(new Date()));
-  const [selectedStaffId, setSelectedStaffId] = useState('any-staff');
+  const [selectedStaffId, setSelectedStaffId] = useState('any');
   const [selectedSlot, setSelectedSlot] = useState('');
   
   const [bookings, setBookings] = useState<Array<{ staff_id: string, time_slot: string }>>([]);
+  const [dbStaff, setDbStaff] = useState<Array<{ id: string, name: string, initials?: string, color_class?: string, colorClass?: string }>>([]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     let isMounted = true;
 
-    async function fetchBookings() {
+    async function fetchData() {
       try {
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('staff_id, time_slot')
-          .eq('salon_id', salon.id)
-          .eq('date', selectedDate);
-
-        if (error) {
-          console.error('Error fetching bookings:', error);
-          return;
-        }
+        const [bookingsRes, staffRes] = await Promise.all([
+          supabase
+            .from('bookings')
+            .select('staff_id, time_slot')
+            .eq('salon_id', salon.id)
+            .eq('date', selectedDate),
+          supabase
+            .from('staff')
+            .select('*')
+            .eq('salon_id', salon.id)
+        ]);
 
         if (isMounted) {
-          setBookings(data || []);
+          setBookings(bookingsRes.data || []);
+          setDbStaff(staffRes.data || []);
         }
       } catch (err) {
-        console.error('Failed to fetch bookings:', err);
+        console.error('Failed to fetch data:', err);
       }
     }
 
-    fetchBookings();
+    fetchData();
 
     return () => {
       isMounted = false;
@@ -167,11 +168,15 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   }
 
   const staffList = [
-    { id: 'any-staff', name: 'Any Staff', initials: <User size={24} />, colorClass: 'bg-neutral-100 text-neutral-600' },
-    ...salon.staff.map(s => ({ ...s, initials: s.initials }))
+    { id: 'any', name: 'Any Staff', initials: <User size={24} />, colorClass: 'bg-neutral-100 text-neutral-600' },
+    ...dbStaff.map(s => ({
+      ...s,
+      initials: s.initials || s.name?.substring(0, 2).toUpperCase() || 'ST',
+      colorClass: s.color_class || s.colorClass || 'bg-slate-200 text-slate-900'
+    }))
   ];
 
-  const totalStaffCount = salon.staff.length;
+  const totalStaffCount = dbStaff.length;
 
   const slotGroups = [
     { label: 'Morning Slots', icon: Sunrise, slots: [] as SlotOption[] },
@@ -182,7 +187,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   ALL_SLOTS.forEach(slotDef => {
     let isBooked = false;
     
-    if (selectedStaffId === 'any-staff') {
+    if (selectedStaffId === 'any') {
       const bookedStaffCount = bookings.filter(b => b.time_slot === slotDef.time && b.staff_id).length;
       if (bookedStaffCount >= totalStaffCount && totalStaffCount > 0) {
         isBooked = true;
