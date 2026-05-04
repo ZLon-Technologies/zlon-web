@@ -6,7 +6,7 @@ import { CalendarDays, Home, UserRound, Wallet } from 'lucide-react';
 
 const navigationItems = [
   { href: '/home', label: 'Home', icon: Home },
-  { href: '/booking', label: 'Booking', icon: CalendarDays },
+  { href: '/booking-history', label: 'Bookings', icon: CalendarDays },
   { href: '/wallet', label: 'Wallet', icon: Wallet },
   { href: '/profile', label: 'Profile', icon: UserRound },
 ] as const;

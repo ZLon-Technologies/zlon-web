@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, ChevronRight } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, ChevronRight, CreditCard } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, serializeSelectedServices } from '../lib/booking-flow';
 
@@ -14,7 +14,7 @@ interface ReviewBookingScreenProps {
   selectedSlot: string;
 }
 
-type PaymentMethod = 'wallet' | 'pay-at-salon';
+type PaymentMethod = 'wallet' | 'pay-at-salon' | 'online';
 
 export function ReviewBookingScreen({
   salon,
@@ -251,6 +251,33 @@ export function ReviewBookingScreen({
               <div
                 className={`h-5 w-5 shrink-0 rounded-full border-2 ${
                   paymentMethod === 'pay-at-salon'
+                    ? 'border-black bg-black'
+                    : 'border-neutral-300'
+                }`}
+              />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('online')}
+              className={`flex w-full items-center gap-3 rounded-[1.5rem] border px-3 py-3 text-left transition-colors ${
+                paymentMethod === 'online'
+                  ? 'border-black bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.8)]'
+                  : 'border-neutral-200 bg-white'
+              }`}
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
+                <CreditCard size={18} className="text-neutral-700" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-semibold text-neutral-950">Online Payment</p>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Gateway integration pending
+                </p>
+              </div>
+              <div
+                className={`h-5 w-5 shrink-0 rounded-full border-2 ${
+                  paymentMethod === 'online'
                     ? 'border-black bg-black'
                     : 'border-neutral-300'
                 }`}

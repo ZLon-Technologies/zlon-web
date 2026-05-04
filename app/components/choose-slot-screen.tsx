@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   Moon,
   SunMedium,
   Sunrise,
+  User,
 } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import {
@@ -19,6 +20,7 @@ import {
   formatLongDate,
   serializeSelectedServices,
 } from '../lib/booking-flow';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface ChooseSlotScreenProps {
   salon: SalonProfile;
@@ -46,7 +48,7 @@ function formatDateId(date: Date) {
 
 function getCurrentMonthDateOptions(): DateOption[] {
   const today = new Date();
-  const cursor = new Date(today.getFullYear(), today.getMonth(), 1);
+  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const finalDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   const options: DateOption[] = [];
 
@@ -64,52 +66,64 @@ function getCurrentMonthDateOptions(): DateOption[] {
   return options;
 }
 
-const slotGroups: Array<{
-  label: string;
-  icon: typeof Sunrise;
-  slots: SlotOption[];
-}> = [
-  {
-    label: 'Morning Slots',
-    icon: Sunrise,
-    slots: [
-      { time: '09:00 AM', state: 'booked' },
-      { time: '09:30 AM', state: 'available' },
-      { time: '10:00 AM', state: 'available' },
-      { time: '10:30 AM', state: 'available' },
-      { time: '11:00 AM', state: 'available' },
-      { time: '11:30 AM', state: 'booked' },
-    ],
-  },
-  {
-    label: 'Afternoon Slots',
-    icon: SunMedium,
-    slots: [
-      { time: '01:00 PM', state: 'available' },
-      { time: '01:45 PM', state: 'available' },
-      { time: '02:30 PM', state: 'available' },
-      { time: '03:15 PM', state: 'booked' },
-      { time: '04:00 PM', state: 'available' },
-      { time: '04:45 PM', state: 'available' },
-    ],
-  },
-  {
-    label: 'Evening Slots',
-    icon: Moon,
-    slots: [
-      { time: '06:00 PM', state: 'available' },
-      { time: '06:45 PM', state: 'available' },
-      { time: '07:30 PM', state: 'available' },
-    ],
-  },
+const ALL_SLOTS = [
+  { time: '09:00 AM', group: 'Morning Slots', icon: Sunrise },
+  { time: '09:30 AM', group: 'Morning Slots', icon: Sunrise },
+  { time: '10:00 AM', group: 'Morning Slots', icon: Sunrise },
+  { time: '10:30 AM', group: 'Morning Slots', icon: Sunrise },
+  { time: '11:00 AM', group: 'Morning Slots', icon: Sunrise },
+  { time: '11:30 AM', group: 'Morning Slots', icon: Sunrise },
+  { time: '01:00 PM', group: 'Afternoon Slots', icon: SunMedium },
+  { time: '01:45 PM', group: 'Afternoon Slots', icon: SunMedium },
+  { time: '02:30 PM', group: 'Afternoon Slots', icon: SunMedium },
+  { time: '03:15 PM', group: 'Afternoon Slots', icon: SunMedium },
+  { time: '04:00 PM', group: 'Afternoon Slots', icon: SunMedium },
+  { time: '04:45 PM', group: 'Afternoon Slots', icon: SunMedium },
+  { time: '06:00 PM', group: 'Evening Slots', icon: Moon },
+  { time: '06:45 PM', group: 'Evening Slots', icon: Moon },
+  { time: '07:30 PM', group: 'Evening Slots', icon: Moon },
 ];
 
 export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenProps) {
   const router = useRouter();
   const [dateOptions] = useState<DateOption[]>(getCurrentMonthDateOptions);
   const [selectedDate, setSelectedDate] = useState(() => formatDateId(new Date()));
-  const [selectedStaffId, setSelectedStaffId] = useState(salon.staff[0]?.id ?? '');
-  const [selectedSlot, setSelectedSlot] = useState('10:00 AM');
+  const [selectedStaffId, setSelectedStaffId] = useState('any-staff');
+  const [selectedSlot, setSelectedSlot] = useState('');
+  
+  const [bookings, setBookings] = useState<Array<{ staff_id: string, time_slot: string }>>([]);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let isMounted = true;
+
+    async function fetchBookings() {
+      try {
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('staff_id, time_slot')
+          .eq('salon_id', salon.id)
+          .eq('date', selectedDate);
+
+        if (error) {
+          console.error('Error fetching bookings:', error);
+          return;
+        }
+
+        if (isMounted) {
+          setBookings(data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch bookings:', err);
+      }
+    }
+
+    fetchBookings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [salon.id, selectedDate]);
 
   const hasSelectedServices = selectedServices.length > 0;
   const totalDurationMinutes = selectedServices.reduce(
@@ -151,6 +165,43 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
 
     router.push(`/booking/review?${query.toString()}`);
   }
+
+  const staffList = [
+    { id: 'any-staff', name: 'Any Staff', initials: <User size={24} />, colorClass: 'bg-neutral-100 text-neutral-600' },
+    ...salon.staff.map(s => ({ ...s, initials: s.initials }))
+  ];
+
+  const totalStaffCount = salon.staff.length;
+
+  const slotGroups = [
+    { label: 'Morning Slots', icon: Sunrise, slots: [] as SlotOption[] },
+    { label: 'Afternoon Slots', icon: SunMedium, slots: [] as SlotOption[] },
+    { label: 'Evening Slots', icon: Moon, slots: [] as SlotOption[] },
+  ];
+
+  ALL_SLOTS.forEach(slotDef => {
+    let isBooked = false;
+    
+    if (selectedStaffId === 'any-staff') {
+      const bookedStaffCount = bookings.filter(b => b.time_slot === slotDef.time && b.staff_id).length;
+      if (bookedStaffCount >= totalStaffCount && totalStaffCount > 0) {
+        isBooked = true;
+      }
+    } else {
+      const isStaffBooked = bookings.some(b => b.time_slot === slotDef.time && b.staff_id === selectedStaffId);
+      if (isStaffBooked) {
+        isBooked = true;
+      }
+    }
+
+    const groupIndex = slotGroups.findIndex(g => g.label === slotDef.group);
+    if (groupIndex !== -1) {
+      slotGroups[groupIndex].slots.push({
+        time: slotDef.time,
+        state: isBooked ? 'booked' : 'available'
+      });
+    }
+  });
 
   return (
     <div className="w-full relative overflow-x-hidden pb-28">
@@ -210,7 +261,10 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                   <button
                     key={date.id}
                     type="button"
-                    onClick={() => setSelectedDate(date.id)}
+                    onClick={() => {
+                      setSelectedDate(date.id);
+                      setSelectedSlot('');
+                    }}
                     className={`flex h-28 w-24 shrink-0 flex-col items-center justify-center rounded-[1.5rem] border text-center transition-colors ${
                       active
                         ? 'border-black bg-black text-white shadow-[0_16px_34px_rgba(0,0,0,0.16)]'
@@ -233,7 +287,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
             Available Staff
           </h3>
           <div className="mt-3 flex gap-3 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {salon.staff.map((staffMember) => {
+            {staffList.map((staffMember) => {
               const selected = staffMember.id === selectedStaffId;
 
               return (
@@ -284,7 +338,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                       onClick={() => setSelectedSlot(slot.time)}
                       className={`rounded-[1.25rem] border px-2.5 py-3 text-sm font-semibold transition-colors ${
                         disabled
-                          ? 'border-transparent bg-neutral-100 text-neutral-300'
+                          ? 'border-transparent bg-neutral-100 text-neutral-300 cursor-not-allowed'
                           : selected
                           ? 'border-neutral-800 bg-black text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.18)]'
                           : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'

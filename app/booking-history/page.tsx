@@ -21,8 +21,10 @@ export default function BookingHistoryPage() {
   const [history, setHistory] = useState<BookingRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
+    setNow(Date.now());
     const supabase = createSupabaseBrowserClient();
     let isMounted = true;
 
@@ -85,6 +87,9 @@ export default function BookingHistoryPage() {
     setHistory([]);
   }
 
+  const upcomingBookings = history.filter((b) => b.sortTime && b.sortTime >= now);
+  const pastBookings = history.filter((b) => !b.sortTime || b.sortTime < now);
+
   return (
     <div className="w-full relative pb-32">
       <div className="flex flex-col text-neutral-950">
@@ -98,7 +103,7 @@ export default function BookingHistoryPage() {
               <ArrowLeft size={22} />
             </Link>
             <h1 className="flex-1 text-center text-xl font-semibold tracking-tight text-neutral-950">
-              Booking History
+              Bookings
             </h1>
             <button
               type="button"
@@ -128,79 +133,143 @@ export default function BookingHistoryPage() {
           </section>
 
           <section>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
-                Recent Visits
-              </h2>
-              <span className="text-sm text-neutral-500">{history.length} visits</span>
-            </div>
-
             {isLoading ? (
               <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-12 text-center">
-                <p className="text-base font-semibold text-neutral-900">Loading booking history...</p>
+                <p className="text-base font-semibold text-neutral-900">Loading bookings...</p>
               </div>
             ) : error ? (
               <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-12 text-center">
                 <p className="text-base font-semibold text-neutral-900">
-                  Unable to load booking history.
+                  Unable to load bookings.
                 </p>
                 <p className="mt-2 text-sm text-neutral-500">{error}</p>
               </div>
             ) : history.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-6 py-12 text-center">
-                <p className="text-base font-semibold text-neutral-900">No booking history yet.</p>
+                <p className="text-base font-semibold text-neutral-900">No bookings yet.</p>
                 <p className="mt-2 text-sm text-neutral-500">
                   Book your next appointment and we&apos;ll keep it here.
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {history.map((entry) => (
-                  <article
-                    key={entry.id}
-                    className="rounded-2xl border border-black/10 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-neutral-200">
-                        <Image
-                          src={entry.image}
-                          alt={entry.salonName}
-                          fill
-                          unoptimized
-                          sizes="64px"
-                          className="object-cover"
-                        />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-semibold tracking-tight text-neutral-950">
-                          {entry.salonName}
-                        </h3>
-                        <p className="mt-1 text-sm text-neutral-500">{entry.serviceName}</p>
-                      </div>
-
-                      <span className="rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
-                        {entry.status}
-                      </span>
+              <div className="space-y-8">
+                {upcomingBookings.length > 0 && (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
+                        Upcoming Bookings
+                      </h2>
+                      <span className="text-sm text-neutral-500">{upcomingBookings.length}</span>
                     </div>
+                    <div className="space-y-4">
+                      {upcomingBookings.map((entry) => (
+                        <article
+                          key={entry.id}
+                          className="rounded-2xl border border-black/10 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-neutral-200">
+                              <Image
+                                src={entry.image}
+                                alt={entry.salonName}
+                                fill
+                                unoptimized
+                                sizes="64px"
+                                className="object-cover"
+                              />
+                            </div>
 
-                    <div className="mt-4 flex items-center gap-3">
-                      <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-neutral-500">
-                        <CalendarDays size={16} strokeWidth={2} className="shrink-0" />
-                        <span className="truncate">{entry.appointmentLabel}</span>
-                      </div>
-                      <span className="text-base font-semibold text-neutral-950">
-                        {formatCurrency(entry.price)}
-                      </span>
-                      <Link
-                        href={`/salon/${entry.salonId}`}
-                        className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
-                      >
-                        Rebook
-                      </Link>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-base font-semibold tracking-tight text-neutral-950">
+                                {entry.salonName}
+                              </h3>
+                              <p className="mt-1 text-sm text-neutral-500">{entry.serviceName}</p>
+                            </div>
+
+                            <span className="rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                              {entry.status}
+                            </span>
+                          </div>
+
+                          <div className="mt-4 flex items-center gap-3">
+                            <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-neutral-500">
+                              <CalendarDays size={16} strokeWidth={2} className="shrink-0" />
+                              <span className="truncate">{entry.appointmentLabel}</span>
+                            </div>
+                            <span className="text-base font-semibold text-neutral-950">
+                              {formatCurrency(entry.price)}
+                            </span>
+                            <Link
+                              href={`/booking/${entry.id}/reschedule`}
+                              className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
+                            >
+                              Reschedule
+                            </Link>
+                          </div>
+                        </article>
+                      ))}
                     </div>
-                  </article>
-                ))}
+                  </div>
+                )}
+
+                {pastBookings.length > 0 && (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
+                        Past Bookings
+                      </h2>
+                      <span className="text-sm text-neutral-500">{pastBookings.length}</span>
+                    </div>
+                    <div className="space-y-4 opacity-75">
+                      {pastBookings.map((entry) => (
+                        <article
+                          key={entry.id}
+                          className="rounded-2xl border border-black/10 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-neutral-200">
+                              <Image
+                                src={entry.image}
+                                alt={entry.salonName}
+                                fill
+                                unoptimized
+                                sizes="64px"
+                                className="object-cover"
+                              />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-base font-semibold tracking-tight text-neutral-950">
+                                {entry.salonName}
+                              </h3>
+                              <p className="mt-1 text-sm text-neutral-500">{entry.serviceName}</p>
+                            </div>
+
+                            <span className="rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                              {entry.status}
+                            </span>
+                          </div>
+
+                          <div className="mt-4 flex items-center gap-3">
+                            <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-neutral-500">
+                              <CalendarDays size={16} strokeWidth={2} className="shrink-0" />
+                              <span className="truncate">{entry.appointmentLabel}</span>
+                            </div>
+                            <span className="text-base font-semibold text-neutral-950">
+                              {formatCurrency(entry.price)}
+                            </span>
+                            <Link
+                              href={`/salon/${entry.salonId}`}
+                              className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
+                            >
+                              Rebook
+                            </Link>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </section>
