@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
 
     // 3. Construct the message parts array safely
     const userMessage = messages[messages.length - 1].content;
-    let parts: any[] = [{ text: userMessage }];
+// Add a space fallback so it never sends an empty string
+let parts: any[] = [{ text: userMessage ? userMessage : ' ' }];
 
     // Strictly validate that imageUrl exists, is a string, and actually contains data
     if (data && typeof data.imageUrl === 'string' && data.imageUrl.trim().length > 0) {
@@ -57,9 +58,10 @@ export async function POST(request: NextRequest) {
     }
 
     const history = messages.slice(0, -1).map((msg: Message) => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content || '' }],
-    }));
+  role: msg.role === 'assistant' ? 'model' : 'user',
+  // Add a space fallback here too for old ghost messages
+  parts: [{ text: msg.content ? msg.content : ' ' }], 
+}));
 
     // Ensure history starts with 'user'
     while (history.length > 0 && history[0].role !== 'user') {
