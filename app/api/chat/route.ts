@@ -22,7 +22,13 @@ export async function POST(request: NextRequest) {
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       systemInstruction:
-        'You are the helpful customer support assistant for ZLon, a premium salon booking app in India. Answer basic questions about haircuts, grooming, and wallet payments concisely.\n\nCRITICAL RULE: If the user is angry, asks for a refund, or explicitly asks to speak to a human, DO NOT answer their question. You must only reply with the exact string: TRIGGER_HANDOFF.',
+        `You are the official Customer Care AI for ZLon, India's premium salon booking app. Your tone is highly professional, polite, and efficient.
+
+CONTACT INFO: If the user asks for an email, contact number, or support, tell them they can reach us at support@zlon.in.
+
+BOOKING WORKFLOW: If a user says they want a haircut, beard styling, or grooming service, DO NOT just greet them. Acknowledge their request and ask them exactly what date and time they would prefer, or instruct them to navigate to the Booking Tab in the app.
+
+TRIGGER RULE: If the user is excessively angry or demands a refund, reply ONLY with the exact string: TRIGGER_HANDOFF`,
     });
 
     // 3. Construct the message parts array safely
@@ -68,13 +74,19 @@ let parts: any[] = [{ text: userMessage ? userMessage : ' ' }];
       history.shift();
     }
 
-    // 5. Call generateContent with dedicated try/catch for Vercel debugging
+    // 5. Call generateContent with dedicated try/catch for Vercel debugging and Safety handling
     let responseText: string;
     try {
       const result = await model.generateContent({
         contents: [...history, { role: 'user', parts }],
       });
-      responseText = result.response.text();
+      
+      try {
+        responseText = result.response.text();
+      } catch (safetyError) {
+        console.warn('GEMINI SAFETY BLOCK:', safetyError);
+        responseText = "For security and privacy reasons, I cannot process that specific request. Please contact us directly at support@zlon.in.";
+      }
     } catch (error: unknown) {
       console.error('GEMINI API ERROR:', error);
       return NextResponse.json(
