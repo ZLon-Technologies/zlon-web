@@ -9,11 +9,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'ZLon | Premium Salon & Grooming Booking Platform',
+    default: 'ZLon | Premium Salon & Grooming',
     template: '%s | ZLon',
   },
   description:
-    'Book your next haircut, spa, or grooming session instantly with ZLon. Discover top-rated salons, view real-time availability, and enjoy seamless wallet payments across India.',
+    'ZLon is India\'s premium salon and grooming platform. Book haircuts, spa sessions, and grooming services at top-rated salons with real-time availability.',
   keywords: [
     'salon booking',
     'haircut booking',
@@ -25,9 +25,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'ZLon',
-    title: 'ZLon | Premium Salon & Grooming Booking Platform',
+    title: 'ZLon | Premium Salon & Grooming',
     description:
-      'Book your next haircut, spa, or grooming session instantly with ZLon. Discover top-rated salons, view real-time availability, and enjoy seamless wallet payments across India.',
+      'ZLon is India\'s premium salon and grooming platform. Book haircuts, spa sessions, and grooming services at top-rated salons with real-time availability.',
   },
   other: {
     'apple-mobile-web-app-title': 'ZLon',
