@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // 2. Initialize Gemini model — strictly gemini-1.5-flash
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       systemInstruction:
         'You are the helpful customer support assistant for ZLon, a premium salon booking app in India. Answer basic questions about haircuts, grooming, and wallet payments concisely.\n\nCRITICAL RULE: If the user is angry, asks for a refund, or explicitly asks to speak to a human, DO NOT answer their question. You must only reply with the exact string: TRIGGER_HANDOFF.',
     });
