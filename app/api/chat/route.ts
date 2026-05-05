@@ -27,15 +27,16 @@ export async function POST(request: NextRequest) {
 
     // 3. Construct the message parts array safely
     const userMessage = messages[messages.length - 1].content;
-    const parts: Array<{ text: string } | { inlineData: { data: string; mimeType: string } }> = [
-      { text: userMessage },
-    ];
+    let parts: any[] = [{ text: userMessage }];
 
-    // Only push image data if it actually exists and has length
-    if (data && data.imageUrl) {
-      const base64Data = data.imageUrl.split(',')[1]; // strip the data:image prefix
-      if (base64Data) {
-        // Dynamically detect mimeType from the data URL prefix, fallback to image/jpeg
+    // Strictly validate that imageUrl exists, is a string, and actually contains data
+    if (data && typeof data.imageUrl === 'string' && data.imageUrl.trim().length > 0) {
+      // Safely extract the base64 string, handling cases with or without the data URI prefix
+      const base64Data = data.imageUrl.includes(',') ? data.imageUrl.split(',')[1] : data.imageUrl;
+      
+      // Final safety check before pushing to the Gemini array
+      if (base64Data && base64Data.trim().length > 0) {
+        // Dynamically detect mimeType from the data URL prefix if possible, fallback to image/jpeg
         const mimeMatch = data.imageUrl.match(/data:([^;]+);/);
         const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
 
