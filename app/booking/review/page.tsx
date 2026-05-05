@@ -38,10 +38,11 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
       .maybeSingle();
 
     if (data) {
+      const salonData = data as any;
       salonName = data.name || salonName;
-      salonImage = data.image || data.image_url || data.imageUrl || salonImage;
-      salonLocation = data.location || salonLocation;
-      salonDistance = data.distance || salonDistance;
+      salonImage = salonData.image || salonData.image_url || data.imageUrl || salonImage;
+      salonLocation = salonData.location || data.address || salonLocation;
+      salonDistance = salonData.distance || salonDistance;
     } else {
       const fallbackSalon = getSalonById(salonId);
       salonName = fallbackSalon.name;
