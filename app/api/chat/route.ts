@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // 2. Initialize Gemini model — strictly gemini-1.5-flash
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-flash-latest',
       systemInstruction:
         `You are the official Customer Care AI for ZLon, India's premium salon booking app. Your tone is highly professional, polite, and efficient.
 
