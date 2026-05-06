@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Check, MapPin } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, formatDuration } from '../lib/booking-flow';
+import { useBooking } from '../lib/booking-state';
 
 interface BookingCompleteScreenProps {
   salon: SalonProfile;
@@ -21,26 +22,46 @@ function createBookingId() {
 }
 
 export function BookingCompleteScreen({
-  salon,
+  salon: propSalon,
   selectedServices,
   selectedDate,
   selectedSlot,
   total,
   paymentMethod,
 }: BookingCompleteScreenProps) {
+  const { state, clearState } = useBooking();
   const [bookingId, setBookingId] = useState('');
+
+  // Redirect if state is empty
+  useEffect(() => {
+    if (!propSalon.id && !state.salonId) {
+      const timer = setTimeout(() => {
+        if (!state.salonId) window.location.href = '/home';
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [propSalon, state]);
+
+  const salon = {
+    ...propSalon,
+    name: propSalon.name !== 'Salon' ? propSalon.name : (state.salonName ?? propSalon.name),
+    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (state.salonLocation ?? propSalon.location),
+  };
+
   const totalDuration = selectedServices.reduce(
     (sum, service) => sum + service.durationMinutes,
     0
-  );
+  ) || (state.duration ?? 0);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
       setBookingId(createBookingId());
+      // Clear state after successful booking
+      clearState();
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [clearState]);
 
   return (
     <div className="w-full relative flex flex-col items-center justify-center px-5 py-12">

@@ -6,6 +6,8 @@ import { useState } from 'react';
 import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, ChevronRight, CreditCard } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, serializeSelectedServices } from '../lib/booking-flow';
+import { useBooking } from '../lib/booking-state';
+import { useEffect } from 'react';
 
 interface ReviewBookingScreenProps {
   salon: SalonProfile;
@@ -17,23 +19,37 @@ interface ReviewBookingScreenProps {
 type PaymentMethod = 'wallet' | 'pay-at-salon' | 'online';
 
 export function ReviewBookingScreen({
-  salon,
+  salon: propSalon,
   selectedServices,
   selectedDate,
   selectedSlot,
 }: ReviewBookingScreenProps) {
   const router = useRouter();
+  const { state } = useBooking();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
 
-  const hasSelectedServices = selectedServices.length > 0;
-  const subtotal = selectedServices.reduce((sum, service) => sum + service.price, 0);
+  // Redirect if state is empty
+  useEffect(() => {
+    if (!propSalon.id && !state.salonId) {
+      router.replace('/home');
+    }
+  }, [propSalon, state, router]);
+
+  const salon = {
+    ...propSalon,
+    name: propSalon.name !== 'Salon' ? propSalon.name : (state.salonName ?? propSalon.name),
+    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (state.salonLocation ?? propSalon.location),
+  };
+
+  const hasSelectedServices = selectedServices.length > 0 || !!state.serviceId;
+  const subtotal = selectedServices.reduce((sum, service) => sum + service.price, 0) || (state.price ?? 0);
   const taxes = Math.round(subtotal * 0.18);
   const platformFee = hasSelectedServices ? 30 : 0;
   const total = subtotal + taxes + platformFee;
   const totalDuration = selectedServices.reduce(
     (sum, service) => sum + service.durationMinutes,
     0
-  );
+  ) || (state.duration ?? 0);
 
   function handleBack() {
     if (window.history.length > 1) {

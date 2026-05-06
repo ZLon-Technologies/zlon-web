@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { ReviewBookingScreen } from '../../components/review-booking-screen';
-import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile } from '../../lib/booking-flow';
+import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
-import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
 
 export const metadata: Metadata = {
   title: 'Review Booking',
@@ -22,28 +21,69 @@ interface ReviewBookingPageProps {
 
 export default async function ReviewBookingPage({ searchParams }: ReviewBookingPageProps) {
   const params = await searchParams;
-  const salonId = params.salon ?? 'velvet-vine';
-  
-  let salonName = 'ZLon Salon';
+  const salonId = params.salon ?? '';
+  const selectedServiceIds = (params.services ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+
+  let salonName = 'Salon';
   let salonImage = 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
   let salonLocation = 'Location unavailable';
   let salonDistance = '';
+  let dbServices: SalonService[] = [];
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { data } = await supabase
-      .from('salons')
-      .select(CUSTOMER_SAFE_SALON_SELECT)
-      .eq('id', salonId)
-      .maybeSingle();
+    
+    // Strict JOIN logic: Fetch services and their parent salon in a single inner join query.
+    // This ensures data integrity between the salon_id and the service records.
+    const { data: joinedData, error } = await supabase
+      .from('services')
+      .select(`
+        id,
+        name,
+        price,
+        duration_minutes,
+        category,
+        badge,
+        description,
+        featured,
+        salon:salons!inner (
+          id,
+          name,
+          address,
+          location,
+          imageUrl,
+          image_url,
+          image,
+          distance
+        )
+      `)
+      .eq('salon_id', salonId)
+      .in('id', selectedServiceIds);
 
-    if (data) {
-      const salonData = data as any;
-      salonName = data.name || salonName;
-      salonImage = salonData.image || salonData.image_url || data.imageUrl || salonImage;
-      salonLocation = salonData.location || data.address || salonLocation;
+    if (!error && joinedData && joinedData.length > 0) {
+      const firstRecord = joinedData[0];
+      const salonData = firstRecord.salon as any;
+      
+      salonName = salonData.name || salonName;
+      salonImage = salonData.imageUrl || salonData.image_url || salonData.image || salonImage;
+      salonLocation = salonData.location || salonData.address || salonLocation;
       salonDistance = salonData.distance || salonDistance;
+
+      dbServices = joinedData.map(s => ({
+        id: String(s.id),
+        name: s.name || 'Service',
+        price: Number(s.price) || 0,
+        durationMinutes: Number(s.duration_minutes) || 0,
+        category: s.category || 'Service',
+        badge: s.badge || s.category || 'Service',
+        description: s.description || '',
+        featured: Boolean(s.featured)
+      }));
     } else {
+      // Fallback if the join fails or returns no matches
       const fallbackSalon = getSalonById(salonId);
       salonName = fallbackSalon.name;
       salonImage = fallbackSalon.image;
@@ -72,20 +112,21 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
     staff: [],
   };
 
-  const selectedServiceIds = (params.services ?? '')
-    .split(',')
-    .map((serviceId) => serviceId.trim())
-    .filter(Boolean);
   const cartServices = parseSelectedServices(params.cart);
+  // Prioritize database-fetched joined services to ensure accurate duration_minutes
   const selectedServices =
-    cartServices.length > 0 ? cartServices : getServicesForSalon(getSalonById(salonId), selectedServiceIds);
+    dbServices.length > 0 
+      ? dbServices 
+      : cartServices.length > 0 
+        ? cartServices 
+        : getServicesForSalon(getSalonById(salonId), selectedServiceIds);
 
   return (
     <ReviewBookingScreen
       salon={salon}
       selectedServices={selectedServices}
-      selectedDate={params.date ?? '2026-10-23'}
-      selectedSlot={params.slot ?? '10:00 AM'}
+      selectedDate={params.date ?? ''}
+      selectedSlot={params.slot ?? ''}
     />
   );
 }

@@ -26,9 +26,9 @@ export default async function BookingCompletePage({
   searchParams,
 }: BookingCompletePageProps) {
   const params = await searchParams;
-  const salonId = params.salon ?? 'velvet-vine';
+  const salonId = params.salon ?? '';
   
-  let salonName = 'ZLon Salon';
+  let salonName = 'Salon';
   let salonImage = 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
   let salonLocation = 'Location unavailable';
   let salonDistance = '';
@@ -91,8 +91,8 @@ export default async function BookingCompletePage({
     <BookingCompleteScreen
       salon={salon}
       selectedServices={selectedServices}
-      selectedDate={params.date ?? '2026-10-23'}
-      selectedSlot={params.slot ?? '10:00 AM'}
+      selectedDate={params.date ?? ''}
+      selectedSlot={params.slot ?? ''}
       total={total}
       paymentMethod={params.payment ?? 'wallet'}
     />

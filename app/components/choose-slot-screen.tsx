@@ -21,6 +21,7 @@ import {
   serializeSelectedServices,
 } from '../lib/booking-flow';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useBooking } from '../lib/booking-state';
 
 interface ChooseSlotScreenProps {
   salon: SalonProfile;
@@ -82,8 +83,37 @@ const ALL_SLOTS = [
   { time: '07:30 PM', group: 'Evening Slots', icon: Moon },
 ];
 
+function calculateEndTime(startTime: string, durationMinutes: number) {
+  if (!startTime) return '';
+  
+  const [time, period] = startTime.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+  
+  if (period === 'PM' && hours !== 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  date.setMinutes(date.getMinutes() + durationMinutes);
+  
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+}
+
 export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenProps) {
   const router = useRouter();
+  const { state } = useBooking();
+
+  // Redirect if no services selected
+  useEffect(() => {
+    if (selectedServices.length === 0 && !state.serviceId) {
+      router.replace('/home');
+    }
+  }, [selectedServices, state, router]);
+
   const [dateOptions] = useState<DateOption[]>(getUpcomingDateOptions);
   const [selectedDate, setSelectedDate] = useState(() => formatDateId(new Date()));
   const [selectedStaffId, setSelectedStaffId] = useState('any');
@@ -127,10 +157,9 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
   }, [salon.id, selectedDate]);
 
   const hasSelectedServices = selectedServices.length > 0;
-  const totalDurationMinutes = selectedServices.reduce(
-    (sum, service) => sum + service.durationMinutes,
-    0
-  );
+  const totalDurationMinutes =
+    selectedServices.reduce((sum, service) => sum + service.durationMinutes, 0) ||
+    (state.duration ?? 0);
   const totalPrice = selectedServices.reduce((sum, service) => sum + service.price, 0);
   const selectedServiceLabel =
     selectedServices.length === 0
@@ -341,7 +370,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                       type="button"
                       disabled={disabled}
                       onClick={() => setSelectedSlot(slot.time)}
-                      className={`rounded-[1.25rem] border px-2.5 py-3 text-sm font-semibold transition-colors ${
+                      className={`relative flex flex-col items-center justify-center rounded-[1.25rem] border px-2.5 py-3 transition-colors ${
                         disabled
                           ? 'border-transparent bg-neutral-100 text-neutral-300 cursor-not-allowed'
                           : selected
@@ -349,7 +378,12 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                           : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'
                       }`}
                     >
-                      {slot.time}
+                      <span className="text-sm font-semibold">{slot.time}</span>
+                      {selected && (
+                        <span className="mt-1 block text-[10px] font-medium opacity-90">
+                          {totalDurationMinutes} min • {calculateEndTime(slot.time, totalDurationMinutes)}
+                        </span>
+                      )}
                     </button>
                   );
                 })}

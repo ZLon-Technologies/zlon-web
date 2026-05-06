@@ -8,6 +8,7 @@ import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/clie
 import type { SalonService } from '../lib/booking-flow';
 import { formatCurrency, serializeSelectedServices } from '../lib/booking-flow';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
+import { useBooking } from '../lib/booking-state';
 
 interface SelectServicesScreenProps {
   salonId: string;
@@ -30,7 +31,8 @@ interface ServiceRecord {
   salon_id: string | number;
   name: string | null;
   price: number | string | null;
-  duration: number | string | null;
+  duration?: number | string | null;
+  duration_minutes?: number | string | null;
   category?: string | null;
   badge?: string | null;
   description?: string | null;
@@ -74,7 +76,7 @@ function mapServiceRecordToBookingService(service: ServiceRecord): SalonService 
     category,
     badge: getServiceBadge(service),
     description: getServiceDescription(service),
-    durationMinutes: getNumericValue(service.duration) ?? 0,
+    durationMinutes: getNumericValue(service.duration_minutes) ?? getNumericValue(service.duration) ?? 0,
     price: getNumericValue(service.price) ?? 0,
     featured: Boolean(service.featured),
   };
@@ -82,6 +84,7 @@ function mapServiceRecordToBookingService(service: ServiceRecord): SalonService 
 
 export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   const router = useRouter();
+  const { updateState } = useBooking();
   const [salon, setSalon] = useState<SalonRecord | null>(null);
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All Services');
@@ -196,17 +199,39 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   }
 
   function toggleService(serviceId: string) {
-    setSelectedServiceIds((previous) =>
-      previous.includes(serviceId)
+    setSelectedServiceIds((previous) => {
+      const isSelected = previous.includes(serviceId);
+      const nextIds = isSelected
         ? previous.filter((id) => id !== serviceId)
-        : [...previous, serviceId]
-    );
+        : [...previous, serviceId];
+
+      if (!isSelected) {
+        const service = services.find((s) => String(s.id) === serviceId);
+        if (service) {
+          updateState({
+            serviceId: String(service.id),
+            serviceName: service.name,
+            price: getNumericValue(service.price),
+            duration:
+              getNumericValue(service.duration_minutes) ?? getNumericValue(service.duration),
+          });
+        }
+      }
+
+      return nextIds;
+    });
   }
 
   function handleContinue() {
     if (selectedServiceIds.length === 0) {
       return;
     }
+
+    updateState({
+      salonId: String(salon?.id ?? salonId),
+      salonName: salon?.name ?? 'Salon',
+      salonLocation: salon?.location || (salon as any)?.address || 'Location unavailable',
+    });
 
     const query = new URLSearchParams({
       salon: String(salon?.id ?? salonId),

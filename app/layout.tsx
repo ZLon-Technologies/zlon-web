@@ -34,6 +34,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { BookingProvider } from './lib/booking-state';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,9 +44,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.className} h-full antialiased`}>
       <body className="min-h-screen bg-gray-900">
-        <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col">
-          {children}
-        </div>
+        <BookingProvider>
+          <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col">
+            {children}
+          </div>
+        </BookingProvider>
       </body>
     </html>
   );
