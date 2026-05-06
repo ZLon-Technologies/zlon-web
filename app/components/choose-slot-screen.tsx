@@ -103,16 +103,21 @@ function calculateEndTime(startTime: string, durationMinutes: number) {
   }).format(date);
 }
 
-export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenProps) {
+export function ChooseSlotScreen({ salon, selectedServices: propServices }: ChooseSlotScreenProps) {
   const router = useRouter();
-  const { state } = useBooking();
+  const { state: bookingState, updateAppointment, totalDuration: storeDuration, subtotal: storeSubtotal } = useBooking();
+  
+  // Use state if props are missing (Problem 2)
+  const selectedServices = propServices.length > 0 ? propServices : bookingState.cart;
+  const totalDurationMinutes = storeDuration || selectedServices.reduce((sum, s) => sum + s.durationMinutes, 0);
+  const totalPrice = storeSubtotal || selectedServices.reduce((sum, s) => sum + s.price, 0);
 
-  // Redirect if no services selected
+  // Validation Gate: Redirect if no services (Problem 2)
   useEffect(() => {
-    if (selectedServices.length === 0 && !state.serviceId) {
-      router.replace('/home');
+    if (selectedServices.length === 0) {
+      router.replace(`/salon/${salon.id}`);
     }
-  }, [selectedServices, state, router]);
+  }, [selectedServices, router, salon.id]);
 
   const [dateOptions] = useState<DateOption[]>(getUpcomingDateOptions);
   const [selectedDate, setSelectedDate] = useState(() => formatDateId(new Date()));
@@ -150,17 +155,9 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
     }
 
     fetchData();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [salon.id, selectedDate]);
 
-  const hasSelectedServices = selectedServices.length > 0;
-  const totalDurationMinutes =
-    selectedServices.reduce((sum, service) => sum + service.durationMinutes, 0) ||
-    (state.duration ?? 0);
-  const totalPrice = selectedServices.reduce((sum, service) => sum + service.price, 0);
   const selectedServiceLabel =
     selectedServices.length === 0
       ? 'No service selected'
@@ -173,14 +170,18 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
       router.back();
       return;
     }
-
     router.push(`/salon/${salon.id}`);
   }
 
   function handleReview() {
-    if (!selectedSlot || !hasSelectedServices) {
-      return;
-    }
+    if (!selectedSlot || selectedServices.length === 0) return;
+
+    // Sync appointment to store
+    updateAppointment({
+      date: selectedDate,
+      slot: selectedSlot,
+      staffId: selectedStaffId,
+    });
 
     const query = new URLSearchParams({
       salon: salon.id,
@@ -205,8 +206,6 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
     }))
   ];
 
-  const totalStaffCount = dbStaff.length;
-
   const slotGroups = [
     { label: 'Morning Slots', icon: Sunrise, slots: [] as SlotOption[] },
     { label: 'Afternoon Slots', icon: SunMedium, slots: [] as SlotOption[] },
@@ -215,17 +214,11 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
 
   ALL_SLOTS.forEach(slotDef => {
     let isBooked = false;
-    
     if (selectedStaffId === 'any') {
       const bookedStaffCount = bookings.filter(b => b.time_slot === slotDef.time && b.staff_id).length;
-      if (bookedStaffCount >= totalStaffCount && totalStaffCount > 0) {
-        isBooked = true;
-      }
+      if (bookedStaffCount >= dbStaff.length && dbStaff.length > 0) isBooked = true;
     } else {
-      const isStaffBooked = bookings.some(b => b.time_slot === slotDef.time && b.staff_id === selectedStaffId);
-      if (isStaffBooked) {
-        isBooked = true;
-      }
+      isBooked = bookings.some(b => b.time_slot === slotDef.time && b.staff_id === selectedStaffId);
     }
 
     const groupIndex = slotGroups.findIndex(g => g.label === slotDef.group);
@@ -241,74 +234,50 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
     <div className="w-full relative overflow-x-hidden pb-28">
       <header className="border-b border-neutral-100 bg-white">
         <div className="flex items-center gap-3 px-5 py-3">
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label="Go back"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
-          >
+          <button type="button" onClick={handleBack} className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-900 hover:bg-neutral-50">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-lg font-semibold tracking-tight text-neutral-950">
-            Select Date &amp; Time
-          </h1>
+          <h1 className="text-lg font-semibold tracking-tight text-neutral-950">Select Date &amp; Time</h1>
         </div>
       </header>
 
       <main className="px-5 py-4 pb-32">
         <section className="rounded-[2rem] bg-white p-4 shadow-[0_18px_38px_rgba(15,23,42,0.06)] ring-1 ring-neutral-100">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
-            Selected Service
-          </p>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">Selected Service</p>
           <div className="mt-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold leading-tight tracking-tight text-neutral-950">
-                {selectedServiceLabel}
-              </h2>
+              <h2 className="text-lg font-semibold leading-tight tracking-tight text-neutral-950">{selectedServiceLabel}</h2>
               <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-neutral-500">
                 <Clock3 size={16} />
                 Total duration: {formatDuration(totalDurationMinutes)}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-lg font-semibold tracking-tight text-neutral-950">
-                {formatCurrency(totalPrice)}
-              </p>
+              <p className="text-lg font-semibold tracking-tight text-neutral-950">{formatCurrency(totalPrice)}</p>
             </div>
           </div>
         </section>
 
         <section className="mt-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold tracking-tight text-neutral-950">
-              {formatLongDate(selectedDate)}
-            </h2>
+            <h2 className="text-lg font-semibold tracking-tight text-neutral-950">{formatLongDate(selectedDate)}</h2>
             <CalendarDays size={20} className="text-neutral-500" />
           </div>
-
-          <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2">
             <div className="flex min-w-max gap-3">
               {dateOptions.map((date) => {
                 const active = date.id === selectedDate;
-
                 return (
                   <button
                     key={date.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedDate(date.id);
-                      setSelectedSlot('');
-                    }}
+                    onClick={() => { setSelectedDate(date.id); setSelectedSlot(''); }}
                     className={`flex h-28 w-24 shrink-0 flex-col items-center justify-center rounded-[1.5rem] border text-center transition-colors ${
-                      active
-                        ? 'border-black bg-black text-white shadow-[0_16px_34px_rgba(0,0,0,0.16)]'
-                        : 'border-neutral-300 bg-white text-neutral-500'
+                      active ? 'border-black bg-black text-white shadow-[0_16px_34px_rgba(0,0,0,0.16)]' : 'border-neutral-300 bg-white text-neutral-500'
                     }`}
                   >
                     <span className="text-xs font-medium">{date.dayLabel}</span>
-                    <span className="mt-2 text-2xl font-semibold leading-none">
-                      {date.dayNumber}
-                    </span>
+                    <span className="mt-2 text-2xl font-semibold leading-none">{date.dayNumber}</span>
                   </button>
                 );
               })}
@@ -317,32 +286,16 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         </section>
 
         <section className="mt-6">
-          <h3 className="text-lg font-semibold tracking-tight text-neutral-950">
-            Available Staff
-          </h3>
-          <div className="mt-3 flex gap-3 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <h3 className="text-lg font-semibold tracking-tight text-neutral-950">Available Staff</h3>
+          <div className="mt-3 flex gap-3 overflow-x-auto py-2">
             {staffList.map((staffMember) => {
               const selected = staffMember.id === selectedStaffId;
-
               return (
-                <button
-                  key={staffMember.id}
-                  type="button"
-                  onClick={() => setSelectedStaffId(staffMember.id)}
-                  className="flex flex-shrink-0 shrink-0 flex-col items-center"
-                >
-                  <div
-                    className={`flex h-16 w-16 flex-shrink-0 shrink-0 items-center justify-center rounded-full text-base font-semibold shadow-sm ring-2 transition-colors ${
-                      selected
-                        ? `${staffMember.colorClass} ring-black`
-                        : `${staffMember.colorClass} ring-transparent`
-                    }`}
-                  >
-                    {staffMember.initials}
-                  </div>
-                  <span className="mt-2 text-xs font-medium text-neutral-600">
-                    {staffMember.name}
-                  </span>
+                <button key={staffMember.id} type="button" onClick={() => setSelectedStaffId(staffMember.id)} className="flex flex-shrink-0 shrink-0 flex-col items-center">
+                  <div className={`flex h-16 w-16 flex-shrink-0 shrink-0 items-center justify-center rounded-full text-base font-semibold shadow-sm ring-2 transition-colors ${
+                    selected ? `${staffMember.colorClass} ring-black` : `${staffMember.colorClass} ring-transparent`
+                  }`}>{staffMember.initials}</div>
+                  <span className="mt-2 text-xs font-medium text-neutral-600">{staffMember.name}</span>
                 </button>
               );
             })}
@@ -354,16 +307,12 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
             <div key={label}>
               <div className="mb-3 flex items-center gap-2.5">
                 <Icon size={16} className="text-neutral-500" />
-                <h4 className="text-sm font-semibold uppercase tracking-[0.08em] text-neutral-800">
-                  {label}
-                </h4>
+                <h4 className="text-sm font-semibold uppercase tracking-[0.08em] text-neutral-800">{label}</h4>
               </div>
-
               <div className="grid grid-cols-3 gap-3">
                 {slots.map((slot) => {
                   const disabled = slot.state === 'booked';
                   const selected = selectedSlot === slot.time;
-
                   return (
                     <button
                       key={slot.time}
@@ -371,11 +320,9 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
                       disabled={disabled}
                       onClick={() => setSelectedSlot(slot.time)}
                       className={`relative flex flex-col items-center justify-center rounded-[1.25rem] border px-2.5 py-3 transition-colors ${
-                        disabled
-                          ? 'border-transparent bg-neutral-100 text-neutral-300 cursor-not-allowed'
-                          : selected
-                          ? 'border-neutral-800 bg-black text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.18)]'
-                          : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'
+                        disabled ? 'border-transparent bg-neutral-100 text-neutral-300 cursor-not-allowed' :
+                        selected ? 'border-neutral-800 bg-black text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.18)]' :
+                        'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'
                       }`}
                     >
                       <span className="text-sm font-semibold">{slot.time}</span>
@@ -396,9 +343,7 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
       <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-5 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center justify-between gap-3 text-neutral-500">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
-              Selected Slot
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Selected Slot</p>
             <p className="mt-1 text-base font-semibold tracking-tight text-neutral-900">
               {formatDateLabel(selectedDate)} • {selectedSlot || 'Pick a slot'}
             </p>
@@ -410,11 +355,10 @@ export function ChooseSlotScreen({ salon, selectedServices }: ChooseSlotScreenPr
         <button
           type="button"
           onClick={handleReview}
-          disabled={!selectedSlot || !hasSelectedServices}
+          disabled={!selectedSlot || selectedServices.length === 0}
           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Review Booking
-          <ChevronRight size={18} />
+          Review Booking <ChevronRight size={18} />
         </button>
       </div>
     </div>

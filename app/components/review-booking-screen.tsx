@@ -2,12 +2,11 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, ChevronRight, CreditCard } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, serializeSelectedServices } from '../lib/booking-flow';
 import { useBooking } from '../lib/booking-state';
-import { useEffect } from 'react';
 
 interface ReviewBookingScreenProps {
   salon: SalonProfile;
@@ -20,53 +19,58 @@ type PaymentMethod = 'wallet' | 'pay-at-salon' | 'online';
 
 export function ReviewBookingScreen({
   salon: propSalon,
-  selectedServices,
-  selectedDate,
-  selectedSlot,
+  selectedServices: propServices,
+  selectedDate: propDate,
+  selectedSlot: propSlot,
 }: ReviewBookingScreenProps) {
   const router = useRouter();
-  const { state } = useBooking();
+  const { state: bookingState, subtotal: storeSubtotal, totalDuration: storeDuration } = useBooking();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
 
-  // Redirect if state is empty
-  useEffect(() => {
-    if (!propSalon.id && !state.salonId) {
-      router.replace('/home');
-    }
-  }, [propSalon, state, router]);
-
+  // Use state as source of truth for salon and cart (Problem 3)
   const salon = {
     ...propSalon,
-    name: propSalon.name !== 'Salon' ? propSalon.name : (state.salonName ?? propSalon.name),
-    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (state.salonLocation ?? propSalon.location),
+    id: propSalon.id || bookingState.salon.id,
+    name: propSalon.name !== 'Salon' ? propSalon.name : (bookingState.salon.name || 'Salon'),
+    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (bookingState.salon.location || 'Location unavailable'),
+    image: propSalon.image || bookingState.salon.image || 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop',
+    distance: propSalon.distance || bookingState.salon.distance || '',
   };
 
-  const hasSelectedServices = selectedServices.length > 0 || !!state.serviceId;
-  const subtotal = selectedServices.reduce((sum, service) => sum + service.price, 0) || (state.price ?? 0);
+  const selectedServices = propServices.length > 0 ? propServices : bookingState.cart;
+  const selectedDate = propDate || bookingState.appointment.date || '';
+  const selectedSlot = propSlot || bookingState.appointment.slot || '';
+
+  // Validation Gate: Redirect if state is lost
+  useEffect(() => {
+    if (!salon.id || selectedServices.length === 0) {
+      router.replace('/home');
+    }
+  }, [salon.id, selectedServices, router]);
+
+  const hasSelectedServices = selectedServices.length > 0;
+  const subtotal = storeSubtotal || selectedServices.reduce((sum, service) => sum + service.price, 0);
   const taxes = Math.round(subtotal * 0.18);
   const platformFee = hasSelectedServices ? 30 : 0;
   const total = subtotal + taxes + platformFee;
-  const totalDuration = selectedServices.reduce(
+  const totalDuration = storeDuration || selectedServices.reduce(
     (sum, service) => sum + service.durationMinutes,
     0
-  ) || (state.duration ?? 0);
+  );
 
   function handleBack() {
     if (window.history.length > 1) {
       router.back();
       return;
     }
-
     router.push('/booking/choose-slot');
   }
 
   function handleConfirmBooking() {
-    if (!hasSelectedServices) {
-      return;
-    }
+    if (!hasSelectedServices) return;
 
     const query = new URLSearchParams({
-      salon: salon.id,
+      salon: salon.id || '',
       services: selectedServices.map((service) => service.id).join(','),
       cart: serializeSelectedServices(selectedServices),
       totalPrice: String(subtotal),
@@ -84,17 +88,10 @@ export function ReviewBookingScreen({
     <div className="w-full relative pb-24">
       <header className="border-b border-neutral-200 bg-white">
         <div className="flex items-center gap-3 px-5 py-3">
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label="Go back"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
-          >
+          <button type="button" onClick={handleBack} className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-900 hover:bg-neutral-50">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-950">
-            Review Booking
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight text-neutral-950">Review Booking</h1>
         </div>
       </header>
 
@@ -103,24 +100,20 @@ export function ReviewBookingScreen({
           <div className="relative h-56">
             <Image
               src={salon.image}
-              alt={salon.name}
+              alt={salon.name || 'Salon'}
               fill
               unoptimized
               sizes="448px"
               className="object-cover"
             />
-            <div className="absolute bottom-3 left-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-              Selected Venue
-            </div>
+            <div className="absolute bottom-3 left-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Selected Venue</div>
           </div>
 
           <div className="p-4">
-            <h2 className="text-xl font-semibold tracking-tight text-neutral-950">
-              {salon.name}
-            </h2>
+            <h2 className="text-xl font-semibold tracking-tight text-neutral-950">{salon.name}</h2>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500">
               <MapPin size={14} />
-              {salon.distance} away • {salon.location}
+              {salon.distance ? `${salon.distance} away • ` : ''}{salon.location}
             </p>
 
             <div className="mt-4 space-y-3">
@@ -129,15 +122,9 @@ export function ReviewBookingScreen({
                   <Scissors size={18} />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">
-                    Service
-                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">Service</p>
                   <p className="text-base font-semibold text-neutral-950">
-                    {selectedServices.length === 0
-                      ? 'No service selected'
-                      : selectedServices.length === 1
-                      ? selectedServices[0].name
-                      : `${selectedServices.length} Services Selected`}
+                    {selectedServices.length === 0 ? 'No service selected' : selectedServices.length === 1 ? selectedServices[0].name : `${selectedServices.length} Services Selected`}
                   </p>
                 </div>
               </div>
@@ -147,11 +134,9 @@ export function ReviewBookingScreen({
                   <CalendarDays size={18} />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">
-                    Appointment
-                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">Appointment</p>
                   <p className="text-base font-semibold text-neutral-950">
-                    {formatDateLabel(selectedDate)} at {selectedSlot}
+                    {selectedDate ? formatDateLabel(selectedDate) : 'Date TBD'} at {selectedSlot || 'Time TBD'}
                   </p>
                 </div>
               </div>
@@ -160,39 +145,22 @@ export function ReviewBookingScreen({
         </section>
 
         <section className="rounded-[2rem] border border-neutral-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
-            Selected Services
-          </h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">Selected Services</h3>
           <div className="mt-4 space-y-3">
-            {!hasSelectedServices && (
-              <p className="rounded-[1.25rem] bg-neutral-50 px-3 py-3 text-sm text-neutral-500">
-                No services selected. Please go back and choose a service.
-              </p>
-            )}
-
             {selectedServices.map((service) => (
-              <div
-                key={service.id}
-                className="flex items-start justify-between gap-3 rounded-[1.25rem] bg-neutral-50 px-3 py-3"
-              >
+              <div key={service.id} className="flex items-start justify-between gap-3 rounded-[1.25rem] bg-neutral-50 px-3 py-3">
                 <div>
                   <p className="text-sm font-semibold text-neutral-950">{service.name}</p>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    {service.durationMinutes} min • {service.category}
-                  </p>
+                  <p className="mt-1 text-sm text-neutral-500">{service.durationMinutes} min • {service.category}</p>
                 </div>
-                <span className="text-sm font-semibold text-neutral-950">
-                  {formatCurrency(service.price)}
-                </span>
+                <span className="text-sm font-semibold text-neutral-950">{formatCurrency(service.price)}</span>
               </div>
             ))}
           </div>
         </section>
 
         <section className="rounded-[2rem] border border-neutral-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
-            Price Breakdown
-          </h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">Price Breakdown</h3>
           <div className="mt-4 space-y-3 text-sm text-neutral-600">
             <div className="flex items-center justify-between">
               <span>Subtotal</span>
@@ -204,9 +172,7 @@ export function ReviewBookingScreen({
             </div>
             <div className="flex items-center justify-between">
               <span>Platform Fees</span>
-              <span className="font-semibold text-neutral-950">
-                {formatCurrency(platformFee)}
-              </span>
+              <span className="font-semibold text-neutral-950">{formatCurrency(platformFee)}</span>
             </div>
             <div className="h-px bg-neutral-200" />
             <div className="flex items-center justify-between text-lg font-semibold text-neutral-950">
@@ -217,99 +183,39 @@ export function ReviewBookingScreen({
         </section>
 
         <section className="rounded-[2rem] border border-neutral-200 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">
-            Payment Method
-          </h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-neutral-400">Payment Method</h3>
           <div className="mt-4 space-y-3">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('wallet')}
-              className={`flex w-full items-center gap-3 rounded-[1.5rem] border px-3 py-3 text-left transition-colors ${
-                paymentMethod === 'wallet'
-                  ? 'border-black bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.8)]'
-                  : 'border-neutral-200 bg-white'
-              }`}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
-                <Wallet size={18} className="text-neutral-700" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-base font-semibold text-neutral-950">Wallet</p>
-                <p className="mt-1 text-sm text-neutral-500">
-                  Balance available • Instant confirmation
-                </p>
-              </div>
-              <div
-                className={`h-5 w-5 shrink-0 rounded-full border-2 ${
-                  paymentMethod === 'wallet' ? 'border-black bg-black' : 'border-neutral-300'
-                }`}
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('pay-at-salon')}
-              className={`flex w-full items-center gap-3 rounded-[1.5rem] border px-3 py-3 text-left transition-colors ${
-                paymentMethod === 'pay-at-salon'
-                  ? 'border-black bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.8)]'
-                  : 'border-neutral-200 bg-white'
-              }`}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
-                <Store size={18} className="text-neutral-700" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-base font-semibold text-neutral-950">Pay at Salon</p>
-                <p className="mt-1 text-sm text-neutral-500">
-                  Settle up after your service
-                </p>
-              </div>
-              <div
-                className={`h-5 w-5 shrink-0 rounded-full border-2 ${
-                  paymentMethod === 'pay-at-salon'
-                    ? 'border-black bg-black'
-                    : 'border-neutral-300'
-                }`}
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('online')}
-              className={`flex w-full items-center gap-3 rounded-[1.5rem] border px-3 py-3 text-left transition-colors ${
-                paymentMethod === 'online'
-                  ? 'border-black bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.8)]'
-                  : 'border-neutral-200 bg-white'
-              }`}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
-                <CreditCard size={18} className="text-neutral-700" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-base font-semibold text-neutral-950">Online Payment</p>
-                <p className="mt-1 text-sm text-neutral-500">
-                  Gateway integration pending
-                </p>
-              </div>
-              <div
-                className={`h-5 w-5 shrink-0 rounded-full border-2 ${
-                  paymentMethod === 'online'
-                    ? 'border-black bg-black'
-                    : 'border-neutral-300'
-                }`}
-              />
-            </button>
+            {[
+              { id: 'wallet', label: 'Wallet', sub: 'Balance available • Instant confirmation', icon: Wallet },
+              { id: 'pay-at-salon', label: 'Pay at Salon', sub: 'Settle up after your service', icon: Store },
+              { id: 'online', label: 'Online Payment', sub: 'Gateway integration pending', icon: CreditCard, disabled: true }
+            ].map((method) => (
+              <button
+                key={method.id}
+                type="button"
+                disabled={method.disabled}
+                onClick={() => setPaymentMethod(method.id as PaymentMethod)}
+                className={`flex w-full items-center gap-3 rounded-[1.5rem] border px-3 py-3 text-left transition-colors ${
+                  paymentMethod === method.id ? 'border-black bg-white shadow-[inset_0_0_0_1px_rgba(0,0,0,0.8)]' : 'border-neutral-200 bg-white'
+                } ${method.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
+                  <method.icon size={18} className="text-neutral-700" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold text-neutral-950">{method.label}</p>
+                  <p className="mt-1 text-sm text-neutral-500">{method.sub}</p>
+                </div>
+                <div className={`h-5 w-5 shrink-0 rounded-full border-2 ${paymentMethod === method.id ? 'border-black bg-black' : 'border-neutral-300'}`} />
+              </button>
+            ))}
           </div>
         </section>
 
         <section className="rounded-[1.5rem] bg-neutral-200 px-3 py-3 text-neutral-700">
           <div className="flex items-start gap-3">
             <Info size={18} className="mt-0.5 shrink-0" />
-            <p className="text-sm leading-6">
-              Flexibility is key. You can reschedule or cancel your appointment free
-              of charge up to <span className="font-semibold text-neutral-950">2 hours</span>{' '}
-              before your scheduled slot.
-            </p>
+            <p className="text-sm leading-6">Flexibility is key. You can reschedule or cancel your appointment free of charge up to <span className="font-semibold text-neutral-950">2 hours</span> before your scheduled slot.</p>
           </div>
         </section>
       </main>
@@ -319,10 +225,9 @@ export function ReviewBookingScreen({
           type="button"
           onClick={handleConfirmBooking}
           disabled={!hasSelectedServices}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3.5 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3.5 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
         >
-          Confirm Booking {formatCurrency(total)}
-          <ChevronRight size={18} />
+          Confirm Booking {formatCurrency(total)} <ChevronRight size={18} />
         </button>
       </div>
     </div>

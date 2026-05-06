@@ -84,11 +84,10 @@ function mapServiceRecordToBookingService(service: ServiceRecord): SalonService 
 
 export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   const router = useRouter();
-  const { updateState } = useBooking();
+  const { state: bookingState, updateSalon, addToCart, removeFromCart, subtotal } = useBooking();
   const [salon, setSalon] = useState<SalonRecord | null>(null);
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All Services');
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,27 +106,27 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
             supabase.from('services').select('*').eq('salon_id', salonId),
           ]);
 
-        if (salonError) {
-          throw salonError;
-        }
+        if (salonError) throw salonError;
+        if (servicesError) throw servicesError;
 
-        if (servicesError) {
-          throw servicesError;
-        }
-
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
         const nextServices = (servicesData ?? []) as ServiceRecord[];
+        const currentSalon = (salonData ?? null) as SalonRecord | null;
 
-        setSalon((salonData ?? null) as SalonRecord | null);
+        setSalon(currentSalon);
         setServices(nextServices);
-        setSelectedServiceIds(
-          nextServices
-            .filter((service) => Boolean(service.featured))
-            .map((service) => String(service.id))
-        );
+        
+        // Sync salon data to global store
+        if (currentSalon) {
+          updateSalon({
+            id: String(currentSalon.id),
+            name: currentSalon.name,
+            location: currentSalon.location || (currentSalon as any).address,
+            image: currentSalon.image || currentSalon.image_url || currentSalon.imageUrl,
+            distance: currentSalon.distance,
+          });
+        }
       } catch (fetchError) {
         if (isMounted) {
           setError(
@@ -137,18 +136,13 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
           );
         }
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     }
 
     fetchSalonDetails();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [salonId]);
+    return () => { isMounted = false; };
+  }, [salonId, updateSalon]);
 
   const categories = [
     'All Services',
@@ -160,19 +154,12 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
       )
     ),
   ];
+
   const visibleServices = services.filter(
     (service) =>
       selectedCategory === 'All Services' || getServiceCategory(service) === selectedCategory
   );
-  const selectedServices = services.filter((service) =>
-    selectedServiceIds.includes(String(service.id))
-  );
-  const selectedBookingServices = selectedServices.map(mapServiceRecordToBookingService);
-  const totalPrice = selectedBookingServices.reduce((sum, service) => sum + service.price, 0);
-  const totalDuration = selectedBookingServices.reduce(
-    (sum, service) => sum + service.durationMinutes,
-    0
-  );
+
   const salonName = salon?.name ?? 'Salon';
   const salonImage = salon?.image || salon?.image_url || salon?.imageUrl || FALLBACK_SALON_IMAGE;
   const locationLabel =
@@ -182,6 +169,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
     ]
       .filter(Boolean)
       .join(' • ') || 'Location unavailable';
+  
   const serviceTags =
     Array.isArray(salon?.services) && salon.services.length > 0
       ? salon.services
@@ -194,51 +182,28 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
       router.back();
       return;
     }
-
     router.push('/home');
   }
 
-  function toggleService(serviceId: string) {
-    setSelectedServiceIds((previous) => {
-      const isSelected = previous.includes(serviceId);
-      const nextIds = isSelected
-        ? previous.filter((id) => id !== serviceId)
-        : [...previous, serviceId];
-
-      if (!isSelected) {
-        const service = services.find((s) => String(s.id) === serviceId);
-        if (service) {
-          updateState({
-            serviceId: String(service.id),
-            serviceName: service.name,
-            price: getNumericValue(service.price),
-            duration:
-              getNumericValue(service.duration_minutes) ?? getNumericValue(service.duration),
-          });
-        }
-      }
-
-      return nextIds;
-    });
+  function toggleService(serviceRecord: ServiceRecord) {
+    const serviceId = String(serviceRecord.id);
+    const isSelected = bookingState.cart.some(s => s.id === serviceId);
+    
+    if (isSelected) {
+      removeFromCart(serviceId);
+    } else {
+      addToCart(mapServiceRecordToBookingService(serviceRecord));
+    }
   }
 
   function handleContinue() {
-    if (selectedServiceIds.length === 0) {
-      return;
-    }
-
-    updateState({
-      salonId: String(salon?.id ?? salonId),
-      salonName: salon?.name ?? 'Salon',
-      salonLocation: salon?.location || (salon as any)?.address || 'Location unavailable',
-    });
+    if (bookingState.cart.length === 0) return;
 
     const query = new URLSearchParams({
       salon: String(salon?.id ?? salonId),
-      services: selectedServiceIds.join(','),
-      cart: serializeSelectedServices(selectedBookingServices),
-      totalPrice: String(totalPrice),
-      totalDuration: String(totalDuration),
+      services: bookingState.cart.map((s) => s.id).join(','),
+      cart: serializeSelectedServices(bookingState.cart),
+      totalPrice: String(subtotal),
     });
 
     router.push(`/booking/choose-slot?${query.toString()}`);
@@ -339,27 +304,21 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
           </div>
 
           <div className="space-y-4">
-            {isLoading && (
-              <p className="text-sm text-neutral-500">Loading services...</p>
-            )}
-
-            {!isLoading && error && (
-              <p className="text-sm text-neutral-500">{error}</p>
-            )}
-
+            {isLoading && <p className="text-sm text-neutral-500">Loading services...</p>}
+            {!isLoading && error && <p className="text-sm text-neutral-500">{error}</p>}
             {!isLoading && !error && visibleServices.length === 0 && (
               <p className="text-sm text-neutral-500">No services available right now.</p>
             )}
 
             {visibleServices.map((service) => {
-              const selected = selectedServiceIds.includes(String(service.id));
+              const selected = bookingState.cart.some(s => s.id === String(service.id));
               const serviceCategory = getServiceCategory(service);
               const usesScissors =
                 serviceCategory.toLowerCase().includes('hair') ||
                 serviceCategory.toLowerCase().includes('shav') ||
                 serviceCategory.toLowerCase().includes('beard');
               const numericPrice = getNumericValue(service.price);
-              const numericDuration = getNumericValue(service.duration);
+              const numericDuration = getNumericValue(service.duration_minutes) ?? getNumericValue(service.duration);
 
               return (
                 <article
@@ -404,7 +363,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
 
                   <button
                     type="button"
-                    onClick={() => toggleService(String(service.id))}
+                    onClick={() => toggleService(service)}
                     className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors ${
                       selected
                         ? 'bg-neutral-500 text-white'
@@ -419,40 +378,22 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
             })}
           </div>
         </section>
-
-        <section className="mt-8 rounded-[2rem] border border-neutral-200 bg-gradient-to-b from-white to-[#f7fbff] p-4 shadow-[0_16px_34px_rgba(148,163,184,0.12)]">
-          <p className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-amber-600">
-            Limited Offer
-          </p>
-          <h3 className="mt-3 text-xl font-semibold leading-tight tracking-tight text-neutral-950">
-            The Gentleman&apos;s Combo
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-neutral-500">
-            Bundle Haircut &amp; Beard Trim for a luxury experience and save 15%.
-          </p>
-          <button
-            type="button"
-            className="mx-auto mt-5 block rounded-full bg-[#d8b247] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(216,178,71,0.24)]"
-          >
-            Claim Offer
-          </button>
-        </section>
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-5 py-3 shadow-[0_-16px_30px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm text-neutral-500">
-              {selectedServices.length} Service{selectedServices.length === 1 ? '' : 's'} Selected
+              {bookingState.cart.length} Service{bookingState.cart.length === 1 ? '' : 's'} Selected
             </p>
             <p className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
-              Subtotal: {formatCurrency(totalPrice)}
+              Subtotal: {formatCurrency(subtotal)}
             </p>
           </div>
           <button
             type="button"
             onClick={handleContinue}
-            disabled={selectedServices.length === 0}
+            disabled={bookingState.cart.length === 0}
             className="inline-flex items-center justify-center rounded-[1.5rem] bg-black px-5 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           >
             Continue

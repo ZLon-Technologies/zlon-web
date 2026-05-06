@@ -23,35 +23,36 @@ function createBookingId() {
 
 export function BookingCompleteScreen({
   salon: propSalon,
-  selectedServices,
-  selectedDate,
-  selectedSlot,
+  selectedServices: propServices,
+  selectedDate: propDate,
+  selectedSlot: propSlot,
   total,
   paymentMethod,
 }: BookingCompleteScreenProps) {
-  const { state, clearState } = useBooking();
+  const { state, clearState, totalDuration: storeDuration } = useBooking();
   const [bookingId, setBookingId] = useState('');
 
   // Redirect if state is empty
   useEffect(() => {
-    if (!propSalon.id && !state.salonId) {
+    if (!propSalon.id && !state.salon.id) {
       const timer = setTimeout(() => {
-        if (!state.salonId) window.location.href = '/home';
+        if (!state.salon.id) window.location.href = '/home';
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [propSalon, state]);
+  }, [propSalon, state.salon.id]);
 
   const salon = {
     ...propSalon,
-    name: propSalon.name !== 'Salon' ? propSalon.name : (state.salonName ?? propSalon.name),
-    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (state.salonLocation ?? propSalon.location),
+    name: propSalon.name !== 'Salon' ? propSalon.name : (state.salon.name || 'Salon'),
+    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (state.salon.location || 'Location unavailable'),
   };
 
-  const totalDuration = selectedServices.reduce(
+  const selectedServices = propServices.length > 0 ? propServices : state.cart;
+  const totalDuration = storeDuration || selectedServices.reduce(
     (sum, service) => sum + service.durationMinutes,
     0
-  ) || (state.duration ?? 0);
+  );
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -80,14 +81,14 @@ export function BookingCompleteScreen({
           <span className="font-semibold text-neutral-950">{bookingId || 'Generating...'}</span>
         </p>
         <p className="mt-1 text-base leading-7 text-neutral-500">
-          {formatDateLabel(selectedDate)} at {selectedSlot}
+          {propDate || state.appointment.date ? formatDateLabel(propDate || state.appointment.date || '') : ''} at {propSlot || state.appointment.slot}
         </p>
 
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-neutral-200 bg-white text-left shadow-[0_18px_38px_rgba(15,23,42,0.08)]">
           <div className="flex gap-3 p-4">
             <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[1.25rem]">
               <Image
-                src={salon.image}
+                src={salon.image || 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop'}
                 alt={salon.name}
                 fill
                 unoptimized
@@ -112,7 +113,7 @@ export function BookingCompleteScreen({
                 Date
               </p>
               <p className="mt-2 text-lg font-semibold tracking-tight text-neutral-950">
-                {formatDateLabel(selectedDate)}
+                {propDate || state.appointment.date ? formatDateLabel(propDate || state.appointment.date || '') : 'TBD'}
               </p>
             </div>
             <div className="p-4">
@@ -120,7 +121,7 @@ export function BookingCompleteScreen({
                 Time
               </p>
               <p className="mt-2 text-lg font-semibold tracking-tight text-neutral-950">
-                {selectedSlot}
+                {propSlot || state.appointment.slot || 'TBD'}
               </p>
               <p className="mt-1 text-sm text-neutral-500">{formatDuration(totalDuration)}</p>
             </div>
@@ -132,7 +133,9 @@ export function BookingCompleteScreen({
                 Service
               </p>
               <p className="mt-2 text-lg font-semibold tracking-tight text-neutral-950">
-                {selectedServices.length === 1
+                {selectedServices.length === 0 
+                  ? 'Service' 
+                  : selectedServices.length === 1
                   ? selectedServices[0].name
                   : `${selectedServices.length} Services`}
               </p>
@@ -162,7 +165,7 @@ export function BookingCompleteScreen({
 
         <div className="mt-6 space-y-3">
           <Link
-            href="/booking"
+            href="/booking-history"
             className="inline-flex w-full items-center justify-center rounded-[1.5rem] bg-black px-4 py-3.5 text-base font-semibold text-white"
           >
             View My Bookings
