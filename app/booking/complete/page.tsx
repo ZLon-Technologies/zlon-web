@@ -19,6 +19,7 @@ interface BookingCompletePageProps {
     slot?: string;
     total?: string;
     payment?: 'wallet' | 'pay-at-salon';
+    staff?: string;
   }>;
 }
 
@@ -27,14 +28,30 @@ export default async function BookingCompletePage({
 }: BookingCompletePageProps) {
   const params = await searchParams;
   const salonId = params.salon ?? '';
+  const staffId = params.staff ?? 'any';
   
   let salonName = 'Salon';
   let salonImage = 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
   let salonLocation = 'Location unavailable';
   let salonDistance = '';
+  let staffName = staffId === 'any' ? 'Any Staff' : 'Professional Staff';
 
   try {
     const supabase = await createSupabaseServerClient();
+
+    // Fetch staff name if not "any"
+    if (staffId !== 'any') {
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('name')
+        .eq('id', staffId)
+        .single();
+      
+      if (staffData) {
+        staffName = staffData.name;
+      }
+    }
+
     const { data } = await supabase
       .from('salons')
       .select(CUSTOMER_SAFE_SALON_SELECT)
@@ -95,6 +112,7 @@ export default async function BookingCompletePage({
       selectedSlot={params.slot ?? ''}
       total={total}
       paymentMethod={params.payment ?? 'wallet'}
+      staffName={staffName}
     />
   );
 }

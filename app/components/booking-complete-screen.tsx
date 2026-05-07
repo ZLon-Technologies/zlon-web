@@ -15,6 +15,7 @@ interface BookingCompleteScreenProps {
   selectedSlot: string;
   total: number;
   paymentMethod: 'wallet' | 'pay-at-salon';
+  staffName?: string;
 }
 
 function createBookingId() {
@@ -28,6 +29,7 @@ export function BookingCompleteScreen({
   selectedSlot: propSlot,
   total,
   paymentMethod,
+  staffName: propStaffName,
 }: BookingCompleteScreenProps) {
   const { state, clearState, totalDuration: storeDuration } = useBooking();
   const [bookingId, setBookingId] = useState('');
@@ -53,6 +55,7 @@ export function BookingCompleteScreen({
     (sum, service) => sum + service.durationMinutes,
     0
   );
+  const staffName = propStaffName || (state.appointment.staffId === 'any' ? 'Any Staff' : 'Professional Staff');
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -130,7 +133,7 @@ export function BookingCompleteScreen({
           <div className="flex items-end justify-between border-t border-neutral-200 p-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
-                Service
+                Service & Staff
               </p>
               <p className="mt-2 text-lg font-semibold tracking-tight text-neutral-950">
                 {selectedServices.length === 0 
@@ -139,6 +142,7 @@ export function BookingCompleteScreen({
                   ? selectedServices[0].name
                   : `${selectedServices.length} Services`}
               </p>
+              <p className="mt-1 text-sm text-neutral-500">With {staffName}</p>
             </div>
             <div className="text-right">
               <p className="text-2xl font-semibold tracking-tight text-neutral-950">

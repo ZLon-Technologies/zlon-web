@@ -30,74 +30,7 @@ export interface SalonProfile {
   staff: SalonStaff[];
 }
 
-export const salons: SalonProfile[] = [
-  {
-    id: 'velvet-vine',
-    name: 'Velvet & Vine',
-    image:
-      'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop',
-    distance: '1.2 km',
-    location: 'Indiranagar',
-    rating: 4.8,
-    price: 300,
-    services: ['HAIR', 'SKIN', 'BEARD'],
-    categories: ['All Services', 'Haircut', 'Shaving', 'Face care'],
-    staff: [
-      { id: 'sarah-j', name: 'Sarah J.', initials: 'SJ', colorClass: 'bg-stone-800 text-white' },
-      { id: 'david-k', name: 'David K.', initials: 'DK', colorClass: 'bg-amber-100 text-amber-950' },
-      { id: 'elena-m', name: 'Elena M.', initials: 'EM', colorClass: 'bg-slate-200 text-slate-900' },
-    ],
-    menu: [
-      {
-        id: 'signature-beard-trim',
-        name: 'Signature Beard Trim',
-        category: 'Shaving',
-        badge: 'Shaving',
-        description:
-          'Hot towel treatment, precision sculpting, and premium beard oil finish.',
-        durationMinutes: 30,
-        price: 300,
-        featured: true,
-      },
-      {
-        id: 'classic-haircut',
-        name: 'Classic Haircut',
-        category: 'Haircut',
-        badge: 'Hair',
-        description:
-          'Precision cutting, wash, and signature styling tailored to your face shape.',
-        durationMinutes: 45,
-        price: 500,
-      },
-      {
-        id: 'revitalizing-facial',
-        name: 'Revitalizing Facial',
-        category: 'Face care',
-        badge: 'Skincare',
-        description: 'Deep pore cleansing and hydration therapy for a refreshed look.',
-        durationMinutes: 60,
-        price: 1200,
-      },
-      {
-        id: 'executive-shave',
-        name: 'Executive Shave',
-        category: 'Shaving',
-        badge: 'Shaving',
-        description: 'Straight razor shave with soothing aftercare and cooling towel.',
-        durationMinutes: 35,
-        price: 450,
-      },
-      {
-        id: 'texture-restyle',
-        name: 'Texture Restyle',
-        category: 'Haircut',
-        badge: 'Hair',
-        description: 'Restyle cut with texture work, detailing, and finish product.',
-        durationMinutes: 50,
-        price: 650,
-      },
-    ],
-  },
+const MOCK_SALONS: SalonProfile[] = [
   {
     id: 'the-modern-man',
     name: 'The Modern Man',
@@ -154,10 +87,10 @@ export const salons: SalonProfile[] = [
       },
     ],
   },
-] as const satisfies SalonProfile[];
+];
 
-export function getSalonById(id: string) {
-  return salons.find((salon) => salon.id === id) ?? salons[0];
+export function getSalonById(id: string): SalonProfile | undefined {
+  return MOCK_SALONS.find((salon) => salon.id === id);
 }
 
 export function getServicesForSalon(salon: SalonProfile, serviceIds: string[]) {

@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, ChevronRight, CreditCard } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, ChevronRight, CreditCard, User } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, serializeSelectedServices } from '../lib/booking-flow';
 import { useBooking } from '../lib/booking-state';
@@ -13,6 +13,8 @@ interface ReviewBookingScreenProps {
   selectedServices: SalonService[];
   selectedDate: string;
   selectedSlot: string;
+  staffId?: string;
+  staffName?: string;
 }
 
 type PaymentMethod = 'wallet' | 'pay-at-salon' | 'online';
@@ -22,6 +24,8 @@ export function ReviewBookingScreen({
   selectedServices: propServices,
   selectedDate: propDate,
   selectedSlot: propSlot,
+  staffId: propStaffId,
+  staffName: propStaffName,
 }: ReviewBookingScreenProps) {
   const router = useRouter();
   const { state: bookingState, subtotal: storeSubtotal, totalDuration: storeDuration } = useBooking();
@@ -40,6 +44,8 @@ export function ReviewBookingScreen({
   const selectedServices = propServices.length > 0 ? propServices : bookingState.cart;
   const selectedDate = propDate || bookingState.appointment.date || '';
   const selectedSlot = propSlot || bookingState.appointment.slot || '';
+  const staffId = propStaffId || bookingState.appointment.staffId || 'any';
+  const staffName = propStaffName || (staffId === 'any' ? 'Any Staff' : 'Professional Staff');
 
   // Validation Gate: Redirect if state is lost
   useEffect(() => {
@@ -77,6 +83,7 @@ export function ReviewBookingScreen({
       totalDuration: String(totalDuration),
       date: selectedDate,
       slot: selectedSlot,
+      staff: staffId,
       payment: paymentMethod,
       total: String(total),
     });
@@ -137,6 +144,18 @@ export function ReviewBookingScreen({
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">Appointment</p>
                   <p className="text-base font-semibold text-neutral-950">
                     {selectedDate ? formatDateLabel(selectedDate) : 'Date TBD'} at {selectedSlot || 'Time TBD'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-[1.5rem] bg-neutral-50 p-3.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+                  <User size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-400">Selected Staff</p>
+                  <p className="text-base font-semibold text-neutral-950">
+                    {staffName}
                   </p>
                 </div>
               </div>

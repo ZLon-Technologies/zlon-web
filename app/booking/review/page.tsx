@@ -16,6 +16,7 @@ interface ReviewBookingPageProps {
     totalDuration?: string;
     date?: string;
     slot?: string;
+    staff?: string;
   }>;
 }
 
@@ -26,16 +27,31 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
+  const staffId = params.staff ?? 'any';
 
   let salonName = 'Salon';
   let salonImage = 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
   let salonLocation = 'Location unavailable';
   let salonDistance = '';
   let dbServices: SalonService[] = [];
+  let staffName = staffId === 'any' ? 'Any Staff' : 'Professional Staff';
 
   try {
     const supabase = await createSupabaseServerClient();
     
+    // Fetch staff name if not "any"
+    if (staffId !== 'any') {
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('name')
+        .eq('id', staffId)
+        .single();
+      
+      if (staffData) {
+        staffName = staffData.name;
+      }
+    }
+
     // Strict JOIN logic: Fetch services and their parent salon in a single inner join query.
     // This ensures data integrity between the salon_id and the service records.
     const { data: joinedData, error } = await supabase
@@ -85,17 +101,21 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
     } else {
       // Fallback if the join fails or returns no matches
       const fallbackSalon = getSalonById(salonId);
+      if (fallbackSalon) {
+        salonName = fallbackSalon.name;
+        salonImage = fallbackSalon.image;
+        salonLocation = fallbackSalon.location;
+        salonDistance = fallbackSalon.distance;
+      }
+    }
+  } catch (error) {
+    const fallbackSalon = getSalonById(salonId);
+    if (fallbackSalon) {
       salonName = fallbackSalon.name;
       salonImage = fallbackSalon.image;
       salonLocation = fallbackSalon.location;
       salonDistance = fallbackSalon.distance;
     }
-  } catch (error) {
-    const fallbackSalon = getSalonById(salonId);
-    salonName = fallbackSalon.name;
-    salonImage = fallbackSalon.image;
-    salonLocation = fallbackSalon.location;
-    salonDistance = fallbackSalon.distance;
   }
 
   const salon: SalonProfile = {
@@ -113,13 +133,15 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
   };
 
   const cartServices = parseSelectedServices(params.cart);
-  // Prioritize database-fetched joined services to ensure accurate duration_minutes
+  const fallback = getSalonById(salonId);
   const selectedServices =
-    dbServices.length > 0 
-      ? dbServices 
-      : cartServices.length > 0 
-        ? cartServices 
-        : getServicesForSalon(getSalonById(salonId), selectedServiceIds);
+    dbServices.length > 0
+      ? dbServices
+      : cartServices.length > 0
+        ? cartServices
+        : fallback
+          ? getServicesForSalon(fallback, selectedServiceIds)
+          : [];
 
   return (
     <ReviewBookingScreen
@@ -127,6 +149,8 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
       selectedServices={selectedServices}
       selectedDate={params.date ?? ''}
       selectedSlot={params.slot ?? ''}
+      staffId={staffId}
+      staffName={staffName}
     />
   );
 }
