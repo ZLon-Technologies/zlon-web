@@ -1,8 +1,12 @@
 import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/proxy';
 
+/**
+ * Proxy function for handling route interception and session updates.
+ * Consolidates logic from previous middleware.ts to resolve Vercel build conflicts.
+ */
 export async function proxy(request: NextRequest) {
-  return updateSession(request);
+  return await updateSession(request);
 }
 
 export const config = {
