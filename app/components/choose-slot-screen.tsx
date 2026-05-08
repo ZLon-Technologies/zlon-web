@@ -132,6 +132,7 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     let isMounted = true;
 
     async function fetchData() {
+      console.log('Fetching data for salon_id:', salon.id, 'and date:', selectedDate);
       try {
         const [bookingsRes, staffRes] = await Promise.all([
           supabase
@@ -145,12 +146,22 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
             .eq('salon_id', salon.id)
         ]);
 
+        if (bookingsRes.error) console.error('Bookings fetch error:', bookingsRes.error);
+        if (staffRes.error) console.error('Staff fetch error:', staffRes.error);
+
+        console.log('Fetched Staff:', staffRes.data);
+        console.log('Fetched Bookings:', bookingsRes.data);
+
+        if (staffRes.data && staffRes.data.length === 0) {
+          console.warn('No staff found for salon_id:', salon.id);
+        }
+
         if (isMounted) {
           setDailyBookings(bookingsRes.data || []);
           setStaffList(staffRes.data || []);
         }
       } catch (err) {
-        console.error('Failed to fetch data:', err);
+        console.error('Unexpected fetch error:', err);
       }
     }
 
