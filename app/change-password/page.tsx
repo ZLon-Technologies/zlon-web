@@ -104,7 +104,7 @@ export default function ChangePasswordPage() {
     <div className="w-full relative px-5 py-4">
       <div className="flex flex-col text-neutral-950">
         <header className="flex items-center gap-3 py-2">
-          <Link
+          <Link prefetch={false}
             href="/privacy-settings"
             aria-label="Go back"
             className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
@@ -195,7 +195,7 @@ export default function ChangePasswordPage() {
           </section>
 
           <div className="mt-auto pb-2 pt-8 text-center">
-            <Link
+            <Link prefetch={false}
               href="/login-email"
               className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
             >

@@ -204,6 +204,18 @@ export default function HomePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const debouncedSearchQuery = useDebouncedValue(searchQuery.trim(), 300);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setRefreshKey((prev) => prev + 1);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const bookings: BookingRecord[] = mapBookingRows(bookingRows, salonRows);
   const latestBooking = bookings?.[0] ?? null;
 
@@ -367,7 +379,7 @@ export default function HomePage() {
     return () => {
       isMounted = false;
     };
-  }, [selected]);
+  }, [selected, refreshKey]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -626,7 +638,7 @@ export default function HomePage() {
                   {locationDisplayLabel}
                 </span>
               </button>
-              <Link
+              <Link prefetch={false}
                 href="/customer-support"
                 aria-label="Open customer support chat"
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 hover:text-black"
@@ -688,7 +700,7 @@ export default function HomePage() {
                             {label}
                           </div>
                           {results.map((result) => (
-                            <Link
+                            <Link prefetch={false}
                               key={`${result.result_type}-${result.id}`}
                               href={
                                 result.result_type === 'salon'
@@ -754,7 +766,7 @@ export default function HomePage() {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Quick Rebook</h2>
-                <Link
+                <Link prefetch={false}
                   href="/booking-history"
                   className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
                 >
@@ -791,7 +803,7 @@ export default function HomePage() {
 
           {/* Recommended Salons */}
           <div>
-            <Link
+            <Link prefetch={false}
               href={aiScannerAccess ? '/ai-stylist' : '#'}
               onClick={(e) => {
                 if (!aiScannerAccess) {
@@ -887,14 +899,13 @@ export default function HomePage() {
 
                   return (
                     <div key={salonId} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-                      <Link href={`/salon-profile/${salonId}`} className="block">
+                      <Link prefetch={false} href={`/salon-profile/${salonId}`} className="block">
                         <div className="relative h-56 overflow-hidden bg-gray-300">
                           <Image
                             src={salonImage}
                             alt={salonName}
                             fill
-                            unoptimized
-                            sizes="448px"
+                            sizes="(max-width: 480px) 100vw, 480px"
                             className="object-cover hover:scale-105 transition-transform duration-300"
                           />
 
@@ -943,7 +954,7 @@ export default function HomePage() {
                         <div className="flex-1"></div>
 
                         {/* Book Now Button */}
-                        <Link
+                        <Link prefetch={false}
                           href={`/salon/${salonId}`}
                           onClick={(event) => event.stopPropagation()}
                           className="block w-full rounded-full bg-gray-900 py-3 text-center text-sm font-bold text-white transition-all hover:bg-gray-800 active:bg-gray-950"
@@ -1022,4 +1033,6 @@ export default function HomePage() {
       <MobileBottomNav />
     </div>
   );
+}
+);
 }

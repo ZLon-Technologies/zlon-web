@@ -112,7 +112,7 @@ export function AIFaceScannerScreen() {
       <div className="bg-[radial-gradient(circle_at_top,_rgba(115,115,115,0.18),_transparent_32%),linear-gradient(180deg,_#09090b_0%,_#000000_100%)] pb-20 text-white">
         <header className="px-5 pt-4">
           <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-sm">
-            <Link
+            <Link prefetch={false}
               href="/home"
               aria-label="Go back"
               className="flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"

@@ -19,7 +19,7 @@ export default async function RescheduleBookingPage({ params }: RescheduleBookin
       <div className="flex flex-col text-neutral-950">
         <header className="border-b border-black/5 bg-white px-5 py-4">
           <div className="flex items-center gap-3">
-            <Link
+            <Link prefetch={false}
               href="/booking"
               aria-label="Go back"
               className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"

@@ -94,8 +94,7 @@ export function BookingCompleteScreen({
                 src={salon.image || 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop'}
                 alt={salon.name}
                 fill
-                unoptimized
-                sizes="96px"
+                sizes="(max-width: 480px) 96px, 96px"
                 className="object-cover"
               />
             </div>
@@ -168,13 +167,13 @@ export function BookingCompleteScreen({
         </div>
 
         <div className="mt-6 space-y-3">
-          <Link
+          <Link prefetch={false}
             href="/booking-history"
             className="inline-flex w-full items-center justify-center rounded-[1.5rem] bg-black px-4 py-3.5 text-base font-semibold text-white"
           >
             View My Bookings
           </Link>
-          <Link
+          <Link prefetch={false}
             href="/home"
             className="inline-flex w-full items-center justify-center rounded-[1.5rem] border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700"
           >

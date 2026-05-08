@@ -16,7 +16,7 @@ export interface BookingState {
   appointment: {
     date: string | null;
     slot: string | null;
-    staffId: string | null;
+    selectedStaffId: string;
   };
 }
 
@@ -44,30 +44,32 @@ const initialState: BookingState = {
   appointment: {
     date: null,
     slot: null,
-    staffId: null,
+    selectedStaffId: 'any',
   },
 };
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BookingState>(initialState);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('zlon_booking_state_v2');
-    if (saved) {
-      try {
-        setState(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse booking state', e);
+  const [state, setState] = useState<BookingState>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('zlon_booking_state_v2');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Failed to parse booking state', e);
+        }
       }
     }
-  }, []);
+    return initialState;
+  });
 
   // Save to localStorage on change
   useEffect(() => {
-    localStorage.setItem('zlon_booking_state_v2', JSON.stringify(state));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('zlon_booking_state_v2', JSON.stringify(state));
+    }
   }, [state]);
 
   const updateSalon = (salon: Partial<BookingState['salon']>) => {

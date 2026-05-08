@@ -145,7 +145,7 @@ export default async function SalonProfilePage({ params }: SalonProfilePageProps
 
   return (
     <div className="w-full relative pb-24">
-      <Link
+      <Link prefetch={false}
         href="/home"
         aria-label="Go back"
         className="fixed left-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-neutral-900 shadow-md backdrop-blur-sm transition-colors hover:bg-white"
@@ -161,8 +161,7 @@ export default async function SalonProfilePage({ params }: SalonProfilePageProps
                 src={photo}
                 alt={`${salonName} photo ${index + 1}`}
                 fill
-                unoptimized
-                sizes="100vw"
+                sizes="(max-width: 480px) 100vw, 480px"
                 className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/10" />
@@ -203,7 +202,7 @@ export default async function SalonProfilePage({ params }: SalonProfilePageProps
       </section>
 
       <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white p-4 [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
-        <Link
+        <Link prefetch={false}
           href={`/salon/${id}`}
           className="inline-flex w-full items-center justify-center rounded-2xl bg-black px-4 py-4 text-sm font-semibold text-white transition-colors hover:bg-neutral-900"
         >

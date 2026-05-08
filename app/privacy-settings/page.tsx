@@ -45,7 +45,7 @@ export default function PrivacySettingsPage() {
       <div className="flex flex-col text-neutral-950">
         <header className="border-b border-black/5 bg-white px-4 py-4">
           <div className="flex items-center gap-3">
-            <Link
+            <Link prefetch={false}
               href="/profile"
               aria-label="Go back"
               className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
@@ -63,7 +63,7 @@ export default function PrivacySettingsPage() {
             </h2>
             <div className="mt-4 space-y-3">
               {accountManagementItems.map(({ href, icon: Icon, title, description }) => (
-                <Link
+                <Link prefetch={false}
                   key={title}
                   href={href}
                   className="flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-4 transition-colors hover:bg-neutral-100"
@@ -89,7 +89,7 @@ export default function PrivacySettingsPage() {
             </h2>
             <div className="mt-4 space-y-3">
               {privacyItems.map(({ href, icon: Icon, title, description }) => (
-                <Link
+                <Link prefetch={false}
                   key={title}
                   href={href}
                   className="flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-4 transition-colors hover:bg-neutral-100"

@@ -166,3 +166,84 @@ export async function rescheduleBooking(formData: FormData): Promise<BookingMuta
     message: 'Booking rescheduled.',
   };
 }
+
+export async function createBooking(formData: FormData): Promise<BookingMutationResult & { bookingId?: string }> {
+  const authResult = await getAuthenticatedClient();
+  if ('ok' in authResult && !authResult.ok) return authResult as BookingMutationResult;
+  const { supabase, userId } = authResult as { supabase: any, userId: string };
+
+  const salonId = getStringValue(formData.get('salonId'));
+  const serviceId = getStringValue(formData.get('serviceId'));
+  const date = getStringValue(formData.get('date'));
+  const slot = getStringValue(formData.get('slot'));
+  const staffId = getStringValue(formData.get('staffId')) || 'any';
+  const totalAmount = Number(formData.get('totalAmount') || 0);
+
+  if (!salonId || !serviceId || !date || !slot) {
+    return { ok: false, message: 'Missing booking details.' };
+  }
+
+  // appointment_timestamp is used in the directive
+  const appointmentTimestamp = `${date} ${slot}`;
+  let assignedStaffId = staffId;
+
+  if (staffId === 'any') {
+    // Auto-assignment logic
+    const { data: allStaff } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('salon_id', salonId);
+    
+    if (!allStaff || allStaff.length === 0) {
+      return { ok: false, message: 'No staff available for this salon.' };
+    }
+
+    const { data: bookedBookings } = await supabase
+      .from('bookings')
+      .select('staff_id')
+      .eq('salon_id', salonId)
+      .eq('time_slot', slot) // The DB might use time_slot or appointment_timestamp
+      .eq('date', date)
+      .not('status', 'eq', 'cancelled');
+
+    const bookedStaffIds = new Set((bookedBookings || []).map((b: any) => b.staff_id));
+    const availableStaffIds = allStaff
+      .map((s: any) => s.id)
+      .filter(id => !bookedStaffIds.has(id));
+
+    if (availableStaffIds.length === 0) {
+      return { ok: false, message: 'No staff available at this time.' };
+    }
+
+    assignedStaffId = availableStaffIds[Math.floor(Math.random() * availableStaffIds.length)];
+  }
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .insert({
+      customer_id: userId,
+      salon_id: salonId,
+      service_id: serviceId,
+      staff_id: assignedStaffId,
+      appointment_timestamp: appointmentTimestamp,
+      total_amount: totalAmount,
+      status: 'upcoming',
+      date: date,
+      time_slot: slot,
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath('/booking-history');
+  revalidatePath('/booking');
+
+  return {
+    ok: true,
+    message: 'Booking confirmed!',
+    bookingId: data.id,
+  };
+}

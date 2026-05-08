@@ -7,6 +7,7 @@ import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, Chevron
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, serializeSelectedServices } from '../lib/booking-flow';
 import { useBooking } from '../lib/booking-state';
+import { createBooking } from '../booking/actions';
 
 interface ReviewBookingScreenProps {
   salon: SalonProfile;
@@ -30,6 +31,7 @@ export function ReviewBookingScreen({
   const router = useRouter();
   const { state: bookingState, subtotal: storeSubtotal, totalDuration: storeDuration } = useBooking();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use state as source of truth for salon and cart (Problem 3)
   const salon = {
@@ -44,7 +46,7 @@ export function ReviewBookingScreen({
   const selectedServices = propServices.length > 0 ? propServices : bookingState.cart;
   const selectedDate = propDate || bookingState.appointment.date || '';
   const selectedSlot = propSlot || bookingState.appointment.slot || '';
-  const staffId = propStaffId || bookingState.appointment.staffId || 'any';
+  const staffId = propStaffId || bookingState.appointment.selectedStaffId || 'any';
   const staffName = propStaffName || (staffId === 'any' ? 'Any Staff' : 'Professional Staff');
 
   // Validation Gate: Redirect if state is lost
@@ -73,22 +75,44 @@ export function ReviewBookingScreen({
   }
 
   function handleConfirmBooking() {
-    if (!hasSelectedServices) return;
+    if (!hasSelectedServices || isSubmitting) return;
 
-    const query = new URLSearchParams({
-      salon: salon.id || '',
-      services: selectedServices.map((service) => service.id).join(','),
-      cart: serializeSelectedServices(selectedServices),
-      totalPrice: String(subtotal),
-      totalDuration: String(totalDuration),
-      date: selectedDate,
-      slot: selectedSlot,
-      staff: staffId,
-      payment: paymentMethod,
-      total: String(total),
+    setIsSubmitting(true);
+    
+    const formData = new FormData();
+    formData.append('salonId', salon.id || '');
+    formData.append('serviceId', selectedServices[0]?.id || '');
+    formData.append('date', selectedDate);
+    formData.append('slot', selectedSlot);
+    formData.append('staffId', staffId);
+    formData.append('totalAmount', String(total));
+
+    createBooking(formData).then((result) => {
+      if (result.ok) {
+        const query = new URLSearchParams({
+          salon: salon.id || '',
+          services: selectedServices.map((service) => service.id).join(','),
+          cart: serializeSelectedServices(selectedServices),
+          totalPrice: String(subtotal),
+          totalDuration: String(totalDuration),
+          date: selectedDate,
+          slot: selectedSlot,
+          staff: staffId,
+          payment: paymentMethod,
+          total: String(total),
+          bookingId: result.bookingId || '',
+        });
+
+        router.replace(`/booking/complete?${query.toString()}`);
+      } else {
+        alert(result.message);
+        setIsSubmitting(false);
+      }
+    }).catch((err) => {
+      console.error(err);
+      alert('Failed to confirm booking. Please try again.');
+      setIsSubmitting(false);
     });
-
-    router.replace(`/booking/complete?${query.toString()}`);
   }
 
   return (
@@ -109,8 +133,7 @@ export function ReviewBookingScreen({
               src={salon.image}
               alt={salon.name || 'Salon'}
               fill
-              unoptimized
-              sizes="448px"
+              sizes="(max-width: 480px) 100vw, 480px"
               className="object-cover"
             />
             <div className="absolute bottom-3 left-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">Selected Venue</div>
@@ -243,10 +266,10 @@ export function ReviewBookingScreen({
         <button
           type="button"
           onClick={handleConfirmBooking}
-          disabled={!hasSelectedServices}
+          disabled={!hasSelectedServices || isSubmitting}
           className="inline-flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-black px-4 py-3.5 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
         >
-          Confirm Booking {formatCurrency(total)} <ChevronRight size={18} />
+          {isSubmitting ? 'Confirming...' : `Confirm Booking ${formatCurrency(total)}`} <ChevronRight size={18} />
         </button>
       </div>
     </div>

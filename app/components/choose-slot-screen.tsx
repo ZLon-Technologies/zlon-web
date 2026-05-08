@@ -107,12 +107,12 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
   const router = useRouter();
   const { state: bookingState, updateAppointment, totalDuration: storeDuration, subtotal: storeSubtotal } = useBooking();
   
-  // Use state if props are missing (Problem 2)
+  // Use state if props are missing
   const selectedServices = propServices.length > 0 ? propServices : bookingState.cart;
   const totalDurationMinutes = storeDuration || selectedServices.reduce((sum, s) => sum + s.durationMinutes, 0);
   const totalPrice = storeSubtotal || selectedServices.reduce((sum, s) => sum + s.price, 0);
 
-  // Validation Gate: Redirect if no services (Problem 2)
+  // Validation Gate: Redirect if no services
   useEffect(() => {
     if (selectedServices.length === 0) {
       router.replace(`/salon/${salon.id}`);
@@ -124,8 +124,8 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
   const [selectedStaffId, setSelectedStaffId] = useState('any');
   const [selectedSlot, setSelectedSlot] = useState('');
   
-  const [bookings, setBookings] = useState<Array<{ staff_id: string, time_slot: string }>>([]);
-  const [dbStaff, setDbStaff] = useState<Array<{ id: string, name: string, initials?: string, color_class?: string, colorClass?: string }>>([]);
+  const [dailyBookings, setDailyBookings] = useState<Array<{ staff_id: string, time_slot: string }>>([]);
+  const [staffList, setStaffList] = useState<Array<{ id: string, name: string, initials?: string, color_class?: string, colorClass?: string }>>([]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -136,7 +136,7 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
         const [bookingsRes, staffRes] = await Promise.all([
           supabase
             .from('bookings')
-            .select('staff_id, time_slot')
+            .select('staff_id, time_slot, appointment_timestamp')
             .eq('salon_id', salon.id)
             .eq('date', selectedDate),
           supabase
@@ -146,8 +146,8 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
         ]);
 
         if (isMounted) {
-          setBookings(bookingsRes.data || []);
-          setDbStaff(staffRes.data || []);
+          setDailyBookings(bookingsRes.data || []);
+          setStaffList(staffRes.data || []);
         }
       } catch (err) {
         console.error('Failed to fetch data:', err);
@@ -157,6 +157,17 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     fetchData();
     return () => { isMounted = false; };
   }, [salon.id, selectedDate]);
+
+  function checkSlotAvailability(slotTime: string) {
+    if (selectedStaffId === 'any') {
+      // Slot is booked only if ALL staff members are booked at this time
+      const bookedCount = dailyBookings.filter(b => b.time_slot === slotTime).length;
+      return staffList.length > 0 && bookedCount >= staffList.length;
+    } else {
+      // Slot is booked if the SPECIFIC selected staff is booked at this time
+      return dailyBookings.some(b => b.time_slot === slotTime && b.staff_id === selectedStaffId);
+    }
+  }
 
   const selectedServiceLabel =
     selectedServices.length === 0
@@ -180,7 +191,7 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     updateAppointment({
       date: selectedDate,
       slot: selectedSlot,
-      staffId: selectedStaffId,
+      selectedStaffId: selectedStaffId,
     });
 
     const query = new URLSearchParams({
@@ -197,9 +208,9 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     router.push(`/booking/review?${query.toString()}`);
   }
 
-  const staffList = [
+  const uiStaffList = [
     { id: 'any', name: 'Any Staff', initials: <User size={24} />, colorClass: 'bg-neutral-100 text-neutral-600' },
-    ...dbStaff.map(s => ({
+    ...staffList.map(s => ({
       ...s,
       initials: s.initials || s.name?.substring(0, 2).toUpperCase() || 'ST',
       colorClass: s.color_class || s.colorClass || 'bg-slate-200 text-slate-900'
@@ -213,13 +224,7 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
   ];
 
   ALL_SLOTS.forEach(slotDef => {
-    let isBooked = false;
-    if (selectedStaffId === 'any') {
-      const bookedStaffCount = bookings.filter(b => b.time_slot === slotDef.time && b.staff_id).length;
-      if (bookedStaffCount >= dbStaff.length && dbStaff.length > 0) isBooked = true;
-    } else {
-      isBooked = bookings.some(b => b.time_slot === slotDef.time && b.staff_id === selectedStaffId);
-    }
+    const isBooked = checkSlotAvailability(slotDef.time);
 
     const groupIndex = slotGroups.findIndex(g => g.label === slotDef.group);
     if (groupIndex !== -1) {
@@ -288,7 +293,7 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
         <section className="mt-6">
           <h3 className="text-lg font-semibold tracking-tight text-neutral-950">Available Staff</h3>
           <div className="mt-3 flex gap-3 overflow-x-auto py-2">
-            {staffList.map((staffMember) => {
+            {uiStaffList.map((staffMember) => {
               const selected = staffMember.id === selectedStaffId;
               return (
                 <button key={staffMember.id} type="button" onClick={() => setSelectedStaffId(staffMember.id)} className="flex flex-shrink-0 shrink-0 flex-col items-center">

@@ -215,7 +215,7 @@ function LandingPageContent() {
 
         <p className="text-center text-sm text-gray-600">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="cursor-pointer font-semibold text-gray-800 hover:underline">
+          <Link prefetch={false} href="/signup" className="cursor-pointer font-semibold text-gray-800 hover:underline">
             Sign Up
           </Link>
         </p>

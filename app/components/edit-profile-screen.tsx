@@ -326,7 +326,7 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
 
           <section className="space-y-3">
             {quickLinks.map(({ href, icon: Icon, title, description }) => (
-              <Link
+              <Link prefetch={false}
                 key={title}
                 href={href}
                 className={`${surfaceClass} flex items-center gap-3 p-4 transition-transform hover:translate-y-[-1px]`}

@@ -232,8 +232,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
               src={salonImage}
               alt={salonName}
               fill
-              unoptimized
-              sizes="448px"
+              sizes="(max-width: 480px) 100vw, 480px"
               className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />

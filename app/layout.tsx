@@ -35,17 +35,23 @@ export const metadata: Metadata = {
 };
 
 import { BookingProvider } from './lib/booking-state';
+// import { unstable_setRequestLocale } from 'next-intl/server';
 
 export default function RootLayout({
   children,
+  params: { locale = 'en' } = {},
 }: Readonly<{
   children: React.ReactNode;
+  params?: { locale?: string };
 }>) {
+  // i18n Localization Prep
+  // unstable_setRequestLocale(locale);
+
   return (
-    <html lang="en" className={`${inter.className} h-full antialiased`}>
+    <html lang={locale} className={`${inter.className} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-screen bg-gray-900">
         <BookingProvider>
-          <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col">
+          <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col pb-24">
             {children}
           </div>
         </BookingProvider>

@@ -155,8 +155,8 @@ export default function CustomerSupportPage() {
                     src={msg.image} 
                     alt="Uploaded proof" 
                     fill 
+                    sizes="(max-width: 480px) 192px, 192px"
                     className="object-cover"
-                    unoptimized
                   />
                 </div>
               )}
@@ -200,8 +200,8 @@ export default function CustomerSupportPage() {
                     src={selectedImage} 
                     alt="Preview" 
                     fill 
+                    sizes="(max-width: 480px) 80px, 80px"
                     className="object-cover"
-                    unoptimized
                   />
                 </div>
                 <button 

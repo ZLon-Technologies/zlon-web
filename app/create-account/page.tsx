@@ -203,13 +203,36 @@ function CreateAccountForm() {
       return;
     }
 
+    const dobDate = new Date(dateOfBirth.trim());
+    if (isNaN(dobDate.getTime())) {
+      setErrorMessage('Please enter a valid date of birth (e.g., YYYY-MM-DD or MM/DD/YYYY).');
+      return;
+    }
+
+    const now = new Date();
+    if (dobDate >= now) {
+      setErrorMessage('Date of birth must be in the past.');
+      return;
+    }
+
+    let age = now.getFullYear() - dobDate.getFullYear();
+    const monthDiff = now.getMonth() - dobDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dobDate.getDate())) {
+      age--;
+    }
+
+    if (age < 13) {
+      setErrorMessage('You must be at least 13 years old to use ZLon.');
+      return;
+    }
+
     setErrorMessage('');
     setIsSaving(true);
 
     const { error } = await supabase.auth.updateUser({
       data: {
         full_name: fullName.trim(),
-        date_of_birth: dateOfBirth.trim(),
+        date_of_birth: dobDate.toISOString(),
         gender,
       },
     });

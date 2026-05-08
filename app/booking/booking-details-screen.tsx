@@ -91,7 +91,7 @@ export function BookingDetailsScreen({ booking }: BookingDetailsScreenProps) {
               <p className="mt-2 text-sm leading-6 text-neutral-500">
                 Your next ZLon appointment will appear here after it is confirmed.
               </p>
-              <Link
+              <Link prefetch={false}
                 href="/home"
                 className="mt-5 block w-full rounded-full bg-black px-5 py-4 text-center text-base font-semibold text-white transition-opacity hover:opacity-95"
               >
@@ -165,7 +165,7 @@ export function BookingDetailsScreen({ booking }: BookingDetailsScreenProps) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-neutral-500">Location</p>
                 <h2 className="mt-1 text-xl font-semibold tracking-tight">{booking.location}</h2>
-                <Link
+                <Link prefetch={false}
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
                     booking.location
                   )}`}
@@ -226,7 +226,7 @@ export function BookingDetailsScreen({ booking }: BookingDetailsScreenProps) {
             </section>
 
             <div className="space-y-3 pt-1">
-              <Link
+              <Link prefetch={false}
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
                   booking.location
                 )}`}

@@ -95,7 +95,7 @@ export default function BookingHistoryPage() {
       <div className="flex flex-col text-neutral-950">
         <header className="border-b border-black/5 px-4 py-4">
           <div className="flex items-center justify-between gap-3">
-            <Link
+            <Link prefetch={false}
               href="/profile"
               aria-label="Go back"
               className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
@@ -173,8 +173,7 @@ export default function BookingHistoryPage() {
                                 src={entry.image}
                                 alt={entry.salonName}
                                 fill
-                                unoptimized
-                                sizes="64px"
+                                sizes="(max-width: 480px) 64px, 64px"
                                 className="object-cover"
                               />
                             </div>
@@ -199,7 +198,7 @@ export default function BookingHistoryPage() {
                             <span className="text-base font-semibold text-neutral-950">
                               {formatCurrency(entry.price)}
                             </span>
-                            <Link
+                            <Link prefetch={false}
                               href={`/booking/${entry.id}/reschedule`}
                               className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
                             >
@@ -232,8 +231,7 @@ export default function BookingHistoryPage() {
                                 src={entry.image}
                                 alt={entry.salonName}
                                 fill
-                                unoptimized
-                                sizes="64px"
+                                sizes="(max-width: 480px) 64px, 64px"
                                 className="object-cover"
                               />
                             </div>
@@ -258,7 +256,7 @@ export default function BookingHistoryPage() {
                             <span className="text-base font-semibold text-neutral-950">
                               {formatCurrency(entry.price)}
                             </span>
-                            <Link
+                            <Link prefetch={false}
                               href={`/salon/${entry.salonId}`}
                               className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-neutral-800"
                             >
@@ -276,7 +274,7 @@ export default function BookingHistoryPage() {
         </main>
 
         <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white p-4 [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
-          <Link
+          <Link prefetch={false}
             href="/home"
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-black px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-95"
           >

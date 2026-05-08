@@ -295,6 +295,8 @@ function VerifyOtpContent() {
               onChange={(event) => updateOtpDigit(index, event.target.value)}
               onKeyDown={(event) => handleKeyDown(index, event)}
               onPaste={handlePaste}
+              autoComplete="one-time-code"
+              aria-label={`Digit ${index + 1} of OTP`}
               className="h-14 w-14 rounded-2xl bg-gray-100 text-center text-xl font-semibold text-black focus:outline-none"
             />
           ))}
