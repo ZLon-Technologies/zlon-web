@@ -141,14 +141,6 @@ function LoginEmailPageContent() {
                 }
               }}
             />
-            <InputField
-              id="login-password"
-              type="password"
-              placeholder="Enter Password"
-              icon={<LockIcon />}
-              value={password}
-              onChange={setPassword}
-            />
           </div>
 
           <button
@@ -156,7 +148,7 @@ function LoginEmailPageContent() {
             disabled={isSubmitting}
             className="mt-7 w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? 'Sending OTP...' : 'Continue'}
+            {isSubmitting ? 'Sending Code...' : 'Continue'}
           </button>
 
           {errorMessage ? (
