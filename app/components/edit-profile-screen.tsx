@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell,
   ChevronRight,
+  History,
+  LogOut,
   Mail,
   Pencil,
   Phone,
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from './mobile-bottom-nav';
+import { useBooking } from '../lib/booking-state';
 
 interface ProfileState {
   id: string;
@@ -61,6 +64,12 @@ const quickLinks: QuickLinkItem[] = [
     title: 'Privacy Settings',
     description: 'Manage personal data and security',
   },
+  {
+    href: '/profile/booking-history',
+    icon: History,
+    title: 'Booking History',
+    description: 'See completed appointments and rebook your favorites',
+  },
 ];
 
 const surfaceClass =
@@ -102,6 +111,7 @@ function getAvatarFilePath(userId: string, file: File) {
 
 export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
   const router = useRouter();
+  const { clearState } = useBooking();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<ProfileState>(() => normalizeProfile(initialProfile));
   const [activeField, setActiveField] = useState<EditableField | null>(null);
@@ -197,6 +207,28 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
     setIsSaving(false);
     event.target.value = '';
     router.refresh();
+  }
+
+  async function handleLogOut() {
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        setMessage(error.message);
+        setIsSaving(false);
+        return;
+      }
+
+      clearState();
+      router.replace('/');
+    } catch {
+      setMessage('An unexpected error occurred during logout.');
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -341,6 +373,24 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
                 <ChevronRight size={20} className="text-neutral-500" strokeWidth={2.1} />
               </Link>
             ))}
+          </section>
+
+          <section>
+            <button
+              type="button"
+              onClick={handleLogOut}
+              disabled={isSaving}
+              className={`${surfaceClass} flex w-full items-center gap-3 p-4 text-red-600 transition-colors hover:bg-red-50`}
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <LogOut size={20} strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <h2 className="text-base font-semibold tracking-tight">Log Out</h2>
+                <p className="mt-1 text-sm text-red-500/70">Sign out of your account</p>
+              </div>
+              <ChevronRight size={20} className="text-red-300" strokeWidth={2.1} />
+            </button>
           </section>
         </div>
       </main>

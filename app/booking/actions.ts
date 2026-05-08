@@ -8,6 +8,10 @@ interface BookingMutationResult {
   message: string;
 }
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+type StaffIdRow = { id: string };
+type BookedStaffRow = { staff_id: string | null };
+
 function getStringValue(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
@@ -75,6 +79,9 @@ async function updateBooking(
     }
 
     revalidatePath('/booking');
+    revalidatePath('/bookings');
+    revalidatePath(`/bookings/${bookingId}`);
+    revalidatePath('/profile/booking-history');
     return {
       ok: true,
       message: 'Booking updated.',
@@ -103,6 +110,9 @@ async function updateBooking(
   }
 
   revalidatePath('/booking');
+  revalidatePath('/bookings');
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath('/profile/booking-history');
   return {
     ok: true,
     message: 'Booking updated.',
@@ -126,6 +136,7 @@ export async function cancelBooking(bookingId: string): Promise<BookingMutationR
   }
 
   revalidatePath('/booking-history');
+  revalidatePath('/profile/booking-history');
 
   return {
     ok: true,
@@ -170,7 +181,10 @@ export async function rescheduleBooking(formData: FormData): Promise<BookingMuta
 export async function createBooking(formData: FormData): Promise<BookingMutationResult & { bookingId?: string }> {
   const authResult = await getAuthenticatedClient();
   if ('ok' in authResult && !authResult.ok) return authResult as BookingMutationResult;
-  const { supabase, userId } = authResult as { supabase: any, userId: string };
+  const { supabase, userId } = authResult as {
+    supabase: SupabaseServerClient;
+    userId: string;
+  };
 
   const salonId = getStringValue(formData.get('salonId'));
   const serviceId = getStringValue(formData.get('serviceId'));
@@ -206,9 +220,13 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
       .eq('date', date)
       .not('status', 'eq', 'cancelled');
 
-    const bookedStaffIds = new Set((bookedBookings || []).map((b: any) => b.staff_id));
-    const availableStaffIds = allStaff
-      .map((s: any) => s.id)
+    const bookedStaffIds = new Set(
+      ((bookedBookings ?? []) as BookedStaffRow[])
+        .map((booking) => booking.staff_id)
+        .filter((staffMemberId): staffMemberId is string => Boolean(staffMemberId))
+    );
+    const availableStaffIds = ((allStaff ?? []) as StaffIdRow[])
+      .map((staffMember) => staffMember.id)
       .filter((id: string) => !bookedStaffIds.has(id));
 
     if (availableStaffIds.length === 0) {
@@ -239,7 +257,10 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
   }
 
   revalidatePath('/booking-history');
+  revalidatePath('/profile/booking-history');
   revalidatePath('/booking');
+  revalidatePath('/bookings');
+  revalidatePath(`/bookings/${data.id}`);
 
   return {
     ok: true,

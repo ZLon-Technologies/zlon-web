@@ -168,7 +168,7 @@ export function BookingCompleteScreen({
 
         <div className="mt-6 space-y-3">
           <Link prefetch={false}
-            href="/booking-history"
+            href="/bookings"
             className="inline-flex w-full items-center justify-center rounded-[1.5rem] bg-black px-4 py-3.5 text-base font-semibold text-white"
           >
             View My Bookings

@@ -82,9 +82,34 @@ function mapServiceRecordToBookingService(service: ServiceRecord): SalonService 
   };
 }
 
+function ServiceCardSkeleton() {
+  return (
+    <div className="rounded-[2rem] border border-transparent bg-white p-4 animate-pulse">
+      <div className="flex items-start justify-between gap-3">
+        <div className="h-6 w-20 rounded-full bg-neutral-100" />
+        <div className="h-5 w-5 rounded-full bg-neutral-100" />
+      </div>
+      <div className="mt-4 h-7 w-3/4 rounded-lg bg-neutral-100" />
+      <div className="mt-2 h-12 w-full rounded-lg bg-neutral-100" />
+      <div className="mt-4 flex items-center gap-3">
+        <div className="h-7 w-24 rounded-lg bg-neutral-100" />
+        <div className="h-5 w-16 rounded-lg bg-neutral-100" />
+      </div>
+      <div className="mt-5 h-11 w-full rounded-full bg-neutral-100" />
+    </div>
+  );
+}
+
 export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   const router = useRouter();
-  const { state: bookingState, updateSalon, addToCart, removeFromCart, subtotal } = useBooking();
+  const { 
+    state: bookingState, 
+    hasHydrated,
+    updateSalon, 
+    addToCart, 
+    removeFromCart, 
+    subtotal 
+  } = useBooking();
   const [salon, setSalon] = useState<SalonRecord | null>(null);
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All Services');
@@ -227,11 +252,12 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
 
       <main className="px-5 pt-3 pb-32">
         <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
-          <div className="relative h-56 overflow-hidden">
+          <div className="relative h-56 w-full overflow-hidden bg-neutral-100">
             <Image
               src={salonImage}
               alt={salonName}
               fill
+              priority
               sizes="(max-width: 480px) 100vw, 480px"
               className="object-cover"
             />
@@ -303,13 +329,19 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
           </div>
 
           <div className="space-y-4">
-            {isLoading && <p className="text-sm text-neutral-500">Loading services...</p>}
+            {isLoading && (
+              <>
+                <ServiceCardSkeleton />
+                <ServiceCardSkeleton />
+                <ServiceCardSkeleton />
+              </>
+            )}
             {!isLoading && error && <p className="text-sm text-neutral-500">{error}</p>}
             {!isLoading && !error && visibleServices.length === 0 && (
               <p className="text-sm text-neutral-500">No services available right now.</p>
             )}
 
-            {visibleServices.map((service) => {
+            {!isLoading && visibleServices.map((service) => {
               const selected = bookingState.cart.some(s => s.id === String(service.id));
               const serviceCategory = getServiceCategory(service);
               const usesScissors =
@@ -380,24 +412,34 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-5 py-3 shadow-[0_-16px_30px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm text-neutral-500">
-              {bookingState.cart.length} Service{bookingState.cart.length === 1 ? '' : 's'} Selected
-            </p>
-            <p className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
-              Subtotal: {formatCurrency(subtotal)}
-            </p>
+        {!hasHydrated ? (
+          <div className="flex items-center gap-3 animate-pulse opacity-50">
+            <div className="min-w-0 flex-1">
+              <div className="h-4 w-24 rounded bg-neutral-200" />
+              <div className="mt-2 h-6 w-32 rounded bg-neutral-200" />
+            </div>
+            <div className="h-11 w-28 rounded-[1.5rem] bg-neutral-200" />
           </div>
-          <button
-            type="button"
-            onClick={handleContinue}
-            disabled={bookingState.cart.length === 0}
-            className="inline-flex items-center justify-center rounded-[1.5rem] bg-black px-5 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Continue
-          </button>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-neutral-500">
+                {bookingState.cart.length} Service{bookingState.cart.length === 1 ? '' : 's'} Selected
+              </p>
+              <p className="mt-1 text-lg font-semibold tracking-tight text-neutral-950">
+                Subtotal: {formatCurrency(subtotal)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={bookingState.cart.length === 0}
+              className="inline-flex items-center justify-center rounded-[1.5rem] bg-black px-5 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Continue
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

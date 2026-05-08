@@ -22,6 +22,7 @@ export interface BookingState {
 
 interface BookingContextType {
   state: BookingState;
+  hasHydrated: boolean;
   updateSalon: (salon: Partial<BookingState['salon']>) => void;
   addToCart: (service: SalonService) => void;
   removeFromCart: (serviceId: string) => void;
@@ -51,26 +52,29 @@ const initialState: BookingState = {
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BookingState>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('zlon_booking_state_v2');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error('Failed to parse booking state', e);
-        }
+  const [state, setState] = useState<BookingState>(initialState);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  // Load from localStorage on mount (Client-side only)
+  useEffect(() => {
+    const saved = localStorage.getItem('zlon_booking_state_v2');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setState(parsed);
+      } catch (e) {
+        console.error('Failed to parse booking state', e);
       }
     }
-    return initialState;
-  });
+    setHasHydrated(true);
+  }, []);
 
   // Save to localStorage on change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (hasHydrated) {
       localStorage.setItem('zlon_booking_state_v2', JSON.stringify(state));
     }
-  }, [state]);
+  }, [state, hasHydrated]);
 
   const updateSalon = (salon: Partial<BookingState['salon']>) => {
     setState((prev) => ({ ...prev, salon: { ...prev.salon, ...salon } }));
@@ -113,6 +117,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     <BookingContext.Provider
       value={{
         state,
+        hasHydrated,
         updateSalon,
         addToCart,
         removeFromCart,

@@ -17,7 +17,7 @@ const accountManagementItems = [
     description: 'Update your credentials and keep your account secure.',
   },
   {
-    href: '/booking-history',
+    href: '/profile/booking-history',
     icon: History,
     title: 'Booking History',
     description: 'Review your past appointments and rebook in a tap.',

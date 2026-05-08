@@ -26,7 +26,7 @@ export function RescheduleBookingForm({ bookingId }: RescheduleBookingFormProps)
       setMessage(result.message);
 
       if (result.ok) {
-        router.push('/booking');
+        router.push(`/bookings/${bookingId}`);
         router.refresh();
       }
     });

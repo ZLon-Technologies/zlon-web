@@ -508,50 +508,6 @@ export default function HomePage() {
       calculateDistanceInKilometers(userLocation.lat, userLocation.lng, salonLat, salonLng) <= 5
     );
   });
-  const detectedNeighborhood = (() => {
-    const currentLat = userLocation.lat;
-    const currentLng = userLocation.lng;
-
-    if (currentLat === null || currentLng === null || userLocation.displayText !== 'Current Location') {
-      return null;
-    }
-
-    return salons.reduce<string | null>((nearestLocation, salon) => {
-      const salonLat = getNumericValue(salon.lat);
-      const salonLng = getNumericValue(salon.lng);
-
-      if (salonLat === null || salonLng === null || !salon.location?.trim()) {
-        return nearestLocation;
-      }
-
-      if (!nearestLocation) {
-        return salon.location;
-      }
-
-      const nearestSalon = salons.find((candidate) => candidate.location === nearestLocation);
-      const nearestSalonLat = getNumericValue(nearestSalon?.lat);
-      const nearestSalonLng = getNumericValue(nearestSalon?.lng);
-
-      if (nearestSalonLat === null || nearestSalonLng === null) {
-        return salon.location;
-      }
-
-      const nextDistance = calculateDistanceInKilometers(
-        currentLat,
-        currentLng,
-        salonLat,
-        salonLng
-      );
-      const currentDistance = calculateDistanceInKilometers(
-        currentLat,
-        currentLng,
-        nearestSalonLat,
-        nearestSalonLng
-      );
-
-      return nextDistance < currentDistance ? salon.location : nearestLocation;
-    }, null);
-  })();
   const locationDisplayLabel = isLocating
     ? 'Locating...'
     : userLocation.displayText !== 'Current Location'
@@ -767,7 +723,7 @@ export default function HomePage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Quick Rebook</h2>
                 <Link prefetch={false}
-                  href="/booking-history"
+                  href="/profile/booking-history"
                   className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   VIEW ALL
