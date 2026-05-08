@@ -19,8 +19,10 @@ function createImageFromScreenshot(screenshot: string) {
     image.onerror = () => reject(new Error('Unable to load webcam screenshot.'));
     image.src = screenshot;
   });
-}
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
+interface ScanResult {
+...
 export function AIFaceScannerScreen() {
   const webcamRef = useRef<Webcam | null>(null);
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
@@ -28,12 +30,42 @@ export function AIFaceScannerScreen() {
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [monthlyBookings] = useState(1);
-  const [hasPaid] = useState(false);
+  const [monthlyBookings, setMonthlyBookings] = useState(0);
+  const [hasPaid, setHasPaid] = useState(true); // Default to true (hiding paywall) if fetch fails
 
   const isPaywallBlocked = monthlyBookings < 3 && hasPaid === false;
 
   useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+
+    async function fetchProfile() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('monthly_bookings, has_paid, ai_scanner_access')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setMonthlyBookings(profile.monthly_bookings ?? 0);
+          setHasPaid(profile.has_paid ?? profile.ai_scanner_access ?? false);
+        } else {
+          setHasPaid(true); // Hide paywall if no profile
+        }
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+        setHasPaid(true); // Hide paywall on error
+      }
+    }
+
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+
     let isCancelled = false;
 
     async function initializeFaceLandmarker() {

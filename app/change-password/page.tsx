@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -73,6 +74,8 @@ export default function ChangePasswordPage() {
     next: false,
     confirm: false,
   });
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const passwordRequirements = [
     {
@@ -98,6 +101,39 @@ export default function ChangePasswordPage() {
       ...previous,
       [field]: !previous[field],
     }));
+  }
+
+  async function handleUpdatePassword() {
+    if (!newPassword || newPassword !== confirmPassword) {
+      setStatus({ type: 'error', message: 'New passwords do not match.' });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setStatus({ type: 'error', message: 'Password must be at least 8 characters.' });
+      return;
+    }
+
+    setIsUpdating(true);
+    setStatus(null);
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        setStatus({ type: 'error', message: error.message });
+      } else {
+        setStatus({ type: 'success', message: 'Password updated successfully.' });
+        setNewPassword('');
+        setConfirmPassword('');
+        setCurrentPassword('');
+      }
+    } catch (err) {
+      setStatus({ type: 'error', message: 'An unexpected error occurred.' });
+    } finally {
+      setIsUpdating(false);
+    }
   }
 
   return (
@@ -160,11 +196,19 @@ export default function ChangePasswordPage() {
               />
             </div>
 
+            {status && (
+              <div className={`mt-4 rounded-xl p-3 text-center text-sm ${status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                {status.message}
+              </div>
+            )}
+
             <button
               type="button"
-              className="mt-5 w-full rounded-full bg-black px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-95"
+              onClick={handleUpdatePassword}
+              disabled={isUpdating || !newPassword}
+              className="mt-5 w-full rounded-full bg-black px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-50"
             >
-              Update Password
+              {isUpdating ? 'Updating...' : 'Update Password'}
             </button>
 
             <div className="mt-6">
