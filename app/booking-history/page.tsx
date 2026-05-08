@@ -8,6 +8,7 @@ import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { MobileBottomNav } from '../components/mobile-bottom-nav';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -273,7 +274,7 @@ export default function BookingHistoryPage() {
           </section>
         </main>
 
-        <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white p-4 [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
+        <div className="fixed bottom-20 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white p-4">
           <Link prefetch={false}
             href="/home"
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-black px-5 py-4 text-base font-semibold text-white transition-opacity hover:opacity-95"
@@ -282,6 +283,8 @@ export default function BookingHistoryPage() {
             Book a New Appointment
           </Link>
         </div>
+
+        <MobileBottomNav />
       </div>
     </div>
   );
