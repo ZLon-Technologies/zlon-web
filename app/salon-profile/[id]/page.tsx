@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
-import { salons as localSalons } from '../../lib/booking-flow';
+import { getSalonById } from '../../lib/booking-flow';
 
 export const metadata: Metadata = {
   title: 'Salon Details',
@@ -95,7 +95,7 @@ function getSafeSalonRow(rawSalon: Record<string, unknown>): SalonRow | null {
 
 export default async function SalonProfilePage({ params }: SalonProfilePageProps) {
   const { id } = await params;
-  const localSalon = localSalons.find((salon) => salon.id === id) ?? null;
+  const localSalon = getSalonById(id) ?? null;
   let remoteSalon: SalonRow | null = null;
 
   try {

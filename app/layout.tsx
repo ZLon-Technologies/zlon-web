@@ -37,15 +37,14 @@ export const metadata: Metadata = {
 import { BookingProvider } from './lib/booking-state';
 // import { unstable_setRequestLocale } from 'next-intl/server';
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-  params: { locale = 'en' } = {},
+  params,
 }: Readonly<{
   children: React.ReactNode;
-  params?: { locale?: string };
+  params: Promise<{ locale?: string }>;
 }>) {
-  // i18n Localization Prep
-  // unstable_setRequestLocale(locale);
+  const { locale = 'en' } = await params;
 
   return (
     <html lang={locale} className={`${inter.className} h-full antialiased`} suppressHydrationWarning>

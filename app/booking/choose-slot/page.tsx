@@ -81,17 +81,17 @@ export default async function ChooseSlotPage({ searchParams }: ChooseSlotPagePro
       }));
     } else {
       const fallbackSalon = getSalonById(salonId);
-      salonName = fallbackSalon.name;
-      salonImage = fallbackSalon.image;
-      salonLocation = fallbackSalon.location;
-      salonDistance = fallbackSalon.distance;
+      salonName = fallbackSalon?.name ?? salonName;
+      salonImage = fallbackSalon?.image ?? salonImage;
+      salonLocation = fallbackSalon?.location ?? salonLocation;
+      salonDistance = fallbackSalon?.distance ?? salonDistance;
     }
   } catch (error) {
     const fallbackSalon = getSalonById(salonId);
-    salonName = fallbackSalon.name;
-    salonImage = fallbackSalon.image;
-    salonLocation = fallbackSalon.location;
-    salonDistance = fallbackSalon.distance;
+    salonName = fallbackSalon?.name ?? salonName;
+    salonImage = fallbackSalon?.image ?? salonImage;
+    salonLocation = fallbackSalon?.location ?? salonLocation;
+    salonDistance = fallbackSalon?.distance ?? salonDistance;
   }
 
   const salon: SalonProfile = {
@@ -114,7 +114,7 @@ export default async function ChooseSlotPage({ searchParams }: ChooseSlotPagePro
       ? dbServices 
       : cartServices.length > 0 
         ? cartServices 
-        : getServicesForSalon(getSalonById(salonId), selectedServiceIds);
+        : getServicesForSalon(salon, selectedServiceIds);
 
   return <ChooseSlotScreen salon={salon} selectedServices={selectedServices} />;
 }

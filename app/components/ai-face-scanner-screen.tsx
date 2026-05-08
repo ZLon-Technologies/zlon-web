@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { ArrowLeft, Camera, Crown, LockKeyhole, ScanFace, Sparkles } from 'lucide-react';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface ScanResult {
   faceShape: string;
@@ -19,10 +20,8 @@ function createImageFromScreenshot(screenshot: string) {
     image.onerror = () => reject(new Error('Unable to load webcam screenshot.'));
     image.src = screenshot;
   });
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+}
 
-interface ScanResult {
-...
 export function AIFaceScannerScreen() {
   const webcamRef = useRef<Webcam | null>(null);
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);

@@ -55,7 +55,7 @@ export function BookingCompleteScreen({
     (sum, service) => sum + service.durationMinutes,
     0
   );
-  const staffName = propStaffName || (state.appointment.staffId === 'any' ? 'Any Staff' : 'Professional Staff');
+  const staffName = propStaffName || (state.appointment.selectedStaffId === 'any' ? 'Any Staff' : 'Professional Staff');
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {

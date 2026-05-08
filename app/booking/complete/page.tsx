@@ -66,17 +66,21 @@ export default async function BookingCompletePage({
       salonDistance = salonData.distance || salonDistance;
     } else {
       const fallbackSalon = getSalonById(salonId);
+      if (fallbackSalon) {
+        salonName = fallbackSalon.name;
+        salonImage = fallbackSalon.image;
+        salonLocation = fallbackSalon.location;
+        salonDistance = fallbackSalon.distance;
+      }
+    }
+  } catch (error) {
+    const fallbackSalon = getSalonById(salonId);
+    if (fallbackSalon) {
       salonName = fallbackSalon.name;
       salonImage = fallbackSalon.image;
       salonLocation = fallbackSalon.location;
       salonDistance = fallbackSalon.distance;
     }
-  } catch (error) {
-    const fallbackSalon = getSalonById(salonId);
-    salonName = fallbackSalon.name;
-    salonImage = fallbackSalon.image;
-    salonLocation = fallbackSalon.location;
-    salonDistance = fallbackSalon.distance;
   }
 
   const salon: SalonProfile = {
@@ -98,8 +102,13 @@ export default async function BookingCompletePage({
     .map((serviceId) => serviceId.trim())
     .filter(Boolean);
   const cartServices = parseSelectedServices(params.cart);
+  const fallback = getSalonById(salonId);
   const selectedServices =
-    cartServices.length > 0 ? cartServices : getServicesForSalon(getSalonById(salonId), selectedServiceIds);
+    cartServices.length > 0
+      ? cartServices
+      : fallback
+        ? getServicesForSalon(fallback, selectedServiceIds)
+        : [];
   const total =
     Number(params.total) ||
     selectedServices.reduce((sum, service) => sum + service.price, 0);

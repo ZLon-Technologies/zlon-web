@@ -209,7 +209,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
     const bookedStaffIds = new Set((bookedBookings || []).map((b: any) => b.staff_id));
     const availableStaffIds = allStaff
       .map((s: any) => s.id)
-      .filter(id => !bookedStaffIds.has(id));
+      .filter((id: string) => !bookedStaffIds.has(id));
 
     if (availableStaffIds.length === 0) {
       return { ok: false, message: 'No staff available at this time.' };
