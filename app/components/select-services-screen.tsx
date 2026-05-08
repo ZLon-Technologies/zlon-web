@@ -21,9 +21,8 @@ interface SalonRecord {
   imageUrl?: string | null;
   image_url?: string | null;
   distance?: string | null;
-  location?: string | null;
+  address?: string | null;
   rating?: number | string | null;
-  services?: string[] | null;
 }
 
 interface ServiceRecord {
@@ -157,7 +156,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
           updateSalon({
             id: String(currentSalon.id),
             name: currentSalon.name,
-            location: currentSalon.location || (currentSalon as any).address,
+            address: currentSalon.address,
             image: currentSalon.image || currentSalon.image_url || currentSalon.imageUrl,
             distance: currentSalon.distance,
           });
@@ -200,17 +199,15 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   const locationLabel =
     [
       salon?.distance ? `${salon.distance} away` : null,
-      salon?.location ?? null,
+      salon?.address ?? null,
     ]
       .filter(Boolean)
       .join(' • ') || 'Location unavailable';
   
   const serviceTags =
-    Array.isArray(salon?.services) && salon.services.length > 0
-      ? salon.services
-      : categories
-          .filter((category) => category !== 'All Services')
-          .map((category) => category.toUpperCase());
+    categories
+      .filter((category) => category !== 'All Services')
+      .map((category) => category.toUpperCase());
 
   function handleBack() {
     if (window.history.length > 1) {

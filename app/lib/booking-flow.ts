@@ -21,10 +21,10 @@ export interface SalonProfile {
   name: string;
   image: string;
   distance: string;
-  location: string;
+  address: string;
   rating: number;
-  price: number;
-  services: string[];
+  lat: number;
+  lng: number;
   categories: Array<'All Services' | 'Haircut' | 'Shaving' | 'Face care'>;
   menu: SalonService[];
   staff: SalonStaff[];
@@ -37,10 +37,10 @@ const MOCK_SALONS: SalonProfile[] = [
     image:
       'https://images.unsplash.com/photo-1633681926022-ec8b1bc32b99?w=1200&h=900&fit=crop',
     distance: '2.4 km',
-    location: 'Domlur',
+    address: 'Domlur',
     rating: 4.6,
-    price: 450,
-    services: ['HAIR', 'BEARD', 'SKINCARE'],
+    lat: 12.9611,
+    lng: 77.6473,
     categories: ['All Services', 'Haircut', 'Shaving', 'Face care'],
     staff: [
       { id: 'aarav-r', name: 'Aarav R.', initials: 'AR', colorClass: 'bg-zinc-900 text-white' },

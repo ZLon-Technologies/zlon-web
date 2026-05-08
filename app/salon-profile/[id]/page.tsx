@@ -20,8 +20,7 @@ interface SalonRow {
   image?: string | null;
   image_url?: string | null;
   imageUrl?: string | null;
-  location?: string | null;
-  services?: string[] | string | null;
+  address?: string | null;
   amenities?: string[] | string | null;
   gallery?: string[] | string | null;
   photos?: string[] | string | null;
@@ -75,10 +74,7 @@ function getSafeSalonRow(rawSalon: Record<string, unknown>): SalonRow | null {
     image: getStringValue(rawSalon.image),
     image_url: getStringValue(rawSalon.image_url),
     imageUrl: getStringValue(rawSalon.imageUrl),
-    location: getStringValue(rawSalon.location),
-    services: Array.isArray(rawSalon.services) || typeof rawSalon.services === 'string'
-      ? (rawSalon.services as string[] | string)
-      : null,
+    address: getStringValue(rawSalon.address),
     amenities: Array.isArray(rawSalon.amenities) || typeof rawSalon.amenities === 'string'
       ? (rawSalon.amenities as string[] | string)
       : null,
@@ -128,11 +124,9 @@ export default async function SalonProfilePage({ params }: SalonProfilePageProps
     ...DEFAULT_GALLERY,
   ]);
   const locationText =
-    remoteSalon?.location?.trim() || localSalon?.location || 'Location unavailable';
+    remoteSalon?.address?.trim() || localSalon?.distance || 'Location unavailable';
   const amenities = dedupe([
     ...toStringArray(remoteSalon?.amenities),
-    ...toStringArray(remoteSalon?.services),
-    ...(localSalon?.services ?? []),
     'Premium Styling',
     'Clean Interiors',
     'Expert Consultation',

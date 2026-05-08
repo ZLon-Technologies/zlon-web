@@ -47,7 +47,7 @@ export function BookingCompleteScreen({
   const salon = {
     ...propSalon,
     name: propSalon.name !== 'Salon' ? propSalon.name : (state.salon.name || 'Salon'),
-    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (state.salon.location || 'Location unavailable'),
+    address: propSalon.address !== 'Location unavailable' ? propSalon.address : (state.salon.address || 'Location unavailable'),
   };
 
   const selectedServices = propServices.length > 0 ? propServices : state.cart;
@@ -104,7 +104,7 @@ export function BookingCompleteScreen({
               </h2>
               <p className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500">
                 <MapPin size={14} />
-                {salon.location}
+                {salon.address}
               </p>
             </div>
           </div>

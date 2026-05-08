@@ -38,7 +38,7 @@ export function ReviewBookingScreen({
     ...propSalon,
     id: propSalon.id || bookingState.salon.id,
     name: propSalon.name !== 'Salon' ? propSalon.name : (bookingState.salon.name || 'Salon'),
-    location: propSalon.location !== 'Location unavailable' ? propSalon.location : (bookingState.salon.location || 'Location unavailable'),
+    address: propSalon.address !== 'Location unavailable' ? propSalon.address : (bookingState.salon.address || 'Location unavailable'),
     image: propSalon.image || bookingState.salon.image || 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop',
     distance: propSalon.distance || bookingState.salon.distance || '',
   };
@@ -144,7 +144,7 @@ export function ReviewBookingScreen({
             <h2 className="text-xl font-semibold tracking-tight text-neutral-950">{salon.name}</h2>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-neutral-500">
               <MapPin size={14} />
-              {salon.distance ? `${salon.distance} away • ` : ''}{salon.location}
+              {salon.distance ? `${salon.distance} away • ` : ''}{salon.address}
             </p>
 
             <div className="mt-4 space-y-3">

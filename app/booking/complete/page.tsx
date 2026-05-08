@@ -62,14 +62,14 @@ export default async function BookingCompletePage({
       const salonData = data as any;
       salonName = data.name || salonName;
       salonImage = salonData.image || salonData.image_url || data.imageUrl || salonImage;
-      salonLocation = salonData.location || data.address || salonLocation;
+      salonLocation = data.address || salonLocation;
       salonDistance = salonData.distance || salonDistance;
     } else {
       const fallbackSalon = getSalonById(salonId);
       if (fallbackSalon) {
         salonName = fallbackSalon.name;
         salonImage = fallbackSalon.image;
-        salonLocation = fallbackSalon.location;
+        salonLocation = fallbackSalon.address;
         salonDistance = fallbackSalon.distance;
       }
     }
@@ -78,7 +78,7 @@ export default async function BookingCompletePage({
     if (fallbackSalon) {
       salonName = fallbackSalon.name;
       salonImage = fallbackSalon.image;
-      salonLocation = fallbackSalon.location;
+      salonLocation = fallbackSalon.address;
       salonDistance = fallbackSalon.distance;
     }
   }
@@ -88,10 +88,10 @@ export default async function BookingCompletePage({
     name: salonName,
     image: salonImage,
     distance: salonDistance,
-    location: salonLocation,
+    address: salonLocation,
     rating: 4.8,
-    price: 0,
-    services: [],
+    lat: 0,
+    lng: 0,
     categories: ['All Services'],
     menu: [],
     staff: [],

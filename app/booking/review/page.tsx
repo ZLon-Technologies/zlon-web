@@ -69,11 +69,12 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
           id,
           name,
           address,
-          location,
           imageUrl,
           image_url,
           image,
-          distance
+          distance,
+          lat,
+          lng
         )
       `)
       .eq('salon_id', salonId)
@@ -85,7 +86,7 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
       
       salonName = salonData.name || salonName;
       salonImage = salonData.imageUrl || salonData.image_url || salonData.image || salonImage;
-      salonLocation = salonData.location || salonData.address || salonLocation;
+      salonLocation = salonData.address || salonLocation;
       salonDistance = salonData.distance || salonDistance;
 
       dbServices = joinedData.map(s => ({
@@ -104,33 +105,33 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
       if (fallbackSalon) {
         salonName = fallbackSalon.name;
         salonImage = fallbackSalon.image;
-        salonLocation = fallbackSalon.location;
+        salonLocation = fallbackSalon.address;
         salonDistance = fallbackSalon.distance;
       }
     }
-  } catch (error) {
+    } catch (error) {
     const fallbackSalon = getSalonById(salonId);
     if (fallbackSalon) {
       salonName = fallbackSalon.name;
       salonImage = fallbackSalon.image;
-      salonLocation = fallbackSalon.location;
+      salonLocation = fallbackSalon.address;
       salonDistance = fallbackSalon.distance;
     }
-  }
+    }
 
-  const salon: SalonProfile = {
+    const salon: SalonProfile = {
     id: salonId,
     name: salonName,
     image: salonImage,
     distance: salonDistance,
-    location: salonLocation,
+    address: salonLocation,
     rating: 4.8,
-    price: 0,
-    services: [],
+    lat: 0,
+    lng: 0,
     categories: ['All Services'],
     menu: [],
     staff: [],
-  };
+    };
 
   const cartServices = parseSelectedServices(params.cart);
   const fallback = getSalonById(salonId);

@@ -30,10 +30,9 @@ interface SalonRecord {
   name: string | null;
   imageUrl?: string | null;
   image_url?: string | null;
-  location?: string | null;
-  price?: number | string | null;
-  lat?: number | string | null;
-  lng?: number | string | null;
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 interface UserLocationState {
@@ -67,15 +66,9 @@ function getSafeSalonRecord(rawSalon: Record<string, unknown>): SalonRecord | nu
       getStringValue(rawSalon.image_url) ??
       getStringValue(rawSalon.imageUrl) ??
       getStringValue(rawSalon.image),
-    location: getStringValue(rawSalon.address) ?? getStringValue(rawSalon.location),
-    price:
-      typeof rawSalon.price === 'number' || typeof rawSalon.price === 'string'
-        ? rawSalon.price
-        : null,
-    lat:
-      getNumericValue(rawSalon.latitude) ?? getNumericValue(rawSalon.lat),
-    lng:
-      getNumericValue(rawSalon.longitude) ?? getNumericValue(rawSalon.lng),
+    address: getStringValue(rawSalon.address),
+    lat: getNumericValue(rawSalon.lat),
+    lng: getNumericValue(rawSalon.lng),
   };
 }
 
@@ -342,11 +335,9 @@ export default function HomePage() {
       setError(null);
 
       try {
-        const categoryLabel = categories.find((c) => c.id === selected)?.label;
         const { data: salonData, error: salonsError } = await supabase
           .from('salons')
-          .select(CUSTOMER_SAFE_SALON_SELECT)
-          .contains('services', [categoryLabel]);
+          .select(CUSTOMER_SAFE_SALON_SELECT);
 
         if (salonsError) {
           throw salonsError;
@@ -537,14 +528,14 @@ export default function HomePage() {
     }
 
     const matchedSalon = salons.find((salon) => {
-      const salonLocation = salon.location?.toLowerCase().trim();
+      const salonAddress = salon.address?.toLowerCase().trim();
       const normalizedInput = nextLocation.toLowerCase();
 
-      if (!salonLocation) {
+      if (!salonAddress) {
         return false;
       }
 
-      return salonLocation.includes(normalizedInput) || normalizedInput.includes(salonLocation);
+      return salonAddress.includes(normalizedInput) || normalizedInput.includes(salonAddress);
     });
     const matchedLat = getNumericValue(matchedSalon?.lat);
     const matchedLng = getNumericValue(matchedSalon?.lng);
@@ -830,7 +821,6 @@ export default function HomePage() {
                   const salonId = String(salon.id);
                   const salonName = salon.name ?? 'Unnamed Salon';
                   const salonImage = salon.imageUrl ?? FALLBACK_SALON_IMAGE;
-                  const price = getNumericValue(salon.price);
                   const salonLat = getNumericValue(salon.lat);
                   const salonLng = getNumericValue(salon.lng);
                   const distanceFromUser =
@@ -848,7 +838,7 @@ export default function HomePage() {
                   const locationLabel =
                     [
                       distanceFromUser !== null ? `${distanceFromUser.toFixed(1)} km away` : null,
-                      salon.location ?? null,
+                      salon.address ?? null,
                     ]
                       .filter(Boolean)
                       .join(' • ') || 'Location unavailable';
@@ -885,23 +875,14 @@ export default function HomePage() {
                       </Link>
 
                       <div className="p-4 pt-4 flex flex-col h-full">
-                        {price !== null && (
-                          <div className="flex items-baseline gap-1 mb-4">
-                            <span className="text-xs text-gray-500">Starts from</span>
-                            <span className="text-xl font-bold text-gray-900">
-                              ₹{price}
-                            </span>
-                          </div>
-                        )}
-
                         {/* Service Tags */}
                         <div className="flex gap-2 mb-4">
                           <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
                             NEARBY
                           </span>
-                          {salon.location && (
+                          {salon.address && (
                             <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
-                              {salon.location}
+                              {salon.address}
                             </span>
                           )}
                         </div>

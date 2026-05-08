@@ -7,7 +7,7 @@ export interface BookingState {
   salon: {
     id: string | null;
     name: string | null;
-    location: string | null;
+    address: string | null;
     image: string | null;
     distance: string | null;
   };
@@ -36,7 +36,7 @@ const initialState: BookingState = {
   salon: {
     id: null,
     name: null,
-    location: null,
+    address: null,
     image: null,
     distance: null,
   },

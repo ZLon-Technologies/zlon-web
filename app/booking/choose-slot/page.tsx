@@ -83,14 +83,14 @@ export default async function ChooseSlotPage({ searchParams }: ChooseSlotPagePro
       const fallbackSalon = getSalonById(salonId);
       salonName = fallbackSalon?.name ?? salonName;
       salonImage = fallbackSalon?.image ?? salonImage;
-      salonLocation = fallbackSalon?.location ?? salonLocation;
+      salonLocation = fallbackSalon?.address ?? salonLocation;
       salonDistance = fallbackSalon?.distance ?? salonDistance;
     }
   } catch (error) {
     const fallbackSalon = getSalonById(salonId);
     salonName = fallbackSalon?.name ?? salonName;
     salonImage = fallbackSalon?.image ?? salonImage;
-    salonLocation = fallbackSalon?.location ?? salonLocation;
+    salonLocation = fallbackSalon?.address ?? salonLocation;
     salonDistance = fallbackSalon?.distance ?? salonDistance;
   }
 
@@ -99,10 +99,10 @@ export default async function ChooseSlotPage({ searchParams }: ChooseSlotPagePro
     name: salonName,
     image: salonImage,
     distance: salonDistance,
-    location: salonLocation,
+    address: salonLocation,
     rating: 4.8,
-    price: 0,
-    services: [],
+    lat: 0,
+    lng: 0,
     categories: ['All Services'],
     menu: [],
     staff: [],
