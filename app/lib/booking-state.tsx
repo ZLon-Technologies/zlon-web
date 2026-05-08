@@ -1,7 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import type { SalonService } from './booking-flow';
 
 export interface BookingState {
@@ -57,58 +56,62 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
   // Load from localStorage on mount (Client-side only)
   useEffect(() => {
-    const saved = localStorage.getItem('zlon_booking_state_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setState(parsed);
-      } catch (e) {
-        console.error('Failed to parse booking state', e);
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('zlon_booking_state_v2');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setState(parsed);
+        } catch (e) {
+          console.error('Failed to parse booking state', e);
+        }
       }
+      setHasHydrated(true);
     }
-    setHasHydrated(true);
   }, []);
 
   // Save to localStorage on change
   useEffect(() => {
-    if (hasHydrated) {
+    if (hasHydrated && typeof window !== 'undefined') {
       localStorage.setItem('zlon_booking_state_v2', JSON.stringify(state));
     }
   }, [state, hasHydrated]);
 
-  const updateSalon = (salon: Partial<BookingState['salon']>) => {
+  const updateSalon = useCallback((salon: Partial<BookingState['salon']>) => {
     setState((prev) => ({ ...prev, salon: { ...prev.salon, ...salon } }));
-  };
+  }, []);
 
-  const addToCart = (service: SalonService) => {
+  const addToCart = useCallback((service: SalonService) => {
     setState((prev) => {
       if (prev.cart.some(s => s.id === service.id)) return prev;
       return { ...prev, cart: [...prev.cart, service] };
     });
-  };
+  }, []);
 
-  const removeFromCart = (serviceId: string) => {
+  const removeFromCart = useCallback((serviceId: string) => {
     setState((prev) => ({
       ...prev,
       cart: prev.cart.filter((s) => s.id !== serviceId),
     }));
-  };
+  }, []);
 
-  const setCart = (services: SalonService[]) => {
+  const setCart = useCallback((services: SalonService[]) => {
     setState((prev) => ({ ...prev, cart: services }));
-  };
+  }, []);
 
-  const updateAppointment = (appointment: Partial<BookingState['appointment']>) => {
+  const updateAppointment = useCallback((appointment: Partial<BookingState['appointment']>) => {
     setState((prev) => ({
       ...prev,
       appointment: { ...prev.appointment, ...appointment },
     }));
-  };
+  }, []);
 
-  const clearState = () => {
+  const clearState = useCallback(() => {
     setState(initialState);
-    localStorage.removeItem('zlon_booking_state_v2');
-  };
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('zlon_booking_state_v2');
+    }
+  }, []);
 
   const subtotal = state.cart.reduce((sum, s) => sum + s.price, 0);
   const totalDuration = state.cart.reduce((sum, s) => sum + s.durationMinutes, 0);

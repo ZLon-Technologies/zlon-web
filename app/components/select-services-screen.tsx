@@ -121,6 +121,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
     let isMounted = true;
 
     async function fetchSalonDetails() {
+      console.log('[Services] Fetching details for salon:', salonId);
       setIsLoading(true);
       setError(null);
 
@@ -131,13 +132,22 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
             supabase.from('services').select('*').eq('salon_id', salonId),
           ]);
 
-        if (salonError) throw salonError;
-        if (servicesError) throw servicesError;
+        if (salonError) {
+          console.error('[Services] Salon fetch error:', salonError);
+          throw salonError;
+        }
+        if (servicesError) {
+          console.error('[Services] Services fetch error:', servicesError);
+          throw servicesError;
+        }
 
         if (!isMounted) return;
 
         const nextServices = (servicesData ?? []) as ServiceRecord[];
         const currentSalon = (salonData ?? null) as SalonRecord | null;
+
+        console.log('[Services] Fetched services count:', nextServices.length);
+        console.log('[Services] Fetched salon name:', currentSalon?.name);
 
         setSalon(currentSalon);
         setServices(nextServices);
