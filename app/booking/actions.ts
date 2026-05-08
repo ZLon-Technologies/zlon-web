@@ -192,6 +192,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
   const slot = getStringValue(formData.get('slot'));
   const staffId = getStringValue(formData.get('staffId')) || 'any';
   const totalAmount = Number(formData.get('totalAmount') || 0);
+  const paymentMethod = getStringValue(formData.get('paymentMethod')) || 'pay-at-salon';
 
   if (!salonId || !serviceId || !date || !slot) {
     return { ok: false, message: 'Missing booking details.' };
@@ -207,7 +208,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
       .from('staff')
       .select('id')
       .eq('salon_id', salonId);
-    
+
     if (!allStaff || allStaff.length === 0) {
       return { ok: false, message: 'No staff available for this salon.' };
     }
@@ -236,6 +237,36 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
     assignedStaffId = availableStaffIds[Math.floor(Math.random() * availableStaffIds.length)];
   }
 
+  // Wallet payment handling
+  if (paymentMethod === 'wallet') {
+    const { data: walletData, error: walletFetchError } = await supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (walletFetchError && !isMissingColumnError(walletFetchError, 'user_id')) {
+      return { ok: false, message: `Wallet check failed: ${walletFetchError.message}` };
+    }
+
+    const currentBalance = (walletData as { balance?: number } | null)?.balance ?? 0;
+
+    if (currentBalance < totalAmount) {
+      return { ok: false, message: 'Insufficient wallet balance. Please try another payment method.' };
+    }
+
+    const newBalance = currentBalance - totalAmount;
+
+    const { error: walletUpdateError } = await supabase
+      .from('wallets')
+      .upsert({ user_id: userId, balance: newBalance, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+
+    if (walletUpdateError) {
+      return { ok: false, message: `Wallet update failed: ${walletUpdateError.message}` };
+    }
+  }
+
   const { data, error } = await supabase
     .from('bookings')
     .insert({
@@ -248,6 +279,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
       status: 'upcoming',
       date: date,
       time_slot: slot,
+      payment_method: paymentMethod,
     })
     .select('id')
     .single();

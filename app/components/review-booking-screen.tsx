@@ -86,6 +86,7 @@ export function ReviewBookingScreen({
     formData.append('slot', selectedSlot);
     formData.append('staffId', staffId);
     formData.append('totalAmount', String(total));
+    formData.append('paymentMethod', paymentMethod);
 
     createBooking(formData).then((result) => {
       if (result.ok) {
