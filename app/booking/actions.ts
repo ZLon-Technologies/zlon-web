@@ -422,6 +422,9 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      return { ok: false, message: 'This slot was just booked by someone else. Please choose another time.' };
+    }
     return { ok: false, message: error.message };
   }
 

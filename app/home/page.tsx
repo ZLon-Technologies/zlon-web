@@ -502,18 +502,32 @@ export default function HomePage() {
     : userLocation.displayText !== 'Current Location'
       ? userLocation.displayText.trim()
       : 'Select Location';
+
+  const salonResults = searchResults.filter((result) => result.result_type === 'salon');
+  const serviceResults = searchResults.filter((result) => result.result_type === 'service');
+
+  const servicesGroupedBySalon = serviceResults.reduce((acc, result) => {
+    const salonName = result.salon_name ?? 'ZLon Salon';
+    if (!acc[salonName]) {
+      acc[salonName] = [];
+    }
+    acc[salonName].push(result);
+    return acc;
+  }, {} as Record<string, typeof serviceResults>);
+
   const groupedSearchResults = [
-    {
+    ...(salonResults.length > 0 ? [{
       type: 'salon',
       label: 'Salons',
-      results: searchResults.filter((result) => result.result_type === 'salon'),
-    },
-    {
-      type: 'service',
-      label: 'Services',
-      results: searchResults.filter((result) => result.result_type === 'service'),
-    },
-  ] as const;
+      results: salonResults,
+    }] : []),
+    ...Object.entries(servicesGroupedBySalon).map(([salonName, results]) => ({
+      type: `service-${salonName}`,
+      label: `Services at ${salonName}`,
+      results,
+    }))
+  ];
+  
   const shouldShowSearchResults = showResults && searchQuery.trim().length >= 2;
 
   const handleManualLocationSave = (event: React.FormEvent<HTMLFormElement>) => {
@@ -655,9 +669,9 @@ export default function HomePage() {
                               className="block px-4 py-3 text-sm text-gray-900 hover:bg-gray-50 transition-colors border-l-2 border-transparent hover:border-gray-900"
                             >
                               {result.result_type === 'service'
-                                ? `${result.name} at ${result.salon_name ?? 'ZLon'} - ${
+                                ? `${result.name} - ${
                                     result.price !== null && result.price !== undefined
-                                      ? `₹${result.price}`
+                                      ? result.price === 0 ? 'Free' : `₹${result.price}`
                                       : 'Price unavailable'
                                   }`
                                 : result.name}

@@ -158,6 +158,23 @@ export function BookingCompleteScreen({
           <p className="mt-2 text-sm leading-6 text-white/70">
             Give 20% off to your friends and earn credits for your next visit.
           </p>
+          <button 
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({
+                  title: 'ZLon Salon Booking',
+                  text: 'Hey! Use my referral code to get 20% off your first booking at ZLon.',
+                  url: 'https://zlon.app/referral/welcome'
+                }).catch(console.error);
+              } else {
+                navigator.clipboard.writeText('https://zlon.app/referral/welcome');
+                alert('Referral link copied to clipboard!');
+              }
+            }}
+            className="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+          >
+            Share Referral Link
+          </button>
         </div>
 
         <div className="mt-6 space-y-3">

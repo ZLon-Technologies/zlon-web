@@ -2,10 +2,10 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseConfig } from './config';
 
-const AUTH_PATHS = new Set(['/', '/login', '/login-email', '/register', '/signup', '/verify-otp']);
+const AUTH_PATHS = new Set(['/', '/login', '/login-email', '/register', '/signup', '/verify-otp', '/forgot-password']);
 const PROTECTED_PATH_PREFIXES = [
   '/booking',
-  '/create-account',
+  '/bookings',
   '/dashboard',
   '/home',
   '/profile',
@@ -81,8 +81,8 @@ export async function updateSession(request: NextRequest) {
       },
     });
 
-    const { data, error } = await supabase.auth.getClaims();
-    const isAuthenticated = !error && Boolean(data?.claims?.sub);
+    const { data, error } = await supabase.auth.getUser();
+    const isAuthenticated = !error && Boolean(data?.user);
     const pathname = request.nextUrl.pathname;
 
     if (!isAuthenticated && isProtectedPath(pathname)) {

@@ -32,6 +32,7 @@ export const metadata: Metadata = {
   other: {
     'apple-mobile-web-app-title': 'ZLon',
   },
+  manifest: '/manifest.json',
 };
 
 import { BookingProvider } from './lib/booking-state';
