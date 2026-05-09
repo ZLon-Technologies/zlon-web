@@ -12,10 +12,10 @@ import {
 } from 'lucide-react';
 import { MobileBottomNav } from './mobile-bottom-nav';
 
-type TransactionType = 'credit' | 'debit';
-type TransactionKind = 'topup' | 'booking' | 'refund';
+export type TransactionType = 'credit' | 'debit';
+export type TransactionKind = 'topup' | 'booking' | 'refund';
 
-interface Transaction {
+export interface Transaction {
   id: string;
   title: string;
   meta: string;
@@ -24,43 +24,7 @@ interface Transaction {
   kind: TransactionKind;
 }
 
-const initialBalance = 2450;
 const presetAmounts = [100, 500, 1000] as const;
-
-const initialTransactions: Transaction[] = [
-  {
-    id: 'booking-classic-haircut',
-    title: 'Paid for Classic Haircut',
-    meta: 'Today, 10:30 AM • Completed',
-    amount: 1200,
-    type: 'debit',
-    kind: 'booking',
-  },
-  {
-    id: 'refund-beard-trim',
-    title: 'Refund for Beard Trim',
-    meta: 'Yesterday, 2:15 PM • Processed',
-    amount: 300,
-    type: 'credit',
-    kind: 'refund',
-  },
-  {
-    id: 'topup-upi',
-    title: 'Added Money via UPI',
-    meta: 'Apr 22, 09:00 AM • Success',
-    amount: 1000,
-    type: 'credit',
-    kind: 'topup',
-  },
-  {
-    id: 'booking-facial-cleanup',
-    title: 'Paid for Facial Cleanup',
-    meta: 'Apr 20, 5:45 PM • Completed',
-    amount: 650,
-    type: 'debit',
-    kind: 'booking',
-  },
-];
 
 const surfaceClass =
   'rounded-[1.5rem] border border-black/10 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]';
@@ -94,10 +58,16 @@ function transactionIcon(kind: TransactionKind, type: TransactionType) {
   };
 }
 
-export function WalletScreen() {
+interface WalletScreenProps {
+  initialBalance: number;
+  initialTransactions: Transaction[];
+}
+
+export function WalletScreen({ initialBalance, initialTransactions }: WalletScreenProps) {
   const [currentBalance, setCurrentBalance] = useState(initialBalance);
   const [amount, setAmount] = useState('500');
   const [transactions, setTransactions] = useState(initialTransactions);
+
 
   const rechargeAmount = useMemo(() => {
     const parsedValue = Number(amount);

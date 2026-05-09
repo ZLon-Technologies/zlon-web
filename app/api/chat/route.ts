@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     // 1. Safely extract messages and optional data (image) from the request
     const body = await request.json();
-    const { messages, data } = body;
+    const { messages, image } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ error: 'Messages are required' }, { status: 400 });
@@ -85,15 +85,15 @@ NEVER share personal phone numbers or personal email addresses of any ZLon emplo
 // Add a space fallback so it never sends an empty string
 let parts: any[] = [{ text: userMessage ? userMessage : ' ' }];
 
-    // Strictly validate that imageUrl exists, is a string, and actually contains data
-    if (data && typeof data.imageUrl === 'string' && data.imageUrl.trim().length > 0) {
+    // Strictly validate that image exists, is a string, and actually contains data
+    if (image && typeof image === 'string' && image.trim().length > 0) {
       // Safely extract the base64 string, handling cases with or without the data URI prefix
-      const base64Data = data.imageUrl.includes(',') ? data.imageUrl.split(',')[1] : data.imageUrl;
+      const base64Data = image.includes(',') ? image.split(',')[1] : image;
       
       // Final safety check before pushing to the Gemini array
       if (base64Data && base64Data.trim().length > 0) {
         // Dynamically detect mimeType from the data URL prefix if possible, fallback to image/jpeg
-        const mimeMatch = data.imageUrl.match(/data:([^;]+);/);
+        const mimeMatch = image.match(/data:([^;]+);/);
         const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
 
         parts.push({

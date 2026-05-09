@@ -16,10 +16,7 @@ interface BookingCompleteScreenProps {
   total: number;
   paymentMethod: 'wallet' | 'pay-at-salon';
   staffName?: string;
-}
-
-function createBookingId() {
-  return `ZL-${Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, '0')}`;
+  bookingId: string;
 }
 
 export function BookingCompleteScreen({
@@ -30,9 +27,9 @@ export function BookingCompleteScreen({
   total,
   paymentMethod,
   staffName: propStaffName,
+  bookingId,
 }: BookingCompleteScreenProps) {
   const { state, clearState, totalDuration: storeDuration } = useBooking();
-  const [bookingId, setBookingId] = useState('');
 
   // Redirect if state is empty
   useEffect(() => {
@@ -57,14 +54,11 @@ export function BookingCompleteScreen({
   );
   const staffName = propStaffName || (state.appointment.selectedStaffId === 'any' ? 'Any Staff' : 'Professional Staff');
 
+  // Clear state when user leaves this page (cleanup on unmount)
   useEffect(() => {
-    const timerId = window.setTimeout(() => {
-      setBookingId(createBookingId());
-      // Clear state after successful booking
+    return () => {
       clearState();
-    }, 0);
-
-    return () => window.clearTimeout(timerId);
+    };
   }, [clearState]);
 
   return (

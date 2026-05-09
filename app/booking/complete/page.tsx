@@ -20,6 +20,7 @@ interface BookingCompletePageProps {
     total?: string;
     payment?: 'wallet' | 'pay-at-salon';
     staff?: string;
+    bookingId?: string;
   }>;
 }
 
@@ -29,6 +30,7 @@ export default async function BookingCompletePage({
   const params = await searchParams;
   const salonId = params.salon ?? '';
   const staffId = params.staff ?? 'any';
+  const bookingId = params.bookingId ?? '';
   
   let salonName = 'Salon';
   let salonImage = 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
@@ -122,6 +124,7 @@ export default async function BookingCompletePage({
       total={total}
       paymentMethod={params.payment ?? 'wallet'}
       staffName={staffName}
+      bookingId={bookingId}
     />
   );
 }

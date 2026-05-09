@@ -124,7 +124,7 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
   const [selectedStaffId, setSelectedStaffId] = useState('any');
   const [selectedSlot, setSelectedSlot] = useState('');
   
-  const [dailyBookings, setDailyBookings] = useState<Array<{ staff_id: string, time_slot: string }>>([]);
+  const [dailyBookings, setDailyBookings] = useState<Array<{ staff_id: string, time_slot: string, duration: number }>>([]);
   const [staffList, setStaffList] = useState<Array<{ id: string, name: string, initials?: string, color_class?: string, colorClass?: string }>>([]);
 
   useEffect(() => {
@@ -134,30 +134,36 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     async function fetchData() {
       console.log('Fetching data for salon_id:', salon.id, 'and date:', selectedDate);
       try {
-        const [bookingsRes, staffRes] = await Promise.all([
+        const [bookingsRes, staffRes, servicesRes] = await Promise.all([
           supabase
             .from('bookings')
-            .select('staff_id, time_slot, appointment_timestamp')
+            .select('staff_id, time_slot, appointment_timestamp, service_id')
             .eq('salon_id', salon.id)
-            .eq('date', selectedDate),
+            .eq('date', selectedDate)
+            .not('status', 'eq', 'cancelled'),
           supabase
             .from('staff')
             .select('*')
+            .eq('salon_id', salon.id),
+          supabase
+            .from('services')
+            .select('id, duration_minutes')
             .eq('salon_id', salon.id)
         ]);
 
         if (bookingsRes.error) console.error('Bookings fetch error:', bookingsRes.error);
         if (staffRes.error) console.error('Staff fetch error:', staffRes.error);
 
-        console.log('Fetched Staff:', staffRes.data);
-        console.log('Fetched Bookings:', bookingsRes.data);
+        const servicesMap = new Map((servicesRes.data || []).map(s => [String(s.id), Number(s.duration_minutes) || 0]));
 
-        if (staffRes.data && staffRes.data.length === 0) {
-          console.warn('No staff found for salon_id:', salon.id);
-        }
+        const processedBookings = (bookingsRes.data || []).map(b => {
+          const serviceIds = (b.service_id || '').split(',').map((id: string) => id.trim());
+          const duration = serviceIds.reduce((sum: number, id: string) => sum + (servicesMap.get(id) || 0), 0);
+          return { staff_id: b.staff_id, time_slot: b.time_slot, duration: duration || 30 }; // default to 30 if 0
+        });
 
         if (isMounted) {
-          setDailyBookings(bookingsRes.data || []);
+          setDailyBookings(processedBookings);
           setStaffList(staffRes.data || []);
         }
       } catch (err) {
@@ -169,14 +175,33 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     return () => { isMounted = false; };
   }, [salon.id, selectedDate]);
 
+  function parseTimeToMinutes(timeStr: string) {
+    if (!timeStr) return 0;
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+
   function checkSlotAvailability(slotTime: string) {
+    const newStart = parseTimeToMinutes(slotTime);
+    const newEnd = newStart + totalDurationMinutes;
+
+    const isOverlap = (b: { time_slot: string, duration: number }) => {
+      const bStart = parseTimeToMinutes(b.time_slot);
+      const bEnd = bStart + b.duration;
+      // Overlap condition: start1 < end2 && start2 < end1
+      return newStart < bEnd && bStart < newEnd;
+    };
+
     if (selectedStaffId === 'any') {
-      // Slot is booked only if ALL staff members are booked at this time
-      const bookedCount = dailyBookings.filter(b => b.time_slot === slotTime).length;
-      return staffList.length > 0 && bookedCount >= staffList.length;
+      // Find all distinct staff members that have overlapping bookings
+      const bookedStaffIds = new Set(dailyBookings.filter(isOverlap).map(b => b.staff_id));
+      return staffList.length > 0 && bookedStaffIds.size >= staffList.length;
     } else {
-      // Slot is booked if the SPECIFIC selected staff is booked at this time
-      return dailyBookings.some(b => b.time_slot === slotTime && b.staff_id === selectedStaffId);
+      // Slot is booked if the SPECIFIC selected staff has an overlapping booking
+      return dailyBookings.some(b => b.staff_id === selectedStaffId && isOverlap(b));
     }
   }
 

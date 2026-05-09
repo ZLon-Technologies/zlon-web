@@ -81,7 +81,7 @@ export function ReviewBookingScreen({
     
     const formData = new FormData();
     formData.append('salonId', salon.id || '');
-    formData.append('serviceId', selectedServices[0]?.id || '');
+    formData.append('serviceId', selectedServices.map((service) => service.id).join(','));
     formData.append('date', selectedDate);
     formData.append('slot', selectedSlot);
     formData.append('staffId', staffId);

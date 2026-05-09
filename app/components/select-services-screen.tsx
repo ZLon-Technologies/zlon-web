@@ -388,7 +388,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
                   <div className="mt-4 flex items-center gap-3 text-neutral-600">
                     <span className="text-xl font-semibold text-neutral-950">
                       {numericPrice !== null
-                        ? formatCurrency(numericPrice)
+                        ? numericPrice === 0 ? 'Free' : formatCurrency(numericPrice)
                         : service.price || 'Price on request'}
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-sm">

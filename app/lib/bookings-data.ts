@@ -142,6 +142,14 @@ function getRelation(row: RawRecord, key: string) {
   return value && typeof value === 'object' ? (value as RawRecord) : null;
 }
 
+function getRelations(row: RawRecord, key: string): RawRecord[] {
+  const value = row[key];
+  if (Array.isArray(value)) {
+    return value.filter(v => v && typeof v === 'object') as RawRecord[];
+  }
+  return value && typeof value === 'object' ? [value as RawRecord] : [];
+}
+
 function getIdValue(value: unknown) {
   if (typeof value === 'string' && value.trim().length > 0) {
     return value.trim();
@@ -272,13 +280,22 @@ function mapBookingRow(row: RawRecord) {
   }
 
   const salon = getRelation(row, 'salons');
-  const service = getRelation(row, 'services');
+  const services = getRelations(row, 'services');
+  const service = services[0] ?? null;
   const staff = getRelation(row, 'staff');
   const appointmentAt = getAppointmentDate(row);
   const statusKey = normalizeStatus(getFirstString(row, ['status']));
   const dateLabel = formatDateLabel(appointmentAt);
   const timeLabel = formatTimeLabel(appointmentAt, row);
   const servicePrice = getNumericValue(row.total_amount) ?? (service ? getNumericValue(service.price) : null) ?? 0;
+
+  let serviceName = 'Salon Service';
+  if (services.length > 0) {
+    const firstServiceName = getFirstString(services[0], ['name']);
+    if (firstServiceName) {
+      serviceName = services.length === 1 ? firstServiceName : `${firstServiceName} +${services.length - 1} more`;
+    }
+  }
 
   return {
     id: String(idValue),
@@ -288,7 +305,7 @@ function mapBookingRow(row: RawRecord) {
     salonName: (salon ? getFirstString(salon, ['name']) : null) ?? 'ZLon Salon',
     salonImage: (salon ? getFirstString(salon, ['imageUrl']) : null) ?? FALLBACK_SALON_IMAGE,
     salonLocation: (salon ? getFirstString(salon, ['address']) : null) ?? 'Location unavailable',
-    serviceName: (service ? getFirstString(service, ['name']) : null) ?? 'Salon Service',
+    serviceName,
     staffName: (staff ? getFirstString(staff, ['name']) : null) ?? 'Assigned Professional',
     staffTitle: 'Salon professional',
     statusKey,
@@ -381,6 +398,45 @@ async function attachStaffDetails(
   });
 }
 
+async function attachServiceDetails(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  rows: RawRecord[]
+) {
+  const allServiceIds = new Set<string>();
+
+  rows.forEach((row) => {
+    const ids = getIdValue(row.service_id).split(',').map(s => s.trim()).filter(Boolean);
+    ids.forEach(id => allServiceIds.add(id));
+  });
+
+  if (allServiceIds.size === 0) {
+    return rows;
+  }
+
+  const { data, error } = await supabase
+    .from('services')
+    .select('id,name,price,duration_minutes')
+    .in('id', Array.from(allServiceIds));
+
+  if (error || !data) {
+    return rows;
+  }
+
+  const serviceLookup = new Map(
+    (data as RawRecord[]).map((s) => [getIdValue(s.id), s])
+  );
+
+  return rows.map((row) => {
+    const ids = getIdValue(row.service_id).split(',').map(s => s.trim()).filter(Boolean);
+    const resolvedServices = ids.map(id => serviceLookup.get(id)).filter(Boolean);
+    
+    if (resolvedServices.length > 0) {
+      return { ...row, services: resolvedServices } satisfies RawRecord;
+    }
+    return row;
+  });
+}
+
 async function runJoinedBookingQuery(options: { bookingId?: string }) {
   const supabase = await createSupabaseServerClient();
   const userId = await getAuthenticatedUserId(supabase);
@@ -411,13 +467,15 @@ async function runJoinedBookingQuery(options: { bookingId?: string }) {
       : await buildQuery();
 
     if (!result.error) {
-      const rows = options.bookingId
+      let rows = options.bookingId
         ? result.data
           ? [result.data as unknown as RawRecord]
           : []
         : ((result.data ?? []) as unknown as RawRecord[]);
 
-      return attachStaffDetails(supabase, rows);
+      rows = await attachStaffDetails(supabase, rows);
+      rows = await attachServiceDetails(supabase, rows);
+      return rows;
     }
 
     lastError = result.error;
@@ -433,6 +491,7 @@ async function runJoinedBookingQuery(options: { bookingId?: string }) {
 
   return [];
 }
+
 
 function byUpcomingOrder(firstBooking: BookingSnapshot, secondBooking: BookingSnapshot) {
   return firstBooking.sortTime - secondBooking.sortTime;
