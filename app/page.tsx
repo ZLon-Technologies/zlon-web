@@ -119,9 +119,22 @@ function LandingPageContent() {
       >
         <h2 className="text-2xl font-bold mb-6 text-center text-black tracking-tight">Welcome Back</h2>
 
-        <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors">
-          <div className="pl-3 pr-1 font-semibold text-black text-sm">
-            +91
+        <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors relative">
+          <div className="relative flex items-center pl-3 pr-1 gap-1">
+            <span className="font-semibold text-black text-sm">{countryCode}</span>
+            <ChevronDown size={14} className="text-gray-500" />
+            <select
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
+              aria-label="Select Country Code"
+            >
+              {COUNTRY_CODES.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.name} ({item.code})
+                </option>
+              ))}
+            </select>
           </div>
           <div className="w-px h-6 bg-gray-300 mx-2" />
           <input
