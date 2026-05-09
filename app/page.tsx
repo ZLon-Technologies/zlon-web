@@ -5,16 +5,23 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Mail } from 'lucide-react';
+import { Mail, ChevronDown } from 'lucide-react';
 
-function getPhoneNumber(phone: string) {
+const COUNTRY_CODES = [
+  { code: '+91', name: 'IN' },
+  { code: '+1', name: 'US' },
+  { code: '+44', name: 'UK' },
+  { code: '+61', name: 'AU' },
+];
+
+function getPhoneNumber(phone: string, countryCode: string) {
   const digitsOnly = phone.replace(/\D/g, '').slice(0, 10);
 
   if (digitsOnly.length !== 10) {
     return null;
   }
 
-  return `+91${digitsOnly}`;
+  return `${countryCode}${digitsOnly}`;
 }
 
 function getSafeRedirectPath(pathname: string | null, fallback: string) {
@@ -31,6 +38,7 @@ function LandingPageContent() {
   const supabase = createSupabaseBrowserClient();
   const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -39,7 +47,7 @@ function LandingPageContent() {
   async function handlePhoneLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const normalizedPhone = getPhoneNumber(phone);
+    const normalizedPhone = getPhoneNumber(phone, countryCode);
 
     if (!normalizedPhone) {
       setErrorMessage('Enter a valid 10-digit phone number.');
