@@ -1,9 +1,7 @@
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { FALLBACK_SALON_IMAGE } from './media';
 
 type RawRecord = Record<string, unknown>;
-
-const FALLBACK_SALON_IMAGE =
-  'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
 
 const BOOKING_SELECT_VARIANTS: string[] = [
   `

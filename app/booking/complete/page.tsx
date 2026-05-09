@@ -3,6 +3,7 @@ import { BookingCompleteScreen } from '../../components/booking-complete-screen'
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile } from '../../lib/booking-flow';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
+import { FALLBACK_SALON_IMAGE } from '../../lib/media';
 
 export const metadata: Metadata = {
   title: 'Booking Complete',
@@ -33,7 +34,7 @@ export default async function BookingCompletePage({
   const bookingId = params.bookingId ?? '';
   
   let salonName = 'Salon';
-  let salonImage = 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
+  let salonImage = FALLBACK_SALON_IMAGE;
   let salonLocation = 'Location unavailable';
   let salonDistance = '';
   let staffName = staffId === 'any' ? 'Any Staff' : 'Professional Staff';

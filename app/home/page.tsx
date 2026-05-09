@@ -9,6 +9,7 @@ import { mapBookingRows } from '../lib/booking-records';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
+import { FALLBACK_SALON_IMAGE } from '../lib/media';
 
 const categories = [
   { id: 'haircut', label: 'Haircut', icon: Scissors },
@@ -40,9 +41,6 @@ interface UserLocationState {
   lng: number | null;
   displayText: string;
 }
-
-const FALLBACK_SALON_IMAGE =
-  'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
 
 function getStringValue(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value : null;

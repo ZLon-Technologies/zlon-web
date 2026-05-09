@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ReviewBookingScreen } from '../../components/review-booking-screen';
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { FALLBACK_SALON_IMAGE } from '../../lib/media';
 
 export const metadata: Metadata = {
   title: 'Review Booking',

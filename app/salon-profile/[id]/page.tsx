@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin } from 'lucide-react';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
 import { getSalonById } from '../../lib/booking-flow';
+import { FALLBACK_SALON_IMAGE, DEFAULT_GALLERY } from '../../lib/media';
 
 export const metadata: Metadata = {
   title: 'Salon Details',
@@ -27,14 +28,6 @@ interface SalonRow {
   about?: string | null;
   description?: string | null;
 }
-
-const FALLBACK_SALON_IMAGE =
-  'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
-
-const DEFAULT_GALLERY = [
-  'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=1200&h=900&fit=crop',
-  'https://images.unsplash.com/photo-1512690459411-b0fdacec10fd?w=1200&h=900&fit=crop',
-];
 
 function getStringValue(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value : null;

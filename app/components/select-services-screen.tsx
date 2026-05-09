@@ -9,6 +9,7 @@ import type { SalonService } from '../lib/booking-flow';
 import { formatCurrency, serializeSelectedServices } from '../lib/booking-flow';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
 import { useBooking } from '../lib/booking-state';
+import { FALLBACK_SALON_IMAGE } from '../lib/media';
 
 interface SelectServicesScreenProps {
   salonId: string;
@@ -37,9 +38,6 @@ interface ServiceRecord {
   description?: string | null;
   featured?: boolean | null;
 }
-
-const FALLBACK_SALON_IMAGE =
-  'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
 
 function getNumericValue(value: number | string | null | undefined) {
   if (typeof value === 'number') {

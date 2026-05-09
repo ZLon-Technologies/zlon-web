@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ChooseSlotScreen } from '../../components/choose-slot-screen';
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { FALLBACK_SALON_IMAGE } from '../../lib/media';
 
 export const metadata: Metadata = {
   title: 'Choose Slot',
@@ -26,7 +27,7 @@ export default async function ChooseSlotPage({ searchParams }: ChooseSlotPagePro
     .filter(Boolean);
 
   let salonName = 'Salon';
-  let salonImage = 'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
+  let salonImage = FALLBACK_SALON_IMAGE;
   let salonLocation = 'Location unavailable';
   let salonDistance = '';
   let dbServices: SalonService[] = [];

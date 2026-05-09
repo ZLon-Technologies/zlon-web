@@ -1,5 +1,4 @@
-const FALLBACK_SALON_IMAGE =
-  'https://images.unsplash.com/photo-1585747860715-cd4628902d4a?w=1200&h=900&fit=crop';
+import { FALLBACK_SALON_IMAGE } from './media';
 
 type RawRow = Record<string, unknown>;
 
