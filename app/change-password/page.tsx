@@ -129,7 +129,7 @@ export default function ChangePasswordPage() {
         setConfirmPassword('');
         setCurrentPassword('');
       }
-    } catch (err) {
+    } catch {
       setStatus({ type: 'error', message: 'An unexpected error occurred.' });
     } finally {
       setIsUpdating(false);

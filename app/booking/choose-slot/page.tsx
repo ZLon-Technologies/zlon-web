@@ -87,7 +87,7 @@ export default async function ChooseSlotPage({ searchParams }: ChooseSlotPagePro
       salonLocation = fallbackSalon?.address ?? salonLocation;
       salonDistance = fallbackSalon?.distance ?? salonDistance;
     }
-  } catch (error) {
+  } catch {
     const fallbackSalon = getSalonById(salonId);
     salonName = fallbackSalon?.name ?? salonName;
     salonImage = fallbackSalon?.image ?? salonImage;

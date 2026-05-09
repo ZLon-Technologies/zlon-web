@@ -10,7 +10,6 @@ interface BookingMutationResult {
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 type StaffIdRow = { id: string };
-type BookedStaffRow = { staff_id: string | null };
 
 function getStringValue(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
@@ -284,10 +283,11 @@ export async function rescheduleBooking(formData: FormData): Promise<BookingMuta
 function parseTimeToMinutes(timeStr: string) {
   if (!timeStr) return 0;
   const [time, period] = timeStr.split(' ');
-  let [hours, minutes] = time.split(':').map(Number);
-  if (period === 'PM' && hours !== 12) hours += 12;
-  if (period === 'AM' && hours === 12) hours = 0;
-  return hours * 60 + minutes;
+  const [hours, minutes] = time.split(':').map(Number);
+  let adjustedHours = hours;
+  if (period === 'PM' && adjustedHours !== 12) adjustedHours += 12;
+  if (period === 'AM' && adjustedHours === 12) adjustedHours = 0;
+  return adjustedHours * 60 + minutes;
 }
 
 export async function createBooking(formData: FormData): Promise<BookingMutationResult & { bookingId?: string }> {

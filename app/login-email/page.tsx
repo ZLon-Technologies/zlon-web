@@ -25,21 +25,6 @@ function EnvelopeIcon() {
   );
 }
 
-function LockIcon() {
-  return (
-    <svg
-      className="h-5 w-5 text-gray-500"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path d="M8 10V8a4 4 0 1 1 8 0v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <rect x="5" y="10" width="14" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
 function InputField({
   id,
   type,
@@ -85,7 +70,6 @@ function LoginEmailPageContent() {
   const supabase = createSupabaseBrowserClient();
   const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

@@ -76,7 +76,7 @@ export default async function BookingCompletePage({
         salonDistance = fallbackSalon.distance;
       }
     }
-  } catch (error) {
+  } catch {
     const fallbackSalon = getSalonById(salonId);
     if (fallbackSalon) {
       salonName = fallbackSalon.name;

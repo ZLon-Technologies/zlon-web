@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const cityOrTown = locality || district || sublocality || 'Unknown Location';
 
     return NextResponse.json({ city: cityOrTown });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch geocoding data' }, { status: 500 });
   }
 }

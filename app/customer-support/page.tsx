@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bot, Camera, Paperclip, Send, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Bot, Camera, Paperclip, Send, X } from 'lucide-react';
 import Image from 'next/image';
 
 interface ChatMessage {

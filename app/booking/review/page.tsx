@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { ReviewBookingScreen } from '../../components/review-booking-screen';
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
-import { FALLBACK_SALON_IMAGE } from '../../lib/media';
 
 export const metadata: Metadata = {
   title: 'Review Booking',
@@ -110,7 +109,7 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
         salonDistance = fallbackSalon.distance;
       }
     }
-    } catch (error) {
+    } catch {
     const fallbackSalon = getSalonById(salonId);
     if (fallbackSalon) {
       salonName = fallbackSalon.name;
