@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { Mail } from 'lucide-react';
 
 function getPhoneNumber(phone: string) {
   const digitsOnly = phone.replace(/\D/g, '').slice(0, 10);
@@ -92,7 +93,7 @@ function LandingPageContent() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center px-5 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center px-5 py-12 bg-white">
       {/* Hidden SEO text — readable by search crawlers and screen readers but invisible to sighted users */}
       <h1 className="sr-only">
         ZLon — Premium Salon & Grooming Booking Platform
@@ -101,12 +102,12 @@ function LandingPageContent() {
         Discover and book top-rated salons across India. From haircuts and spa treatments to full grooming sessions, ZLon lets you browse real-time availability, compare prices, and pay seamlessly with the built-in wallet — all in one app.
       </p>
 
-      <div className="mb-10">
+      <div className="mb-10 bg-transparent">
         <Image
           src="/logo.png"
           alt="ZLon Logo"
-          width={120}
-          height={120}
+          width={100}
+          height={100}
           priority
           className="mx-auto object-contain"
         />
@@ -114,14 +115,15 @@ function LandingPageContent() {
 
       <form
         onSubmit={handlePhoneLogin}
-        className="w-full max-w-sm rounded-[2.5rem] bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-10"
+        className="w-full max-w-sm"
       >
-        <h2 className="mb-8 text-center text-3xl font-bold text-black">Welcome Back</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-black tracking-tight">Welcome Back</h2>
 
-        <div className="mb-6 flex gap-3">
-          <div className="flex w-20 items-center justify-center rounded-2xl bg-gray-100 py-4 font-medium text-black">
+        <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors">
+          <div className="pl-3 pr-1 font-semibold text-black text-sm">
             +91
           </div>
+          <div className="w-px h-6 bg-gray-300 mx-2" />
           <input
             type="tel"
             inputMode="numeric"
@@ -134,38 +136,37 @@ function LandingPageContent() {
               }
             }}
             placeholder="Enter Number"
-            className="flex-1 rounded-2xl bg-gray-100 py-4 pl-5 text-black placeholder-gray-400 focus:outline-none"
+            className="flex-1 bg-transparent py-4 pr-4 text-black placeholder-gray-400 focus:outline-none font-medium"
           />
         </div>
 
         <button
           type="submit"
           disabled={isSendingOtp || isGoogleLoading}
-          className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-70"
+          className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-70 shadow-lg shadow-black/10"
         >
           {isSendingOtp ? 'Sending OTP...' : 'Send OTP'}
         </button>
 
         {errorMessage ? (
-          <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p>
+          <p className="mt-4 text-center text-sm text-red-500 font-medium">{errorMessage}</p>
         ) : null}
 
         <div className="my-8 flex items-center">
-          <div className="flex-grow border-t border-gray-200" />
-          <span className="mx-4 text-xs font-medium tracking-widest text-gray-400">OR SIGN IN WITH</span>
-          <div className="flex-grow border-t border-gray-200" />
+          <div className="flex-grow border-t border-gray-100" />
+          <span className="mx-4 text-[10px] font-bold tracking-[0.2em] text-gray-400 uppercase">OR CONTINUE WITH</span>
+          <div className="flex-grow border-t border-gray-100" />
         </div>
 
-        <div className="mb-8 flex justify-center gap-8">
+        <div className="space-y-3">
           <button
             type="button"
-            className="focus:outline-none"
+            className="w-full border border-gray-300 rounded-xl py-3.5 flex items-center justify-center gap-3 bg-white transition-all hover:bg-gray-50 active:scale-[0.99] disabled:opacity-50"
             onClick={handleGoogleLogin}
             disabled={isSendingOtp || isGoogleLoading}
-            aria-label="Continue with Google"
           >
             <svg
-              className="h-10 w-10"
+              className="h-5 w-5"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -187,35 +188,22 @@ function LandingPageContent() {
                 fill="#EA4335"
               />
             </svg>
+            <span className="text-sm font-semibold text-gray-700">Continue with Google</span>
           </button>
 
           <button
             type="button"
-            className="focus:outline-none"
+            className="w-full border border-gray-300 rounded-xl py-3.5 flex items-center justify-center gap-3 bg-white transition-all hover:bg-gray-50 active:scale-[0.99]"
             onClick={() => router.push('/login-email')}
-            aria-label="Continue with email"
           >
-            <svg
-              className="h-10 w-10"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect x="2" y="4" width="20" height="16" rx="2" fill="#7C2D12" />
-              <path
-                d="M2 7l10 6 10-6"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Mail size={20} className="text-gray-700" />
+            <span className="text-sm font-semibold text-gray-700">Continue with Email</span>
           </button>
         </div>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="mt-8 text-center text-sm text-gray-500">
           Don&apos;t have an account?{' '}
-          <Link prefetch={false} href="/signup" className="cursor-pointer font-semibold text-gray-800 hover:underline">
+          <Link prefetch={false} href="/signup" className="cursor-pointer font-bold text-black hover:underline">
             Sign Up
           </Link>
         </p>

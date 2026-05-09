@@ -261,14 +261,25 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     { label: 'Evening Slots', icon: Moon, slots: [] as SlotOption[] },
   ];
 
+  // Get current time label for today comparison
+  const currentTimeLabel = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date());
+
   ALL_SLOTS.forEach(slotDef => {
     const isBooked = checkSlotAvailability(slotDef.time);
+
+    // Check if the slot time is in the past (only for today)
+    const today = formatDateId(new Date());
+    const isPastSlot = selectedDate === today && slotDef.time <= currentTimeLabel;
 
     const groupIndex = slotGroups.findIndex(g => g.label === slotDef.group);
     if (groupIndex !== -1) {
       slotGroups[groupIndex].slots.push({
         time: slotDef.time,
-        state: isBooked ? 'booked' : 'available'
+        state: isBooked || isPastSlot ? 'booked' : 'available'
       });
     }
   });
