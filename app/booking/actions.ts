@@ -59,11 +59,11 @@ async function updateBooking(
     .from('bookings')
     .update(values)
     .eq('id', bookingId)
-    .eq('customer_id', userId)
+    .eq('user_id', userId)
     .select('id')
     .maybeSingle();
 
-  if (ownedUpdate.error && !isMissingColumnError(ownedUpdate.error, 'customer_id')) {
+  if (ownedUpdate.error && !isMissingColumnError(ownedUpdate.error, 'user_id')) {
     return {
       ok: false,
       message: ownedUpdate.error.message,
@@ -138,7 +138,7 @@ export async function cancelBooking(bookingId: string): Promise<BookingMutationR
     .from('bookings')
     .select('payment_method, total_amount, status')
     .eq('id', safeBookingId)
-    .eq('customer_id', userId)
+    .eq('user_id', userId)
     .single();
 
   if (bookingError || !bookingData) {
@@ -216,7 +216,7 @@ export async function rescheduleBooking(formData: FormData): Promise<BookingMuta
     .from('bookings')
     .select('salon_id, staff_id, service_id, status')
     .eq('id', bookingId)
-    .eq('customer_id', userId)
+    .eq('user_id', userId)
     .single();
 
   if (!bookingData || bookingData.status === 'cancelled') {
@@ -407,7 +407,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
   const { data, error } = await supabase
     .from('bookings')
     .insert({
-      customer_id: userId,
+      user_id: userId,
       salon_id: salonId,
       service_id: serviceId,
       staff_id: assignedStaffId,

@@ -30,7 +30,7 @@ export default async function WalletPage() {
 
   const [{ data: walletData }, { data: bookingsData }] = await Promise.all([
     supabase.from('wallets').select('balance').eq('user_id', userId).maybeSingle(),
-    supabase.from('bookings').select('id, total_amount, created_at, status, salons:salon_id(name)').eq('customer_id', userId).eq('payment_method', 'wallet').order('created_at', { ascending: false }),
+    supabase.from('bookings').select('id, total_amount, created_at, status, salons:salon_id(name)').eq('user_id', userId).eq('payment_method', 'wallet').order('created_at', { ascending: false }),
   ]);
 
   const initialBalance = walletData?.balance || 0;

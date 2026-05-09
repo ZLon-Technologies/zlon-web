@@ -298,7 +298,7 @@ export default function HomePage() {
 
         const [{ data: bookingData, error: bookingsError }, { data: profileData }] =
           await Promise.all([
-            supabase.from('bookings').select('*').eq('customer_id', userId),
+            supabase.from('bookings').select('*').eq('user_id', userId),
             supabase.from('profiles').select('full_name, email, ai_scanner_access').eq('id', userId).maybeSingle(),
           ]);
 

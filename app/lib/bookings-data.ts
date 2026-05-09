@@ -450,7 +450,7 @@ async function runJoinedBookingQuery(options: { bookingId?: string }) {
       let query = supabase
         .from('bookings')
         .select(select)
-        .eq('customer_id', userId)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (options.bookingId) {
