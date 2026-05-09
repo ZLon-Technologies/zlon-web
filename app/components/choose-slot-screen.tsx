@@ -261,19 +261,20 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
     { label: 'Evening Slots', icon: Moon, slots: [] as SlotOption[] },
   ];
 
-  // Get current time label for today comparison
-  const currentTimeLabel = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date());
+  const now = new Date();
+  const todayId = formatDateId(now);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   ALL_SLOTS.forEach(slotDef => {
     const isBooked = checkSlotAvailability(slotDef.time);
 
-    // Check if the slot time is in the past (only for today)
-    const today = formatDateId(new Date());
-    const isPastSlot = selectedDate === today && slotDef.time <= currentTimeLabel;
+    // Check if the slot time is in the past
+    let isPastSlot = false;
+    if (selectedDate < todayId) {
+      isPastSlot = true;
+    } else if (selectedDate === todayId) {
+      isPastSlot = parseTimeToMinutes(slotDef.time) < currentMinutes;
+    }
 
     const groupIndex = slotGroups.findIndex(g => g.label === slotDef.group);
     if (groupIndex !== -1) {
