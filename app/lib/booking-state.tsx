@@ -51,31 +51,27 @@ const initialState: BookingState = {
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BookingState>(initialState);
-  const [hasHydrated, setHasHydrated] = useState(false);
-
-  // Load from localStorage on mount (Client-side only)
-  useEffect(() => {
+  const [state, setState] = useState<BookingState>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zlon_booking_state_v2');
       if (saved) {
         try {
-          const parsed = JSON.parse(saved);
-          setState(parsed);
+          return JSON.parse(saved) as BookingState;
         } catch (e) {
           console.error('Failed to parse booking state', e);
         }
       }
-      setHasHydrated(true);
     }
-  }, []);
+    return initialState;
+  });
+  const hasHydrated = true;
 
   // Save to localStorage on change
   useEffect(() => {
-    if (hasHydrated && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('zlon_booking_state_v2', JSON.stringify(state));
     }
-  }, [state, hasHydrated]);
+  }, [state]);
 
   const updateSalon = useCallback((salon: Partial<BookingState['salon']>) => {
     setState((prev) => ({ ...prev, salon: { ...prev.salon, ...salon } }));

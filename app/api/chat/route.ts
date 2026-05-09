@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, Part } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -83,7 +83,7 @@ NEVER share personal phone numbers or personal email addresses of any ZLon emplo
     // 3. Construct the message parts array safely
     const userMessage = messages[messages.length - 1].content;
 // Add a space fallback so it never sends an empty string
-const parts: unknown[] = [{ text: userMessage ? userMessage : ' ' }];
+const parts: Part[] = [{ text: userMessage ? userMessage : ' ' }];
 
     // Strictly validate that image exists, is a string, and actually contains data
     if (image && typeof image === 'string' && image.trim().length > 0) {

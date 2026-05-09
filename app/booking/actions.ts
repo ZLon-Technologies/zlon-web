@@ -248,10 +248,10 @@ export async function rescheduleBooking(formData: FormData): Promise<BookingMuta
   const newStart = parseTimeToMinutes(timeSlot);
   const newEnd = newStart + totalDuration;
 
-  const isOverlap = (b: any) => {
+  const isOverlap = (b: { service_id: string | null; time_slot: string | null }) => {
     const sIds = (b.service_id || '').split(',').map((id: string) => id.trim());
     const duration = sIds.reduce((sum: number, id: string) => sum + (servicesMap.get(id) || 0), 0);
-    const bStart = parseTimeToMinutes(b.time_slot);
+    const bStart = parseTimeToMinutes(b.time_slot || '');
     const bEnd = bStart + (duration || 30);
     return newStart < bEnd && bStart < newEnd;
   };
@@ -337,10 +337,10 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
   const newStart = parseTimeToMinutes(slot);
   const newEnd = newStart + totalDuration;
 
-  const isOverlap = (b: any) => {
+  const isOverlap = (b: { service_id: string | null; time_slot: string | null }) => {
     const serviceIds = (b.service_id || '').split(',').map((id: string) => id.trim());
     const duration = serviceIds.reduce((sum: number, id: string) => sum + (servicesMap.get(id) || 0), 0);
-    const bStart = parseTimeToMinutes(b.time_slot);
+    const bStart = parseTimeToMinutes(b.time_slot || '');
     const bEnd = bStart + (duration || 30);
     return newStart < bEnd && bStart < newEnd;
   };

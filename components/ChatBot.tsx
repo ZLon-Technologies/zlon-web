@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Bot, Send, X, MessageSquare } from 'lucide-react';
 
 interface ChatMessage {
@@ -31,14 +31,14 @@ export function ChatBot({ isOpen: externalIsOpen, onClose }: ChatBotProps) {
 
   const isExpanded = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setInternalIsOpen(false);
     if (onClose) onClose();
-  };
+  }, [onClose]);
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     setInternalIsOpen(true);
-  };
+  }, []);
 
   useEffect(() => {
     if (messagesEndRef.current) {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ReviewBookingScreen } from '../../components/review-booking-screen';
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import type { SalonData } from '@/lib/types/booking';
 
 export const metadata: Metadata = {
   title: 'Review Booking',
@@ -82,7 +83,7 @@ export default async function ReviewBookingPage({ searchParams }: ReviewBookingP
 
     if (!error && joinedData && joinedData.length > 0) {
       const firstRecord = joinedData[0];
-      const salonData = firstRecord.salon as any;
+      const salonData = (firstRecord.salon as SalonData[])[0];
       
       salonName = salonData.name || salonName;
       salonImage = salonData.imageUrl || salonData.image_url || salonData.image || salonImage;

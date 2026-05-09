@@ -4,6 +4,7 @@ import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile 
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
 import { FALLBACK_SALON_IMAGE } from '../../lib/media';
+import type { SalonData } from '@/lib/types/booking';
 
 export const metadata: Metadata = {
   title: 'Booking Complete',
@@ -62,7 +63,7 @@ export default async function BookingCompletePage({
       .maybeSingle();
 
     if (data) {
-      const salonData = data as any;
+      const salonData = data as SalonData;
       salonName = data.name || salonName;
       salonImage = salonData.image || salonData.image_url || data.imageUrl || salonImage;
       salonLocation = data.address || salonLocation;

@@ -4,6 +4,14 @@ import type { TransactionType, TransactionKind, Transaction } from '../component
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
+interface WalletBooking {
+  id: string | number;
+  total_amount: number | string;
+  created_at: string;
+  status: string;
+  salons: { name: string }[];
+}
+
 export const metadata: Metadata = {
   title: 'Wallet',
 };
@@ -35,9 +43,9 @@ export default async function WalletPage() {
 
   const initialBalance = walletData?.balance || 0;
   
-  const initialTransactions: Transaction[] = (bookingsData || []).map((booking: any) => ({
+  const initialTransactions: Transaction[] = (bookingsData || []).map((booking: WalletBooking) => ({
     id: String(booking.id),
-    title: booking.status === 'cancelled' ? `Refund for ${booking.salons?.name || 'Booking'}` : `Paid for ${booking.salons?.name || 'Booking'}`,
+    title: booking.status === 'cancelled' ? `Refund for ${booking.salons?.[0]?.name || 'Booking'}` : `Paid for ${booking.salons?.[0]?.name || 'Booking'}`,
     meta: `${formatDateLabel(new Date(booking.created_at))} • ${booking.status === 'cancelled' ? 'Refunded' : 'Completed'}`,
     amount: Number(booking.total_amount),
     type: (booking.status === 'cancelled' ? 'credit' : 'debit') as TransactionType,

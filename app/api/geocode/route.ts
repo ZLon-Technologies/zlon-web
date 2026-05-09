@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface GoogleAddressComponent {
+  long_name: string;
+  short_name: string;
+  types: string[];
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get('lat');
@@ -28,9 +34,9 @@ export async function GET(request: NextRequest) {
     const addressComponents = data.results[0]?.address_components || [];
     
     // Find locality (city), administrative_area_level_2 (district/city), or administrative_area_level_3 (town)
-    const locality = addressComponents.find((c: any) => c.types.includes('locality'))?.long_name;
-    const district = addressComponents.find((c: any) => c.types.includes('administrative_area_level_2'))?.long_name;
-    const sublocality = addressComponents.find((c: any) => c.types.includes('sublocality_level_1'))?.long_name;
+    const locality = addressComponents.find((c: GoogleAddressComponent) => c.types.includes('locality'))?.long_name;
+    const district = addressComponents.find((c: GoogleAddressComponent) => c.types.includes('administrative_area_level_2'))?.long_name;
+    const sublocality = addressComponents.find((c: GoogleAddressComponent) => c.types.includes('sublocality_level_1'))?.long_name;
 
     const cityOrTown = locality || district || sublocality || 'Unknown Location';
 
