@@ -632,7 +632,7 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="bg-white border-b border-gray-200 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
           <div className="flex items-center justify-between gap-4">
             <Image
               src="/logo.png"
@@ -665,9 +665,9 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="px-5 pt-4 pb-20">
+        <div className="px-5 pt-3 pb-20">
           {/* Search Bar */}
-          <div className="mb-6 relative">
+          <div className="mb-5 relative">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input

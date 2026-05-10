@@ -60,7 +60,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-gray-900">
         <LoadingProvider>
           <BookingProvider>
-            <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col pb-24 safe-area-pt safe-area-pb">
+            <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col pb-24 safe-area-pb">
               {children}
             </div>
           </BookingProvider>
