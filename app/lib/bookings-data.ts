@@ -21,12 +21,6 @@ const BOOKING_SELECT_VARIANTS: string[] = [
       name,
       address,
       imageUrl
-    ),
-    services:service_id (
-      id,
-      name,
-      price,
-      duration_minutes
     )
   `,
   `
@@ -39,19 +33,7 @@ const BOOKING_SELECT_VARIANTS: string[] = [
     date,
     time_slot,
     total_amount,
-    created_at,
-    salons:salon_id (
-      id,
-      name,
-      address,
-      imageUrl
-    ),
-    services:service_id (
-      id,
-      name,
-      price,
-      duration_minutes
-    )
+    created_at
   `,
 ];
 
