@@ -1,3 +1,5 @@
+export const generateStaticParams = () => [];
+
 import { redirect } from 'next/navigation';
 
 interface RescheduleBookingPageProps {

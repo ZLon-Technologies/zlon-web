@@ -1,16 +1,16 @@
-import type { Metadata } from 'next';
-import { SelectServicesScreen } from '../../components/select-services-screen';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Services',
-};
+export const generateStaticParams = () => [];
+
+import { use } from 'react';
+import { SelectServicesScreen } from '../../components/select-services-screen';
 
 interface SalonServicesPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function SalonServicesPage({ params }: SalonServicesPageProps) {
-  const { id } = await params;
+export default function SalonServicesPage({ params }: SalonServicesPageProps) {
+  const { id } = use(params);
 
   return <SelectServicesScreen salonId={id} />;
 }

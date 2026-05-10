@@ -1,29 +1,14 @@
-import { createServerClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+// import { createServerClient } from '@supabase/ssr';
+// import { cookies } from 'next/headers';
 import { getSupabaseConfig } from './config';
 
+/**
+ * createClient is disabled for static export as it depends on 'next/headers'.
+ * refactor to client-side Supabase calls for Capacitor.
+ */
 export async function createClient() {
-  const cookieStore = await cookies();
-  const { url, publishableKey } = getSupabaseConfig();
-
-  return createServerClient(url, publishableKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        } catch {
-          // Server Components can read cookies but may not be able to write them.
-          // The root proxy refreshes the session cookie when needed.
-        }
-      },
-    },
-  });
+  throw new Error('createClient (SSR) is not supported in static export mode.');
 }
 
 export function createAdminClient() {

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { CalendarDays, Clock3, Info, MapPin, Scissors } from 'lucide-react';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
-import { cancelBooking } from './actions';
+import { cancelBooking } from '@/app/wallet/actions';
 import type { BookingDetails } from './booking-details-types';
 
 interface BookingDetailsScreenProps {

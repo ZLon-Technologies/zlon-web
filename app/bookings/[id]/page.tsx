@@ -1,18 +1,18 @@
-import type { Metadata } from 'next';
+'use client';
+
+export const generateStaticParams = () => [];
+
+import { useState, useEffect, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, CalendarDays, MapPin, MessageCircleMore, Wallet } from 'lucide-react';
 import { BookingDetailActions } from './booking-detail-actions';
-import { getBookingById } from '../../lib/bookings-data';
+import { getBookingById, type BookingSnapshot } from '../../lib/bookings-data';
 
 interface BookingDetailPageProps {
   params: Promise<{ id: string }>;
 }
-
-export const metadata: Metadata = {
-  title: 'Booking Detail',
-};
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -31,9 +31,29 @@ function getInitials(name: string) {
     .join('');
 }
 
-export default async function BookingDetailPage({ params }: BookingDetailPageProps) {
-  const { id } = await params;
-  const booking = await getBookingById(id);
+export default function BookingDetailPage({ params }: BookingDetailPageProps) {
+  const { id } = use(params);
+  const [booking, setBooking] = useState<BookingSnapshot | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadBooking() {
+      try {
+        const data = await getBookingById(id);
+        setBooking(data);
+      } catch (error) {
+        console.error('Error loading booking:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadBooking();
+  }, [id]);
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
 
   if (!booking) {
     notFound();
@@ -93,7 +113,7 @@ export default async function BookingDetailPage({ params }: BookingDetailPagePro
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-black/10 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+          <section className="rounded-[1.75rem] border border-black/10 bg-white p-4 shadow-[0_10px_24_rgba(15,23,42,0.08)]">
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,_#f0c7a2_18%,_#d38d60_36%,_#27272a_37%,_#27272a_100%)] text-base font-semibold text-white">
                 {getInitials(booking.staffName) || 'SP'}

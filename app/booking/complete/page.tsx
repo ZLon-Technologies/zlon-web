@@ -1,130 +1,142 @@
-import type { Metadata } from 'next';
+'use client';
+
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { BookingCompleteScreen } from '../../components/booking-complete-screen';
-import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile } from '../../lib/booking-flow';
-import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
+import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
 import { FALLBACK_SALON_IMAGE } from '../../lib/media';
 import type { SalonData } from '@/lib/types/booking';
 
-export const metadata: Metadata = {
-  title: 'Booking Complete',
-};
+export default function BookingCompletePage() {
+  const searchParams = useSearchParams();
+  const salonId = searchParams.get('salon') ?? '';
+  const staffId = searchParams.get('staff') ?? 'any';
+  const bookingId = searchParams.get('bookingId') ?? '';
+  const dateParam = searchParams.get('date') ?? '';
+  const slotParam = searchParams.get('slot') ?? '';
+  const totalParam = searchParams.get('total') ?? '';
+  const paymentParam = searchParams.get('payment') as 'wallet' | 'pay-at-salon' | null;
+  const servicesParam = searchParams.get('services') ?? '';
+  const cartParam = searchParams.get('cart') ?? '';
 
-interface BookingCompletePageProps {
-  searchParams: Promise<{
-    salon?: string;
-    services?: string;
-    cart?: string;
-    totalPrice?: string;
-    totalDuration?: string;
-    date?: string;
-    slot?: string;
-    total?: string;
-    payment?: 'wallet' | 'pay-at-salon';
-    staff?: string;
-    bookingId?: string;
-  }>;
-}
+  const [salon, setSalon] = useState<SalonProfile | null>(null);
+  const [selectedServices, setSelectedServices] = useState<SalonService[]>([]);
+  const [staffName, setStaffName] = useState(staffId === 'any' ? 'Any Staff' : 'Professional Staff');
+  const [isLoading, setIsLoading] = useState(true);
 
-export default async function BookingCompletePage({
-  searchParams,
-}: BookingCompletePageProps) {
-  const params = await searchParams;
-  const salonId = params.salon ?? '';
-  const staffId = params.staff ?? 'any';
-  const bookingId = params.bookingId ?? '';
-  
-  let salonName = 'Salon';
-  let salonImage = FALLBACK_SALON_IMAGE;
-  let salonLocation = 'Location unavailable';
-  let salonDistance = '';
-  let staffName = staffId === 'any' ? 'Any Staff' : 'Professional Staff';
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      let currentSalonName = 'Salon';
+      let currentSalonImage = FALLBACK_SALON_IMAGE;
+      let currentSalonLocation = 'Location unavailable';
+      let currentSalonDistance = '';
+      let currentStaffName = staffId === 'any' ? 'Any Staff' : 'Professional Staff';
 
-  try {
-    const supabase = await createSupabaseServerClient();
+      try {
+        const supabase = createSupabaseBrowserClient();
 
-    // Fetch staff name if not "any"
-    if (staffId !== 'any') {
-      const { data: staffData } = await supabase
-        .from('staff')
-        .select('name')
-        .eq('id', staffId)
-        .single();
-      
-      if (staffData) {
-        staffName = staffData.name;
+        // Fetch staff name if not "any"
+        if (staffId !== 'any') {
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('name')
+            .eq('id', staffId)
+            .single();
+          
+          if (staffData) {
+            currentStaffName = staffData.name;
+          }
+        }
+
+        const { data } = await supabase
+          .from('salons')
+          .select(CUSTOMER_SAFE_SALON_SELECT)
+          .eq('id', salonId)
+          .maybeSingle();
+
+        if (data) {
+          const salonData = data as SalonData;
+          currentSalonName = data.name || currentSalonName;
+          currentSalonImage = salonData.image || salonData.image_url || data.imageUrl || currentSalonImage;
+          currentSalonLocation = data.address || currentSalonLocation;
+          currentSalonDistance = salonData.distance || currentSalonDistance;
+        } else {
+          const fallbackSalon = getSalonById(salonId);
+          if (fallbackSalon) {
+            currentSalonName = fallbackSalon.name;
+            currentSalonImage = fallbackSalon.image;
+            currentSalonLocation = fallbackSalon.address;
+            currentSalonDistance = fallbackSalon.distance;
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching complete data:', e);
+        const fallbackSalon = getSalonById(salonId);
+        if (fallbackSalon) {
+          currentSalonName = fallbackSalon.name;
+          currentSalonImage = fallbackSalon.image;
+          currentSalonLocation = fallbackSalon.address;
+          currentSalonDistance = fallbackSalon.distance;
+        }
       }
+
+      const salonProfile: SalonProfile = {
+        id: salonId,
+        name: currentSalonName,
+        image: currentSalonImage,
+        distance: currentSalonDistance,
+        address: currentSalonLocation,
+        rating: 4.8,
+        lat: 0,
+        lng: 0,
+        categories: ['All Services'],
+        menu: [],
+        staff: [],
+      };
+
+      const selectedServiceIds = servicesParam
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
+      const cartServices = parseSelectedServices(cartParam);
+      const fallback = getSalonById(salonId);
+      const finalServices =
+        cartServices.length > 0
+          ? cartServices
+          : fallback
+            ? getServicesForSalon(fallback, selectedServiceIds)
+            : [];
+
+      setSalon(salonProfile);
+      setSelectedServices(finalServices);
+      setStaffName(currentStaffName);
+      setIsLoading(false);
     }
 
-    const { data } = await supabase
-      .from('salons')
-      .select(CUSTOMER_SAFE_SALON_SELECT)
-      .eq('id', salonId)
-      .maybeSingle();
+    if (salonId) {
+      fetchData();
+    }
+  }, [salonId, staffId, servicesParam, cartParam]);
 
-    if (data) {
-      const salonData = data as SalonData;
-      salonName = data.name || salonName;
-      salonImage = salonData.image || salonData.image_url || data.imageUrl || salonImage;
-      salonLocation = data.address || salonLocation;
-      salonDistance = salonData.distance || salonDistance;
-    } else {
-      const fallbackSalon = getSalonById(salonId);
-      if (fallbackSalon) {
-        salonName = fallbackSalon.name;
-        salonImage = fallbackSalon.image;
-        salonLocation = fallbackSalon.address;
-        salonDistance = fallbackSalon.distance;
-      }
-    }
-  } catch {
-    const fallbackSalon = getSalonById(salonId);
-    if (fallbackSalon) {
-      salonName = fallbackSalon.name;
-      salonImage = fallbackSalon.image;
-      salonLocation = fallbackSalon.address;
-      salonDistance = fallbackSalon.distance;
-    }
+  if (isLoading || !salon) {
+    return <div className="flex min-h-screen items-center justify-center bg-[#f4efe8]">Loading...</div>;
   }
 
-  const salon: SalonProfile = {
-    id: salonId,
-    name: salonName,
-    image: salonImage,
-    distance: salonDistance,
-    address: salonLocation,
-    rating: 4.8,
-    lat: 0,
-    lng: 0,
-    categories: ['All Services'],
-    menu: [],
-    staff: [],
-  };
-
-  const selectedServiceIds = (params.services ?? '')
-    .split(',')
-    .map((serviceId) => serviceId.trim())
-    .filter(Boolean);
-  const cartServices = parseSelectedServices(params.cart);
-  const fallback = getSalonById(salonId);
-  const selectedServices =
-    cartServices.length > 0
-      ? cartServices
-      : fallback
-        ? getServicesForSalon(fallback, selectedServiceIds)
-        : [];
   const total =
-    Number(params.total) ||
+    Number(totalParam) ||
     selectedServices.reduce((sum, service) => sum + service.price, 0);
 
   return (
     <BookingCompleteScreen
       salon={salon}
       selectedServices={selectedServices}
-      selectedDate={params.date ?? ''}
-      selectedSlot={params.slot ?? ''}
+      selectedDate={dateParam}
+      selectedSlot={slotParam}
       total={total}
-      paymentMethod={params.payment ?? 'wallet'}
+      paymentMethod={paymentParam ?? 'wallet'}
       staffName={staffName}
       bookingId={bookingId}
     />

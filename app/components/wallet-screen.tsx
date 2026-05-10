@@ -37,6 +37,23 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+const transactionStyles = `
+  @keyframes transactionSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-transaction {
+    opacity: 0;
+    animation: transactionSlideIn 0.2s ease-out forwards;
+  }
+`;
+
 function transactionIcon(kind: TransactionKind, type: TransactionType) {
   if (kind === 'booking') {
     return {
@@ -250,14 +267,18 @@ export function WalletScreen({ initialBalance, initialTransactions }: WalletScre
           </div>
 
           <div className="space-y-3">
-            {transactions.map((transaction) => {
+            {transactions.map((transaction, index) => {
               const { Icon, wrapperClass } = transactionIcon(
                 transaction.kind,
                 transaction.type
               );
 
               return (
-                <article key={transaction.id} className={`${surfaceClass} flex items-center gap-3 p-4`}>
+                <article
+                  key={transaction.id}
+                  className={`${surfaceClass} flex items-center gap-3 p-4 animate-transaction`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${wrapperClass}`}
                   >
@@ -283,6 +304,8 @@ export function WalletScreen({ initialBalance, initialTransactions }: WalletScre
           </div>
         </section>
       </main>
+
+      <style>{transactionStyles}</style>
 
       <MobileBottomNav />
     </div>

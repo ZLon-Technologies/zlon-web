@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { cancelBooking } from '../../booking/actions';
+import { cancelBooking } from '@/app/wallet/actions';
 import { RescheduleBookingForm } from '../../booking/[id]/reschedule/reschedule-booking-form';
 
 interface BookingDetailActionsProps {

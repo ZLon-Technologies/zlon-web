@@ -4,6 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CalendarDays, Home, UserRound, Wallet } from 'lucide-react';
 
+const navStyles = `
+  @keyframes iconPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .animate-iconPop {
+    animation: iconPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+`;
+
 const navigationItems = [
   { href: '/home', label: 'Home', icon: Home },
   { href: '/bookings', label: 'Bookings', icon: CalendarDays },
@@ -33,15 +44,15 @@ export function MobileBottomNav() {
               <li key={href}>
                 <Link
                   href={href}
-                  className={`flex h-16 flex-col items-center justify-center rounded-[1.25rem] transition-all ${
+                  className={`flex h-16 flex-col items-center justify-center rounded-[1.25rem] transition-all duration-200 ${
                     active
-                      ? 'bg-neutral-200 text-black'
-                      : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
+                      ? 'bg-neutral-200 text-black scale-105'
+                      : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 hover:scale-100'
                   }`}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <Icon size={20} strokeWidth={2.1} />
-                  <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em]">
+                  <Icon size={20} strokeWidth={2.1} className={active ? 'animate-iconPop' : ''} />
+                  <span className={`mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition-all ${active ? 'scale-110' : ''}`}>
                     {label}
                   </span>
                 </Link>
@@ -50,6 +61,8 @@ export function MobileBottomNav() {
           })}
         </ul>
       </nav>
+
+      <style>{navStyles}</style>
     </div>
   );
 }

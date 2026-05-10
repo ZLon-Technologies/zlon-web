@@ -593,6 +593,40 @@ export default function HomePage() {
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
+        @keyframes fadeSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeSlideIn {
+          animation: fadeSlideIn 0.2s ease-out forwards;
+        }
+        @keyframes listItemSlide {
+          from {
+            opacity: 0;
+            transform: translateX(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        .animate-listItem {
+          opacity: 0;
+          animation: listItemSlide 0.15s ease-out forwards;
+        }
+        @keyframes categoryPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(0.96); }
+        }
+        .active\\:scale-\\[0\\.98\\]:active {
+          animation: categoryPulse 0.1s ease-in-out;
+        }
       `}</style>
 
       {/* Main Content */}
@@ -662,7 +696,7 @@ export default function HomePage() {
 
             {/* Search Results Overlay */}
             {shouldShowSearchResults && (
-              <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-2 z-20 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden animate-fadeSlideIn">
                 {isSearching ? (
                   <div className="px-4 py-3 text-sm text-gray-500">
                     Searching…
@@ -673,7 +707,7 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {groupedSearchResults.map(({ type, label, results }) => {
+                    {groupedSearchResults.map(({ type, label, results }, groupIndex) => {
                       if (results.length === 0) return null;
 
                       return (
@@ -681,7 +715,7 @@ export default function HomePage() {
                           <div className="px-4 py-2 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
                             {label}
                           </div>
-                          {results.map((result) => (
+                          {results.map((result, resultIndex) => (
                             <Link prefetch={false}
                               key={`${result.result_type}-${result.id}`}
                               href={
@@ -689,7 +723,8 @@ export default function HomePage() {
                                   ? `/salon-profile/${result.id}`
                                   : `/salon/${result.salon_id ?? result.id}`
                               }
-                              className="block px-4 py-3 text-sm text-gray-900 hover:bg-gray-50 transition-colors border-l-2 border-transparent hover:border-gray-900"
+                              style={{ animationDelay: `${(groupIndex * 10 + resultIndex) * 30}ms` }}
+                              className="block px-4 py-3 text-sm text-gray-900 hover:bg-gray-50 transition-colors border-l-2 border-transparent hover:border-gray-900 animate-listItem"
                             >
                               {result.result_type === 'service'
                                 ? `${result.name} - ${

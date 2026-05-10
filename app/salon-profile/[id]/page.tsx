@@ -1,15 +1,15 @@
-import type { Metadata } from 'next';
+'use client';
+
+export const generateStaticParams = () => [];
+
+import { useState, useEffect, use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, MapPin } from 'lucide-react';
-import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
 import { getSalonById } from '../../lib/booking-flow';
 import { FALLBACK_SALON_IMAGE, DEFAULT_GALLERY } from '../../lib/media';
-
-export const metadata: Metadata = {
-  title: 'Salon Details',
-};
 
 interface SalonProfilePageProps {
   params: Promise<{ id: string }>;
@@ -82,25 +82,35 @@ function getSafeSalonRow(rawSalon: Record<string, unknown>): SalonRow | null {
   };
 }
 
-export default async function SalonProfilePage({ params }: SalonProfilePageProps) {
-  const { id } = await params;
-  const localSalon = getSalonById(id) ?? null;
-  let remoteSalon: SalonRow | null = null;
+export default function SalonProfilePage({ params }: SalonProfilePageProps) {
+  const { id } = use(params);
+  const [remoteSalon, setRemoteSalon] = useState<SalonRow | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data } = await supabase
-      .from('salons')
-      .select(CUSTOMER_SAFE_SALON_SELECT)
-      .eq('id', id)
-      .maybeSingle();
-    remoteSalon =
-      data && typeof data === 'object' && !Array.isArray(data)
-        ? getSafeSalonRow(data as Record<string, unknown>)
-        : null;
-  } catch (error) {
-    console.error('Unable to load salon profile details:', error);
-  }
+  useEffect(() => {
+    async function loadSalon() {
+      try {
+        const supabase = createSupabaseClient();
+        const { data } = await supabase
+          .from('salons')
+          .select(CUSTOMER_SAFE_SALON_SELECT)
+          .eq('id', id)
+          .maybeSingle();
+        
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          setRemoteSalon(getSafeSalonRow(data as Record<string, unknown>));
+        }
+      } catch (error) {
+        console.error('Unable to load salon profile details:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadSalon();
+  }, [id]);
+
+  const localSalon = getSalonById(id) ?? null;
 
   const salonName = remoteSalon?.name?.trim() || localSalon?.name || 'ZLon Salon';
   const primaryImage =

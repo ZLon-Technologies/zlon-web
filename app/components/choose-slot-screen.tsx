@@ -39,6 +39,24 @@ interface SlotOption {
   state: 'available' | 'booked';
 }
 
+// CSS animations for smooth transitions
+const slotStyles = `
+  @keyframes slotFadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .animate-slotCard {
+    opacity: 0;
+    animation: slotFadeIn 0.2s ease-out forwards;
+  }
+`;
+
 function formatDateId(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -327,8 +345,8 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
                     key={date.id}
                     type="button"
                     onClick={() => { setSelectedDate(date.id); setSelectedSlot(''); }}
-                    className={`flex h-28 w-24 shrink-0 flex-col items-center justify-center rounded-[1.5rem] border text-center transition-colors ${
-                      active ? 'border-black bg-black text-white shadow-[0_16px_34px_rgba(0,0,0,0.16)]' : 'border-neutral-300 bg-white text-neutral-500'
+                    className={`flex h-28 w-24 shrink-0 flex-col items-center justify-center rounded-[1.5rem] border text-center transition-all duration-200 ease-out transform hover:scale-105 active:scale-95 ${
+                      active ? 'border-black bg-black text-white shadow-[0_16px_34px_rgba(0,0,0,0.16)] scale-105' : 'border-neutral-300 bg-white text-neutral-500 hover:border-neutral-400'
                     }`}
                   >
                     <span className="text-xs font-medium">{date.dayLabel}</span>
@@ -347,8 +365,8 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
               const selected = staffMember.id === selectedStaffId;
               return (
                 <button key={staffMember.id} type="button" onClick={() => setSelectedStaffId(staffMember.id)} className="flex flex-shrink-0 shrink-0 flex-col items-center">
-                  <div className={`flex h-16 w-16 flex-shrink-0 shrink-0 items-center justify-center rounded-full text-base font-semibold shadow-sm ring-2 transition-colors ${
-                    selected ? `${staffMember.colorClass} ring-black` : `${staffMember.colorClass} ring-transparent`
+                  <div className={`flex h-16 w-16 flex-shrink-0 shrink-0 items-center justify-center rounded-full text-base font-semibold shadow-sm ring-2 transition-all duration-200 ease-out ${
+                    selected ? `${staffMember.colorClass} ring-black ring-4 ring-black/20 scale-110` : `${staffMember.colorClass} ring-transparent hover:ring-gray-300`
                   }`}>{staffMember.initials}</div>
                   <span className="mt-2 text-xs font-medium text-neutral-600">{staffMember.name}</span>
                 </button>
@@ -358,14 +376,14 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
         </section>
 
         <section className="mt-6 space-y-5">
-          {slotGroups.map(({ label, icon: Icon, slots }) => (
+          {slotGroups.map(({ label, icon: Icon, slots }, groupIndex) => (
             <div key={label}>
               <div className="mb-3 flex items-center gap-2.5">
                 <Icon size={16} className="text-neutral-500" />
                 <h4 className="text-sm font-semibold uppercase tracking-[0.08em] text-neutral-800">{label}</h4>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                {slots.map((slot) => {
+                {slots.map((slot, slotIndex) => {
                   const disabled = slot.state === 'booked';
                   const selected = selectedSlot === slot.time;
                   return (
@@ -374,10 +392,11 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
                       type="button"
                       disabled={disabled}
                       onClick={() => setSelectedSlot(slot.time)}
-                      className={`relative flex flex-col items-center justify-center rounded-[1.25rem] border px-2.5 py-3 transition-colors ${
+                      style={{ animationDelay: `${(groupIndex * 15 + slotIndex) * 30}ms` }}
+                      className={`relative flex flex-col items-center justify-center rounded-[1.25rem] border px-2.5 py-3 transition-all duration-200 ease-out animate-slotCard ${
                         disabled ? 'border-transparent bg-neutral-100 text-neutral-300 cursor-not-allowed' :
-                        selected ? 'border-neutral-800 bg-black text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.18)]' :
-                        'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50'
+                        selected ? 'border-neutral-800 bg-black text-white shadow-[inset_0_0_0_2px_rgba(255,255,255,0.18)] scale-105' :
+                        'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 hover:scale-105 active:scale-95'
                       }`}
                     >
                       <span className="text-sm font-semibold">{slot.time}</span>
@@ -394,6 +413,8 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
           ))}
         </section>
       </main>
+
+      <style>{slotStyles}</style>
 
       <div className="fixed bottom-0 left-0 right-0 z-20 w-full border-t border-neutral-200 bg-white px-5 py-4 shadow-[0_-18px_32px_rgba(15,23,42,0.08)] [padding-bottom:calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="flex items-center justify-between gap-3 text-neutral-500">

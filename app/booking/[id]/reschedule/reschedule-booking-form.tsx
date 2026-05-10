@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { rescheduleBooking } from '../../actions';
+import { rescheduleBooking } from '@/app/wallet/actions';
 
 interface RescheduleBookingFormProps {
   bookingId: string;

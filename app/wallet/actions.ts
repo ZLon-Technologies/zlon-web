@@ -1,42 +1,27 @@
-'use server';
+/**
+ * Server Actions are not supported in static export mode.
+ * These are stubs for build compatibility.
+ * Refactor to client-side Supabase logic for Capacitor.
+ */
 
-import { revalidatePath } from 'next/cache';
-import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+interface BookingMutationResult {
+  ok: boolean;
+  message: string;
+}
 
-export async function rechargeWallet(amount: number) {
-  const supabase = await createSupabaseServerClient();
-  const { data: authData, error: authError } = await supabase.auth.getUser();
+export async function rechargeWallet(amount: number): Promise<BookingMutationResult> {
+  console.warn('rechargeWallet called in static mode. Refactor to client-side Supabase.');
+  return { ok: false, message: 'Action not available in static mode.' };
+}
 
-  if (authError || !authData.user) {
-    return { ok: false, message: 'You must be logged in to recharge your wallet.' };
-  }
+export async function cancelBooking(bookingId: string): Promise<BookingMutationResult> {
+  return { ok: false, message: 'Action not available in static mode.' };
+}
 
-  const userId = authData.user.id;
+export async function rescheduleBooking(formData: FormData): Promise<BookingMutationResult> {
+  return { ok: false, message: 'Action not available in static mode.' };
+}
 
-  // Fetch current balance
-  const { data: walletData, error: walletFetchError } = await supabase
-    .from('wallets')
-    .select('balance')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (walletFetchError && walletFetchError.code !== '42703' && !walletFetchError.message.includes('user_id')) {
-    return { ok: false, message: 'Failed to fetch wallet balance.' };
-  }
-
-  const currentBalance = walletData?.balance || 0;
-  const newBalance = currentBalance + amount;
-
-  const { error: walletUpdateError } = await supabase
-    .from('wallets')
-    .upsert({ user_id: userId, balance: newBalance, updated_at: new Date().toISOString() })
-    .eq('user_id', userId);
-
-  if (walletUpdateError) {
-    return { ok: false, message: 'Failed to update wallet balance.' };
-  }
-
-  revalidatePath('/wallet');
-  
-  return { ok: true, message: 'Recharge successful.' };
+export async function createBooking(formData: FormData): Promise<BookingMutationResult & { bookingId?: string }> {
+  return { ok: false, message: 'Action not available in static mode.' };
 }

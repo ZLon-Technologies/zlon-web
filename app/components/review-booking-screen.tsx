@@ -7,7 +7,7 @@ import { ArrowLeft, CalendarDays, Info, MapPin, Scissors, Wallet, Store, Chevron
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, serializeSelectedServices } from '../lib/booking-flow';
 import { useBooking } from '../lib/booking-state';
-import { createBooking } from '../booking/actions';
+import { createBooking } from '@/app/wallet/actions';
 
 interface ReviewBookingScreenProps {
   salon: SalonProfile;

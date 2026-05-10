@@ -1,4 +1,4 @@
-import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { FALLBACK_SALON_IMAGE } from './media';
 
 type RawRecord = Record<string, unknown>;
@@ -312,7 +312,7 @@ function isRecoverableJoinError(error: { code?: string; message?: string } | nul
   );
 }
 
-async function getAuthenticatedUserId(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+async function getAuthenticatedUserId(supabase: ReturnType<typeof createSupabaseClient>) {
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {
@@ -323,7 +323,7 @@ async function getAuthenticatedUserId(supabase: Awaited<ReturnType<typeof create
 }
 
 async function attachStaffDetails(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supabase: ReturnType<typeof createSupabaseClient>,
   rows: RawRecord[]
 ) {
   const staffIds = Array.from(
@@ -379,7 +379,7 @@ async function attachStaffDetails(
 }
 
 async function attachServiceDetails(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supabase: ReturnType<typeof createSupabaseClient>,
   rows: RawRecord[]
 ) {
   const allServiceIds = new Set<string>();
@@ -418,7 +418,7 @@ async function attachServiceDetails(
 }
 
 async function runJoinedBookingQuery(options: { bookingId?: string }) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseClient();
   const userId = await getAuthenticatedUserId(supabase);
 
   if (!userId) {

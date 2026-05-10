@@ -2,11 +2,33 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, MapPin } from 'lucide-react';
 import type { SalonProfile, SalonService } from '../lib/booking-flow';
 import { formatCurrency, formatDateLabel, formatDuration } from '../lib/booking-flow';
 import { useBooking } from '../lib/booking-state';
+
+const checkmarkStyles = `
+  @keyframes checkDraw {
+    0% { stroke-dashoffset: 24; }
+    100% { stroke-dashoffset: 0; }
+  }
+  @keyframes scaleIn {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes ringPulse {
+    0%, 100% { box-shadow: 0 28px 60px rgba(15,23,42,0.22), ring-3 ring-neutral-300/60; }
+    50% { box-shadow: 0 28px 60px rgba(15,23,42,0.3), ring-3 ring-neutral-400/80; }
+  }
+  .animate-ringPulse {
+    animation: ringPulse 1.5s ease-in-out infinite;
+  }
+  .animate-scaleIn {
+    animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+`;
 
 interface BookingCompleteScreenProps {
   salon: SalonProfile;
@@ -30,6 +52,7 @@ export function BookingCompleteScreen({
   bookingId,
 }: BookingCompleteScreenProps) {
   const { state, clearState, totalDuration: storeDuration } = useBooking();
+  const [showContent, setShowContent] = useState(false);
 
   // Redirect if state is empty
   useEffect(() => {
@@ -40,6 +63,12 @@ export function BookingCompleteScreen({
       return () => clearTimeout(timer);
     }
   }, [propSalon, state.salon.id]);
+
+  // Trigger animations on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setShowContent(true), 400);
+    return () => clearTimeout(timer);
+  }, []);
 
   const salon = {
     ...propSalon,
@@ -64,13 +93,13 @@ export function BookingCompleteScreen({
   return (
     <div className="w-full relative flex flex-col items-center justify-center px-5 py-12">
       <div className="w-full text-center">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-black shadow-[0_28px_60px_rgba(15,23,42,0.22)] ring-3 ring-neutral-300/60">
+        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-black shadow-[0_28px_60px_rgba(15,23,42,0.22)] animate-scaleIn animate-ringPulse">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
             <Check size={26} className="text-black" />
           </div>
         </div>
 
-        <h1 className="mt-8 text-2xl font-semibold leading-none tracking-tight text-neutral-950">
+        <h1 className={`mt-8 text-2xl font-semibold leading-none tracking-tight text-neutral-950 transition-all duration-300 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           Booking Confirmed!
         </h1>
         <p className="mt-3 text-base leading-7 text-neutral-500">
@@ -171,16 +200,16 @@ export function BookingCompleteScreen({
                 alert('Referral link copied to clipboard!');
               }
             }}
-            className="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+            className="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black transition-all duration-200 hover:scale-105 active:scale-95"
           >
             Share Referral Link
           </button>
         </div>
 
-        <div className="mt-6 space-y-3">
+        <div className={`mt-6 space-y-3 transition-all duration-500 delay-200 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <Link prefetch={false}
             href="/bookings"
-            className="inline-flex w-full items-center justify-center rounded-[1.5rem] bg-black px-4 py-3.5 text-base font-semibold text-white"
+            className="inline-flex w-full items-center justify-center rounded-[1.5rem] bg-black px-4 py-3.5 text-base font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             View My Bookings
           </Link>
@@ -192,6 +221,8 @@ export function BookingCompleteScreen({
           </Link>
         </div>
       </div>
+
+      <style>{checkmarkStyles}</style>
     </div>
   );
 }
