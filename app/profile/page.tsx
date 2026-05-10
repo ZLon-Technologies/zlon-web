@@ -13,13 +13,21 @@ interface ProfileRecord {
   phone_number: string | null;
   gender: string | null;
   avatar_url: string | null;
+  wallet_balance: number;
+  monthly_bookings: number;
 }
 
 function getStringValue(value: unknown) {
   return typeof value === 'string' ? value : null;
 }
 
-function mapProfileRow(row: Record<string, unknown>, fallbackEmail: string | null): ProfileRecord {
+function getNumericValue(value: unknown) {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return parseFloat(value) || 0;
+  return 0;
+}
+
+function mapProfileRow(row: Record<string, unknown>, fallbackEmail: string | null, walletBalance: number): ProfileRecord {
   return {
     id: getStringValue(row.id) ?? '',
     full_name: getStringValue(row.full_name),
@@ -27,10 +35,12 @@ function mapProfileRow(row: Record<string, unknown>, fallbackEmail: string | nul
     phone_number: getStringValue(row.phone_number),
     gender: getStringValue(row.gender),
     avatar_url: getStringValue(row.avatar_url),
+    wallet_balance: walletBalance,
+    monthly_bookings: getNumericValue(row.monthly_bookings),
   };
 }
 
-async function getCurrentProfile() {
+async function getCurrentProfile(): Promise<ProfileRecord | null> {
   const supabase = await createSupabaseServerClient();
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -39,24 +49,23 @@ async function getCurrentProfile() {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id,full_name,email,phone_number,gender,avatar_url')
-    .eq('id', user.id)
-    .maybeSingle();
+  const [{ data: profileData }, { data: walletData }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id,full_name,email,phone_number,gender,avatar_url,monthly_bookings')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle()
+  ]);
 
-  if (!error && data && typeof data === 'object') {
-    return mapProfileRow(data as Record<string, unknown>, user.email ?? null);
-  }
+  const walletBalance = getNumericValue(walletData?.balance);
 
-  const fallbackResult = await supabase
-    .from('profiles')
-    .select('id,full_name,phone_number')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (fallbackResult.data && typeof fallbackResult.data === 'object') {
-    return mapProfileRow(fallbackResult.data as Record<string, unknown>, user.email ?? null);
+  if (profileData) {
+    return mapProfileRow(profileData as Record<string, unknown>, user.email ?? null, walletBalance);
   }
 
   return {
@@ -66,7 +75,9 @@ async function getCurrentProfile() {
     phone_number: getStringValue(user.phone) ?? null,
     gender: null,
     avatar_url: null,
-  } satisfies ProfileRecord;
+    wallet_balance: walletBalance,
+    monthly_bookings: 0,
+  };
 }
 
 export default async function ProfilePage() {

@@ -15,10 +15,16 @@ import {
   Shield,
   UserRound,
   Wallet,
+  Settings,
+  CreditCard,
+  User,
+  Zap,
+  CheckCircle2,
 } from 'lucide-react';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { useBooking } from '../lib/booking-state';
+import { formatCurrency } from '../lib/booking-flow';
 
 interface ProfileState {
   id: string;
@@ -27,6 +33,8 @@ interface ProfileState {
   phoneNumber: string;
   gender: string;
   avatarUrl: string;
+  walletBalance: number;
+  monthlyBookings: number;
 }
 
 interface ProfileRecord {
@@ -36,44 +44,18 @@ interface ProfileRecord {
   phone_number: string | null;
   gender: string | null;
   avatar_url: string | null;
+  wallet_balance: number;
+  monthly_bookings: number;
 }
 
 interface EditProfileScreenProps {
   initialProfile: ProfileRecord | null;
 }
 
-interface QuickLinkItem {
-  href: string;
-  icon: typeof Wallet;
-  title: string;
-  description: string;
-}
-
 type EditableField = 'fullName' | 'phoneNumber' | 'gender';
 
-const quickLinks: QuickLinkItem[] = [
-  {
-    href: '/wallet',
-    icon: Wallet,
-    title: 'ZLon Wallet',
-    description: 'Hassle-free wallet payments',
-  },
-  {
-    href: '/privacy-settings',
-    icon: Shield,
-    title: 'Privacy Settings',
-    description: 'Manage personal data and security',
-  },
-  {
-    href: '/profile/booking-history',
-    icon: History,
-    title: 'Booking History',
-    description: 'See completed appointments and rebook your favorites',
-  },
-];
-
 const surfaceClass =
-  'rounded-[1.5rem] border border-black/10 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]';
+  'rounded-[2rem] border border-black/5 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)]';
 
 const editableFieldLabels: Record<EditableField, string> = {
   fullName: 'Full Name',
@@ -95,6 +77,8 @@ function normalizeProfile(profile: ProfileRecord | null): ProfileState {
     phoneNumber: profile?.phone_number ?? '',
     gender: profile?.gender ?? '',
     avatarUrl: profile?.avatar_url ?? '',
+    walletBalance: profile?.wallet_balance ?? 0,
+    monthlyBookings: profile?.monthly_bookings ?? 0,
   };
 }
 
@@ -119,12 +103,14 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const currentFieldValue = activeField ? profile[activeField] : '';
+  const aiScansAvailable = Math.max(0, 3 - profile.monthlyBookings);
+
+  const currentFieldValue = activeField ? profile[activeField as keyof ProfileState] as string : '';
   const hasDraftChanges = activeField !== null && draftValue !== currentFieldValue;
 
   function openFieldEditor(field: EditableField) {
     setActiveField(field);
-    setDraftValue(profile[field]);
+    setDraftValue(profile[field as keyof ProfileState] as string);
     setMessage(null);
   }
 
@@ -232,39 +218,46 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
   }
 
   return (
-    <div className="flex flex-col text-neutral-950">
-      <header className="border-b border-black/5 px-4 py-4">
+    <div className="flex flex-col bg-[#F9F9F9] min-h-screen text-neutral-950 pb-28">
+      {/* Premium Header Background */}
+      <div className="absolute top-0 left-0 right-0 h-48 bg-neutral-950 rounded-b-[3rem] shadow-lg" />
+
+      <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-4">
+        <h1 className="text-white text-xl font-bold tracking-tight">Profile</h1>
         <button
           type="button"
           aria-label="Notifications"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-transparent text-black transition-colors hover:bg-white"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
         >
           <Bell size={20} strokeWidth={2.1} />
         </button>
       </header>
 
-      <main className="flex-1 px-4 py-4 pb-20">
-        <section className="text-center">
-          <div className="relative mx-auto h-24 w-24 aspect-square overflow-hidden rounded-full border border-gray-200 bg-white shadow-[0_16px_32px_rgba(15,23,42,0.14)] ring-4 ring-white">
-            {profile.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.avatarUrl}
-                alt={profile.fullName ? `${profile.fullName} avatar` : 'Profile avatar'}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-500">
-                <UserRound size={36} strokeWidth={1.8} />
-              </div>
-            )}
+      <main className="relative z-10 flex-1 px-5">
+        {/* Identity Section */}
+        <section className="mt-4 text-center">
+          <div className="relative mx-auto h-28 w-28 rounded-full border-4 border-white bg-white shadow-xl overflow-visible">
+            <div className="h-full w-full rounded-full overflow-hidden">
+              {profile.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.fullName ? `${profile.fullName} avatar` : 'Profile avatar'}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400">
+                  <User size={48} strokeWidth={1.5} />
+                </div>
+              )}
+            </div>
             <button
               type="button"
               aria-label="Edit profile picture"
               onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-700 text-white shadow-lg transition-transform hover:scale-105"
+              className="absolute -right-1 -bottom-1 flex h-9 w-9 items-center justify-center rounded-full bg-white text-black shadow-lg ring-1 ring-black/5 transition-transform hover:scale-110 active:scale-95"
             >
-              <Pencil size={20} strokeWidth={2.2} />
+              <Pencil size={16} strokeWidth={2.5} />
             </button>
             <input
               ref={fileInputRef}
@@ -275,123 +268,164 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
             />
           </div>
 
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight">
-            {profile.fullName || 'Your Profile'}
-          </h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            {profile.emailAddress || 'Customer Profile'}
-          </p>
+          <div className="mt-4 flex flex-col items-center">
+            <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">
+              {profile.fullName || 'ZLon Guest'}
+            </h2>
+            <p className="text-sm font-medium text-neutral-500 mb-2">
+              {profile.emailAddress || 'Add email for security'}
+            </p>
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200">
+              <CheckCircle2 size={12} />
+              ZLon Member
+            </div>
+          </div>
         </section>
 
-        <div className="mt-6 space-y-4">
-          <section className={`${surfaceClass} space-y-4 p-5`}>
-            <div>
-              <span className="block text-sm font-medium text-neutral-500">
-                Full Name
-              </span>
-              <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
-                <UserRound size={20} className="text-neutral-500" strokeWidth={2} />
-                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
-                  {getDisplayValue(profile.fullName)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => openFieldEditor('fullName')}
-                  aria-label="Edit full name"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white hover:text-black"
-                >
-                  <Pencil size={16} strokeWidth={2.2} />
-                </button>
+        {/* Quick Stats Row */}
+        <section className="mt-8 grid grid-cols-2 gap-3">
+          <div className="flex flex-col rounded-2xl bg-white p-4 shadow-sm border border-black/5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600">
+                <Wallet size={14} />
               </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Balance</span>
             </div>
+            <p className="text-lg font-bold text-neutral-900">{formatCurrency(profile.walletBalance)}</p>
+          </div>
 
-            <div>
-              <span className="block text-sm font-medium text-neutral-500">
-                Email Address
-              </span>
-              <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
-                <Mail size={20} className="text-neutral-500" strokeWidth={2} />
-                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
-                  {getDisplayValue(profile.emailAddress)}
-                </span>
+          <div className="flex flex-col rounded-2xl bg-white p-4 shadow-sm border border-black/5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-neutral-100 text-neutral-600">
+                <Zap size={14} />
               </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">AI Scans</span>
             </div>
+            <p className="text-lg font-bold text-neutral-900">{aiScansAvailable} Left</p>
+          </div>
+        </section>
 
-            <div>
-              <span className="block text-sm font-medium text-neutral-500">
-                Phone Number
-              </span>
-              <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
-                <Phone size={20} className="text-neutral-500" strokeWidth={2} />
-                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
-                  {getDisplayValue(profile.phoneNumber)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => openFieldEditor('phoneNumber')}
-                  aria-label="Edit phone number"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white hover:text-black"
-                >
-                  <Pencil size={16} strokeWidth={2.2} />
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <span className="block text-sm font-medium text-neutral-500">Gender</span>
-              <div className="mt-2 flex items-center gap-3 rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 ring-1 ring-black/5">
-                <Shield size={20} className="text-neutral-500" strokeWidth={2} />
-                <span className="min-w-0 flex-1 truncate text-left text-base text-neutral-950">
-                  {getDisplayValue(profile.gender)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => openFieldEditor('gender')}
-                  aria-label="Edit gender"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-white hover:text-black"
-                >
-                  <Pencil size={16} strokeWidth={2.2} />
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            {quickLinks.map(({ href, icon: Icon, title, description }) => (
-              <Link prefetch={false}
-                key={title}
-                href={href}
-                className={`${surfaceClass} flex items-center gap-3 p-4 transition-transform hover:translate-y-[-1px]`}
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
-                  <Icon size={20} strokeWidth={2} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-                  <p className="mt-1 text-sm text-neutral-500">{description}</p>
-                </div>
-                <ChevronRight size={20} className="text-neutral-500" strokeWidth={2.1} />
-              </Link>
-            ))}
-          </section>
-
+        {/* Settings Groups */}
+        <div className="mt-8 space-y-6">
+          {/* Group 1: Personal Information */}
           <section>
+            <h3 className="ml-1 mb-3 text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
+              Personal Information
+            </h3>
+            <div className={`${surfaceClass} overflow-hidden divide-y divide-black/5`}>
+              <div 
+                onClick={() => openFieldEditor('fullName')}
+                className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
+                    <User size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Name</span>
+                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.fullName)}</span>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-neutral-300" />
+              </div>
+
+              <div className="group flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500">
+                    <Mail size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Email</span>
+                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.emailAddress)}</span>
+                  </div>
+                </div>
+                <div className="h-4 w-4" /> {/* Spacer */}
+              </div>
+
+              <div 
+                onClick={() => openFieldEditor('phoneNumber')}
+                className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
+                    <Phone size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Phone</span>
+                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.phoneNumber)}</span>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-neutral-300" />
+              </div>
+
+              <div 
+                onClick={() => openFieldEditor('gender')}
+                className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50 cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
+                    <Settings size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Gender</span>
+                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.gender)}</span>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-neutral-300" />
+              </div>
+            </div>
+          </section>
+
+          {/* Group 2: Account & Security */}
+          <section>
+            <h3 className="ml-1 mb-3 text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
+              Account & Security
+            </h3>
+            <div className={`${surfaceClass} overflow-hidden divide-y divide-black/5`}>
+              <Link prefetch={false} href="/wallet" className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
+                    <CreditCard size={18} />
+                  </div>
+                  <span className="text-sm font-semibold text-neutral-900">Wallet Details</span>
+                </div>
+                <ChevronRight size={16} className="text-neutral-300" />
+              </Link>
+
+              <Link prefetch={false} href="/profile/booking-history" className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
+                    <History size={18} />
+                  </div>
+                  <span className="text-sm font-semibold text-neutral-900">Booking History</span>
+                </div>
+                <ChevronRight size={16} className="text-neutral-300" />
+              </Link>
+
+              <Link prefetch={false} href="/privacy-settings" className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
+                    <Shield size={18} />
+                  </div>
+                  <span className="text-sm font-semibold text-neutral-900">Privacy Settings</span>
+                </div>
+                <ChevronRight size={16} className="text-neutral-300" />
+              </Link>
+            </div>
+          </section>
+
+          {/* Log Out Button */}
+          <div className="pt-4 flex justify-center">
             <button
               type="button"
               onClick={handleLogOut}
               disabled={isSaving}
-              className={`${surfaceClass} flex w-full items-center gap-3 p-4 text-red-600 transition-colors hover:bg-red-50`}
+              className="flex items-center gap-2 px-8 py-3 rounded-full text-red-500 font-bold text-sm transition-all hover:bg-red-50 active:scale-95"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
-                <LogOut size={20} strokeWidth={2.2} />
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <h2 className="text-base font-semibold tracking-tight">Log Out</h2>
-                <p className="mt-1 text-sm text-red-500/70">Sign out of your account</p>
-              </div>
-              <ChevronRight size={20} className="text-red-300" strokeWidth={2.1} />
+              <LogOut size={16} />
+              {isSaving ? 'Logging out...' : 'Log Out'}
             </button>
-          </section>
+          </div>
         </div>
       </main>
 
