@@ -25,6 +25,10 @@ body {
 }
 
 /* Safe area insets for mobile devices (notch, home indicator) */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
 .safe-area-pb {
   padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
 }
@@ -35,4 +39,13 @@ body {
 
 .safe-area-pr {
   padding-right: max(0px, env(safe-area-inset-right));
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

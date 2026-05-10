@@ -765,7 +765,7 @@ export default function HomePage() {
                   key={category.id}
                   onClick={() => setSelected(category.id)}
                   onMouseDown={(e) => e.preventDefault()}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full whitespace-nowrap font-medium text-sm transition-all pointer-events-auto ${
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full whitespace-nowrap font-medium text-sm transition-all pointer-events-auto flex-shrink-0 ${
                     isSelected
                       ? 'bg-gray-900 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

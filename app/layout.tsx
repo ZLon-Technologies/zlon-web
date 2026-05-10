@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
@@ -6,6 +6,14 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: {
@@ -36,7 +44,7 @@ export const metadata: Metadata = {
 };
 
 import { BookingProvider } from './lib/booking-state';
-// import { unstable_setRequestLocale } from 'next-intl/server';
+import { LoadingProvider } from './components/loading-provider';
 
 export default async function RootLayout({
   children,
@@ -50,11 +58,13 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${inter.className} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-screen bg-gray-900">
-        <BookingProvider>
-          <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col pb-24">
-            {children}
-          </div>
-        </BookingProvider>
+        <LoadingProvider>
+          <BookingProvider>
+            <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col pb-24 safe-area-pt safe-area-pb">
+              {children}
+            </div>
+          </BookingProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

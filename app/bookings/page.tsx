@@ -22,22 +22,19 @@ export default async function BookingsPage() {
   return (
     <div className="w-full relative">
       <div className="flex flex-col text-neutral-950">
-        <header className="border-b border-black/5 bg-white px-4 py-4">
+        <header className="bg-white px-4 pt-4 pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">
-                Bottom Nav Tab
-              </p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-950">
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
                 Bookings
               </h1>
             </div>
             <Link
               prefetch={false}
               href="/profile/booking-history"
-              className="rounded-full border border-black/10 px-4 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50"
+              className="text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-colors"
             >
-              History
+              VIEW HISTORY
             </Link>
           </div>
         </header>
