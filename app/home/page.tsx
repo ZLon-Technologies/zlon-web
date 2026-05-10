@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Crosshair, MapPin, MessageSquare, Rocket, ScanFace, Search, Sparkles, Scissors, Star, Wind } from 'lucide-react';
+import { Crosshair, MapPin, MessageSquare, Rocket, ScanFace, Search, SearchX, Sparkles, Scissors, Star, Wind } from 'lucide-react';
 import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
@@ -12,6 +12,7 @@ import { MobileBottomNav } from '../components/mobile-bottom-nav';
 import { FALLBACK_SALON_IMAGE } from '../lib/media';
 
 const categories = [
+  { id: 'all', label: 'All', icon: Search },
   { id: 'haircut', label: 'Haircut', icon: Scissors },
   { id: 'beard', label: 'Beard', icon: Sparkles },
   { id: 'facial', label: 'Facial', icon: Wind },
@@ -169,7 +170,7 @@ function calculateDistanceInKilometers(
 }
 
 export default function HomePage() {
-  const [selected, setSelected] = useState('haircut');
+  const [selected, setSelected] = useState('all');
   const [salons, setSalons] = useState<SalonRecord[]>([]);
   const [salonRows, setSalonRows] = useState<Array<Record<string, unknown>>>([]);
   const [bookingRows, setBookingRows] = useState<Array<Record<string, unknown>>>([]);
@@ -818,13 +819,27 @@ export default function HomePage() {
             ) : error ? (
               <p className="text-sm text-red-500">{error}</p>
             ) : salons.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
-                <p className="text-base font-semibold text-gray-900">
-                  No salons found for this service.
+              <div className="flex flex-col items-center justify-center rounded-[2.5rem] bg-gray-50 px-8 py-16 text-center border border-gray-100 shadow-inner">
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 scale-150 rounded-full bg-gray-200/40 blur-3xl" />
+                  <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-gray-50 to-white" />
+                    <SearchX className="relative h-10 w-10 text-gray-400" strokeWidth={1.5} />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold tracking-tight text-gray-900">
+                  No salons found
+                </h3>
+                <p className="mt-3 max-w-[260px] text-sm leading-6 text-gray-600 font-medium">
+                  We couldn&apos;t find any salons matching your exact style right now. Let&apos;s try something else!
                 </p>
-                <p className="mt-2 text-sm text-gray-500">
-                  Try another service or check back later.
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelected('all')}
+                  className="mt-8 rounded-full bg-gray-900 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-gray-800 active:scale-[0.98] shadow-lg shadow-gray-200"
+                >
+                  View All Services
+                </button>
               </div>
             ) : nearbySalons.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
