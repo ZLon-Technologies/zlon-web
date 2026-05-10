@@ -37,23 +37,21 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // 3. Send OTP via Fast2SMS
+    // 3. Send OTP via Fast2SMS (Quick Route)
     // Extract 10 digits if it starts with +91
     const cleanNumber = phone.startsWith('+91') ? phone.slice(3) : phone.replace(/\D/g, '');
+    const message = `Your ZLon verification code is ${otpCode}`;
 
-    console.log('Attempting to send OTP via Fast2SMS to:', cleanNumber);
+    console.log('Attempting to send OTP via Fast2SMS (Route Q) to:', cleanNumber);
 
-    const fast2smsResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-      method: 'POST',
-      headers: {
-        'authorization': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        route: 'otp',
-        variables_values: otpCode,
-        numbers: cleanNumber,
-      }),
+    const url = new URL('https://www.fast2sms.com/dev/bulkV2');
+    url.searchParams.append('authorization', apiKey);
+    url.searchParams.append('route', 'q');
+    url.searchParams.append('message', message);
+    url.searchParams.append('numbers', cleanNumber);
+
+    const fast2smsResponse = await fetch(url.toString(), {
+      method: 'GET',
     });
 
     const data = await fast2smsResponse.json();
