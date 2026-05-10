@@ -2,13 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, CalendarDays, Plus } from 'lucide-react';
 import type { BookingSnapshot } from '../../lib/bookings-data';
+import { getUserBookings } from '../../lib/bookings-data';
+import { getPastBookings } from '../../lib/bookings-data';
 
-interface BookingHistoryScreenProps {
-  initialBookings: BookingSnapshot[];
-}
+interface BookingHistoryScreenProps {}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -18,8 +18,55 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-export function BookingHistoryScreen({ initialBookings }: BookingHistoryScreenProps) {
-  const [bookings, setBookings] = useState(initialBookings);
+export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
+  const [bookings, setBookings] = useState<BookingSnapshot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadBookings() {
+      try {
+        const allBookings = await getUserBookings();
+        const pastBookings = getPastBookings(allBookings);
+        setBookings(pastBookings);
+      } catch (error) {
+        console.error('Failed to load bookings:', error);
+        setBookings([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadBookings();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="w-full relative">
+        <div className="flex flex-col text-neutral-950">
+          <header className="border-b border-black/5 bg-white px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Link
+                prefetch={false}
+                href="/profile"
+                aria-label="Go back"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-colors hover:bg-neutral-50"
+              >
+                <ArrowLeft size={22} />
+              </Link>
+              <h1 className="text-xl font-semibold tracking-tight text-neutral-950">
+                Booking History
+              </h1>
+            </div>
+          </header>
+          <main className="flex-1 px-4 py-5 pb-36">
+            <div className="flex items-center justify-center h-64">
+              <p className="text-neutral-500">Loading...</p>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full relative">
@@ -39,14 +86,6 @@ export function BookingHistoryScreen({ initialBookings }: BookingHistoryScreenPr
                 Booking History
               </h1>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setBookings([])}
-              className="text-sm font-semibold text-red-500 transition-colors hover:text-red-600"
-            >
-              Clear History
-            </button>
           </div>
         </header>
 

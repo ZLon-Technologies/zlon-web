@@ -1,17 +1,20 @@
-export const generateStaticParams = () => [];
-
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, CalendarDays } from 'lucide-react';
-import { RescheduleBookingForm } from '../../../booking/[id]/reschedule/reschedule-booking-form';
 
 interface RescheduleBookingPageProps {
   params: Promise<{ id: string }>;
 }
 
+export const dynamic = 'force-static';
+
 export const metadata: Metadata = {
   title: 'Reschedule Booking',
 };
+
+export function generateStaticParams(): Array<{ id: string }> {
+  return [{ id: 'placeholder' }];
+}
 
 export default async function RescheduleBookingPage({ params }: RescheduleBookingPageProps) {
   const { id } = await params;
@@ -44,7 +47,9 @@ export default async function RescheduleBookingPage({ params }: RescheduleBookin
             <p className="mt-2 text-sm leading-6 text-neutral-500">
               Choose a new start time for this booking and we&apos;ll update it across your account.
             </p>
-            <RescheduleBookingForm bookingId={id} />
+            <div className="mt-5 space-y-4">
+              <p className="text-sm text-neutral-500">Reschedule form will be available soon.</p>
+            </div>
           </section>
         </main>
       </div>
