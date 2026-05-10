@@ -304,6 +304,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
   const slot = getStringValue(formData.get('slot'));
   const staffId = getStringValue(formData.get('staffId')) || 'any';
   const totalAmount = Number(formData.get('totalAmount') || 0);
+  const platformFee = Number(formData.get('platformFee') || 0);
   const totalDuration = Number(formData.get('totalDuration') || 30);
   const paymentMethod = getStringValue(formData.get('paymentMethod')) || 'pay-at-salon';
 
@@ -413,6 +414,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
       staff_id: assignedStaffId,
       appointment_timestamp: appointmentTimestamp,
       total_amount: totalAmount,
+      platform_fee: platformFee,
       status: 'upcoming',
       date: date,
       time_slot: slot,

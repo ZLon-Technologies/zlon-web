@@ -59,7 +59,8 @@ export function ReviewBookingScreen({
   const hasSelectedServices = selectedServices.length > 0;
   const subtotal = storeSubtotal || selectedServices.reduce((sum, service) => sum + service.price, 0);
   const taxes = Math.round(subtotal * 0.18);
-  const platformFee = hasSelectedServices ? 30 : 0;
+  const originalPlatformFee = 30;
+  const platformFee = 0; // Hardcoded to 0 as per "Waived Fee" directive
   const total = subtotal + taxes + platformFee;
   const totalDuration = storeDuration || selectedServices.reduce(
     (sum, service) => sum + service.durationMinutes,
@@ -86,6 +87,7 @@ export function ReviewBookingScreen({
     formData.append('slot', selectedSlot);
     formData.append('staffId', staffId);
     formData.append('totalAmount', String(total));
+    formData.append('platformFee', String(platformFee));
     formData.append('paymentMethod', paymentMethod);
 
     createBooking(formData).then((result) => {
@@ -215,7 +217,10 @@ export function ReviewBookingScreen({
             </div>
             <div className="flex items-center justify-between">
               <span>Platform Fees</span>
-              <span className="font-semibold text-neutral-950">{formatCurrency(platformFee)}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-neutral-400 line-through">{formatCurrency(originalPlatformFee)}</span>
+                <span className="font-bold text-emerald-600 uppercase tracking-wider text-xs bg-emerald-50 px-2 py-0.5 rounded-full">Free</span>
+              </div>
             </div>
             <div className="h-px bg-neutral-200" />
             <div className="flex items-center justify-between text-lg font-semibold text-neutral-950">
