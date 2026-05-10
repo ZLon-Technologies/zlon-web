@@ -30,13 +30,18 @@ export async function POST(request: NextRequest) {
       }, { onConflict: 'phone_number' });
 
     if (dbError) {
-      console.error('Database error storing OTP:', dbError);
-      return NextResponse.json({ error: 'Failed to initialize verification' }, { status: 500 });
+      console.error('OTP Error Details (Supabase):', dbError);
+      return NextResponse.json({ 
+        error: 'Failed to initialize verification',
+        details: dbError.message 
+      }, { status: 500 });
     }
 
     // 3. Send OTP via Fast2SMS
     // Extract 10 digits if it starts with +91
     const cleanNumber = phone.startsWith('+91') ? phone.slice(3) : phone.replace(/\D/g, '');
+
+    console.log('Attempting to send OTP via Fast2SMS to:', cleanNumber);
 
     const fast2smsResponse = await fetch('https://www.fast2sms.com/dev/bulkV2', {
       method: 'POST',
@@ -52,15 +57,22 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await fast2smsResponse.json();
+    console.log('Fast2SMS Response Details:', data);
 
     if (!data.return) {
-      return NextResponse.json({ error: data.message || 'Failed to send SMS' }, { status: 500 });
+      return NextResponse.json({ 
+        error: data.message || 'Failed to send SMS',
+        details: data
+      }, { status: 500 });
     }
 
     // For Fast2SMS, we don't have a sessionId, we use the phone as the identifier
     return NextResponse.json({ status: 'success', sessionId: phone });
   } catch (error) {
-    console.error('Send OTP error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('OTP Error Details (Catch):', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }

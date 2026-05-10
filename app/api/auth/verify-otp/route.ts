@@ -19,7 +19,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (verifyError || !verification) {
-      return NextResponse.json({ error: 'Verification record not found. Please request a new OTP.' }, { status: 401 });
+      console.error('Verify Error (DB Lookup):', verifyError);
+      return NextResponse.json({ 
+        error: 'Verification record not found. Please request a new OTP.',
+        details: verifyError?.message 
+      }, { status: 401 });
     }
 
     // Check expiry
@@ -41,6 +45,8 @@ export async function POST(request: NextRequest) {
     // 2. Manual User Management & Auth Logic
     const supabase = await createClient(); // Use SSR client to handle cookies
 
+    console.log('OTP verified successfully. Managing user for phone:', phone);
+
     // Check if a user with this phone number already exists in auth.users
     const { data: { users } } = await adminClient.auth.admin.listUsers();
     let targetUser = users.find(u => u.phone === phone || u.user_metadata?.phone_number === phone);
@@ -60,6 +66,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (createError) {
+        console.error('Create User Error (Admin):', createError);
         return NextResponse.json({ error: createError.message }, { status: 500 });
       }
 
@@ -71,19 +78,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure profile record exists
-    const { data: profile } = await adminClient
+    const { data: profile, error: profileError } = await adminClient
       .from('profiles')
       .select('id, full_name')
       .eq('id', targetUser.id)
       .maybeSingle();
 
+    if (profileError) {
+       console.error('Profile Lookup Error:', profileError);
+    }
+
     if (!profile) {
       isNewUser = true;
       redirectTo = '/complete-profile';
-      await adminClient.from('profiles').insert({
+      const { error: insertError } = await adminClient.from('profiles').insert({
         id: targetUser.id,
         phone_number: phone,
       });
+      if (insertError) console.error('Profile Insert Error:', insertError);
     } else if (!profile.full_name) {
       // Profile exists but incomplete
       isNewUser = true;
@@ -98,6 +110,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (updateError) {
+      console.error('Admin Password Update Error:', updateError);
       return NextResponse.json({ error: 'Failed to prepare session' }, { status: 500 });
     }
 
@@ -108,6 +121,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (signInError) {
+      console.error('SSR Sign In Error:', signInError);
       return NextResponse.json({ error: signInError.message }, { status: 500 });
     }
 
@@ -117,7 +131,10 @@ export async function POST(request: NextRequest) {
       redirectTo,
     });
   } catch (error) {
-    console.error('Verify OTP error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Verify OTP Error Details (Catch):', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
