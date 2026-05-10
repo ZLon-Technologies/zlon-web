@@ -79,6 +79,9 @@ function VerifyOtpContent() {
   const queryPhone =
     searchParams.get('phone') ??
     (searchParams.get('method') === 'phone' ? searchParams.get('contact') : null);
+  const querySessionId = searchParams.get('sessionId');
+
+  const [currentSessionId, setCurrentSessionId] = useState(querySessionId);
 
   const verificationDetails = queryPhone
     ? {
@@ -192,50 +195,75 @@ function VerifyOtpContent() {
       return;
     }
 
+    if (verificationDetails.phone && !currentSessionId) {
+      setErrorMessage('Session details are missing. Please request a new OTP.');
+      return;
+    }
+
     setErrorMessage('');
     setStatusMessage('');
     setIsVerifying(true);
 
-    const response = verificationDetails.phone
-      ? await supabase.auth.verifyOtp({
-          phone: verificationDetails.phone,
-          token,
-          type: 'sms',
-        })
-      : await supabase.auth.verifyOtp({
+    try {
+      if (verificationDetails.phone) {
+        // 1. Custom Server-side Verification for Phone (2Factor)
+        const response = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: verificationDetails.phone,
+            otp: token,
+            sessionId: currentSessionId,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!isMountedRef.current) return;
+        setIsVerifying(false);
+
+        if (!response.ok) {
+          setErrorMessage(data.error || 'Verification failed');
+          return;
+        }
+
+        // Successfully verified and signed in via API (cookies set)
+        router.replace(data.redirectTo || nextPath);
+      } else {
+        // 2. Native Supabase Verification for Email
+        const response = await supabase.auth.verifyOtp({
           email: verificationDetails.email!,
           token,
           type: 'email',
         });
 
-    if (!isMountedRef.current) {
-      return;
+        if (!isMountedRef.current) return;
+        setIsVerifying(false);
+
+        if (response.error) {
+          setErrorMessage(response.error.message);
+          return;
+        }
+
+        const user = response.data.user ?? response.data.session?.user;
+        const hasCompletedProfile = Boolean(
+          user?.user_metadata?.full_name ||
+            user?.user_metadata?.name ||
+            user?.user_metadata?.first_name
+        );
+
+        router.replace(
+          hasCompletedProfile
+            ? nextPath
+            : `/complete-profile?next=${encodeURIComponent(nextPath)}`
+        );
+      }
+    } catch (err) {
+      if (isMountedRef.current) {
+        setIsVerifying(false);
+        setErrorMessage('An unexpected error occurred during verification.');
+      }
     }
-
-    setIsVerifying(false);
-
-    if (response.error) {
-      setErrorMessage(response.error.message);
-      return;
-    }
-
-    if (!response.data.session) {
-      setErrorMessage('Supabase did not return a valid session. Please request a new code and try again.');
-      return;
-    }
-
-    const user = response.data.user ?? response.data.session.user;
-    const hasCompletedProfile = Boolean(
-      user?.user_metadata?.full_name ||
-        user?.user_metadata?.name ||
-        user?.user_metadata?.first_name
-    );
-
-    router.replace(
-      hasCompletedProfile
-        ? nextPath
-        : `/create-account?next=${encodeURIComponent(nextPath)}`
-    );
   };
 
   const handleResend = async () => {
@@ -247,29 +275,51 @@ function VerifyOtpContent() {
     setStatusMessage('');
     setIsResending(true);
 
-    const response = verificationDetails.phone
-      ? await supabase.auth.signInWithOtp({
-          phone: verificationDetails.phone,
-        })
-      : await supabase.auth.signInWithOtp({
+    try {
+      if (verificationDetails.phone) {
+        // Custom Send OTP for Phone
+        const response = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: verificationDetails.phone }),
+        });
+
+        const data = await response.json();
+
+        if (!isMountedRef.current) return;
+        setIsResending(false);
+
+        if (!response.ok) {
+          setErrorMessage(data.error || 'Failed to resend OTP');
+          return;
+        }
+
+        setCurrentSessionId(data.sessionId);
+      } else {
+        // Native Supabase Resend for Email
+        const response = await supabase.auth.signInWithOtp({
           email: verificationDetails.email!,
         });
 
-    if (!isMountedRef.current) {
-      return;
+        if (!isMountedRef.current) return;
+        setIsResending(false);
+
+        if (response.error) {
+          setErrorMessage(response.error.message);
+          return;
+        }
+      }
+
+      setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
+      setSecondsLeft(24);
+      setStatusMessage(`A new verification code was sent to ${verificationDetails.contact}.`);
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      if (isMountedRef.current) {
+        setIsResending(false);
+        setErrorMessage('An unexpected error occurred while resending.');
+      }
     }
-
-    setIsResending(false);
-
-    if (response.error) {
-      setErrorMessage(response.error.message);
-      return;
-    }
-
-    setOtp(Array.from({ length: OTP_LENGTH }, () => ''));
-    setSecondsLeft(24);
-    setStatusMessage(`A new verification code was sent to ${verificationDetails.contact}.`);
-    inputRefs.current[0]?.focus();
   };
 
   return (

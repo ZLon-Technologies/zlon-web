@@ -57,20 +57,29 @@ function LandingPageContent() {
     setErrorMessage('');
     setIsSendingOtp(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: normalizedPhone,
-    });
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: normalizedPhone }),
+      });
 
-    setIsSendingOtp(false);
+      const data = await response.json();
 
-    if (error) {
-      setErrorMessage(error.message);
-      return;
+      setIsSendingOtp(false);
+
+      if (!response.ok) {
+        setErrorMessage(data.error || 'Failed to send OTP');
+        return;
+      }
+
+      router.push(
+        `/verify-otp?phone=${encodeURIComponent(normalizedPhone)}&sessionId=${encodeURIComponent(data.sessionId)}&next=${encodeURIComponent(nextPath)}`
+      );
+    } catch (err) {
+      setIsSendingOtp(false);
+      setErrorMessage('An unexpected error occurred.');
     }
-
-    router.push(
-      `/verify-otp?phone=${encodeURIComponent(normalizedPhone)}&next=${encodeURIComponent(nextPath)}`
-    );
   }
 
   async function handleGoogleLogin(event: React.MouseEvent<HTMLButtonElement>) {

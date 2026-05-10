@@ -6,6 +6,8 @@ const SUPABASE_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 export function getSupabaseConfig() {
   if (!SUPABASE_URL) {
     throw new Error(
@@ -22,5 +24,6 @@ export function getSupabaseConfig() {
   return {
     url: SUPABASE_URL,
     publishableKey: SUPABASE_PUBLISHABLE_KEY,
+    serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
   };
 }
