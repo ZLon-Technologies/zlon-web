@@ -39,7 +39,7 @@ interface SalonRecord {
 interface UserLocationState {
   lat: number | null;
   lng: number | null;
-  displayText: string;
+  displayText: string | null;
 }
 
 function getStringValue(value: unknown) {
@@ -179,7 +179,7 @@ export default function HomePage() {
   const [userLocation, setUserLocation] = useState<UserLocationState>({
     lat: null,
     lng: null,
-    displayText: 'Current Location',
+    displayText: null,
   });
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -333,9 +333,33 @@ export default function HomePage() {
       setError(null);
 
       try {
-        const { data: salonData, error: salonsError } = await supabase
-          .from('salons')
-          .select(CUSTOMER_SAFE_SALON_SELECT);
+        let query = supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT);
+
+        // DIRECTIVE 3: Move category filtering to the Supabase query level
+        // We filter salons that have services matching the selected category ID
+        if (selected && selected !== 'all') {
+          // Join with services to filter salons by category
+          // Note: This assumes a 1:N relationship between salons and services
+          // We use a subquery or join-filter if supported, or a standard filter
+          const { data: salonIdsWithCategory } = await supabase
+            .from('services')
+            .select('salon_id')
+            .eq('category', selected);
+          
+          const validIds = Array.from(new Set((salonIdsWithCategory ?? []).map(s => s.salon_id)));
+          
+          if (validIds.length > 0) {
+            query = query.in('id', validIds);
+          } else {
+            // No salons match this category
+            setSalons([]);
+            setSalonRows([]);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        const { data: salonData, error: salonsError } = await query;
 
         if (salonsError) {
           throw salonsError;
@@ -499,9 +523,7 @@ export default function HomePage() {
   });
   const locationDisplayLabel = isLocating
     ? 'Locating...'
-    : userLocation.displayText !== 'Current Location'
-      ? userLocation.displayText.trim()
-      : 'Select Location';
+    : userLocation.displayText?.trim() || 'Select Location';
 
   const salonResults = searchResults.filter((result) => result.result_type === 'salon');
   const serviceResults = searchResults.filter((result) => result.result_type === 'service');

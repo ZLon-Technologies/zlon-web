@@ -106,19 +106,19 @@ function calculateEndTime(startTime: string, durationMinutes: number) {
 
 export function ChooseSlotScreen({ salon, selectedServices: propServices }: ChooseSlotScreenProps) {
   const router = useRouter();
-  const { state: bookingState, updateAppointment, totalDuration: storeDuration, subtotal: storeSubtotal } = useBooking();
+  const { state: bookingState, updateAppointment, totalDuration: storeDuration, subtotal: storeSubtotal, hasHydrated } = useBooking();
   
   // Use state if props are missing
   const selectedServices = propServices.length > 0 ? propServices : bookingState.cart;
   const totalDurationMinutes = storeDuration || selectedServices.reduce((sum, s) => sum + s.durationMinutes, 0);
   const totalPrice = storeSubtotal || selectedServices.reduce((sum, s) => sum + s.price, 0);
 
-  // Validation Gate: Redirect if no services
+  // Validation Gate: Redirect if no services, but ONLY after hydration
   useEffect(() => {
-    if (selectedServices.length === 0) {
+    if (hasHydrated && selectedServices.length === 0) {
       router.replace(`/salon/${salon.id}`);
     }
-  }, [selectedServices, router, salon.id]);
+  }, [hasHydrated, selectedServices, router, salon.id]);
 
   const [dateOptions] = useState<DateOption[]>(getUpcomingDateOptions);
   const [selectedDate, setSelectedDate] = useState(() => formatDateId(new Date()));

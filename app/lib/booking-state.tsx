@@ -51,36 +51,55 @@ const initialState: BookingState = {
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export function BookingProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<BookingState>(() => {
+  const [state, setState] = useState<BookingState>(initialState);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('zlon_booking_state_v2');
       if (saved) {
         try {
-          return JSON.parse(saved) as BookingState;
+          const parsed = JSON.parse(saved);
+          setState(parsed);
         } catch (e) {
           console.error('Failed to parse booking state', e);
         }
       }
+      setHasHydrated(true);
     }
-    return initialState;
-  });
-  const hasHydrated = true;
+  }, []);
 
   // Save to localStorage on change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('zlon_booking_state_v2', JSON.stringify(state));
+    if (hasHydrated && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('zlon_booking_state_v2', JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to save booking state', e);
+      }
     }
-  }, [state]);
+  }, [state, hasHydrated]);
 
   const updateSalon = useCallback((salon: Partial<BookingState['salon']>) => {
     setState((prev) => ({ ...prev, salon: { ...prev.salon, ...salon } }));
   }, []);
 
+  // DIRECTIVE 4: Reset staff selection when services change to prevent mismatch
+  const resetAppointment = {
+    date: null,
+    slot: null,
+    selectedStaffId: 'any',
+  };
+
   const addToCart = useCallback((service: SalonService) => {
     setState((prev) => {
       if (prev.cart.some(s => s.id === service.id)) return prev;
-      return { ...prev, cart: [...prev.cart, service] };
+      return { 
+        ...prev, 
+        cart: [...prev.cart, service],
+        appointment: resetAppointment // Clear slot/staff if service changes
+      };
     });
   }, []);
 
@@ -88,11 +107,16 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({
       ...prev,
       cart: prev.cart.filter((s) => s.id !== serviceId),
+      appointment: resetAppointment
     }));
   }, []);
 
   const setCart = useCallback((services: SalonService[]) => {
-    setState((prev) => ({ ...prev, cart: services }));
+    setState((prev) => ({ 
+      ...prev, 
+      cart: services,
+      appointment: resetAppointment
+    }));
   }, []);
 
   const updateAppointment = useCallback((appointment: Partial<BookingState['appointment']>) => {

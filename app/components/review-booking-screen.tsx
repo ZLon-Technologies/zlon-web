@@ -29,7 +29,7 @@ export function ReviewBookingScreen({
   staffName: propStaffName,
 }: ReviewBookingScreenProps) {
   const router = useRouter();
-  const { state: bookingState, subtotal: storeSubtotal, totalDuration: storeDuration } = useBooking();
+  const { state: bookingState, subtotal: storeSubtotal, totalDuration: storeDuration, hasHydrated } = useBooking();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -49,12 +49,12 @@ export function ReviewBookingScreen({
   const staffId = propStaffId || bookingState.appointment.selectedStaffId || 'any';
   const staffName = propStaffName || (staffId === 'any' ? 'Any Staff' : 'Professional Staff');
 
-  // Validation Gate: Redirect if state is lost
+  // Validation Gate: Redirect if state is lost, but ONLY after hydration
   useEffect(() => {
-    if (!salon.id || selectedServices.length === 0) {
+    if (hasHydrated && (!salon.id || selectedServices.length === 0)) {
       router.replace('/home');
     }
-  }, [salon.id, selectedServices, router]);
+  }, [hasHydrated, salon.id, selectedServices, router]);
 
   const hasSelectedServices = selectedServices.length > 0;
   const subtotal = storeSubtotal || selectedServices.reduce((sum, service) => sum + service.price, 0);

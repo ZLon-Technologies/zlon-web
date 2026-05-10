@@ -160,21 +160,43 @@ export async function cancelBooking(bookingId: string): Promise<BookingMutationR
     return result;
   }
 
+  // DIRECTIVE 1: Prevent double-spending and ensure atomicity
   // Refund if payment method was wallet
   if (bookingData.payment_method === 'wallet' && bookingData.total_amount) {
-    const { data: walletData } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', userId)
+    // 1. Transactional check for double refund
+    const { data: alreadyRefunded } = await supabase
+      .from('wallet_transactions')
+      .select('id')
+      .eq('booking_id', safeBookingId)
+      .eq('type', 'refund')
       .maybeSingle();
 
-    const currentBalance = walletData?.balance || 0;
-    const newBalance = currentBalance + Number(bookingData.total_amount);
+    if (!alreadyRefunded) {
+      const { data: walletData } = await supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    await supabase
-      .from('wallets')
-      .upsert({ user_id: userId, balance: newBalance, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
+      const currentBalance = walletData?.balance || 0;
+      const refundAmount = Number(bookingData.total_amount);
+      const newBalance = currentBalance + refundAmount;
+
+      // 2. Perform refund and log transaction
+      await Promise.all([
+        supabase
+          .from('wallets')
+          .upsert({ user_id: userId, balance: newBalance, updated_at: new Date().toISOString() })
+          .eq('user_id', userId),
+        supabase.from('wallet_transactions').insert({
+          user_id: userId,
+          booking_id: safeBookingId,
+          amount: refundAmount,
+          type: 'refund',
+          description: 'Booking cancellation refund',
+        }),
+      ]);
+    }
   }
 
   revalidatePath('/booking-history');
@@ -395,6 +417,7 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
 
     const newBalance = currentBalance - totalAmount;
 
+    // DIRECTIVE 1: Log payment transaction
     const { error: walletUpdateError } = await supabase
       .from('wallets')
       .upsert({ user_id: userId, balance: newBalance, updated_at: new Date().toISOString() })
@@ -403,6 +426,13 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
     if (walletUpdateError) {
       return { ok: false, message: `Wallet update failed: ${walletUpdateError.message}` };
     }
+
+    await supabase.from('wallet_transactions').insert({
+      user_id: userId,
+      amount: -totalAmount,
+      type: 'payment',
+      description: `Payment for booking at salon ${salonId}`,
+    });
   }
 
   const { data, error } = await supabase
@@ -429,6 +459,9 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
     }
     return { ok: false, message: error.message };
   }
+
+  // DIRECTIVE 1: Increment monthly_bookings for AI Paywall enforcement
+  await supabase.rpc('increment_monthly_bookings', { user_id: userId });
 
   revalidatePath('/booking-history');
   revalidatePath('/profile/booking-history');
