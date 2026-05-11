@@ -270,15 +270,22 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
 
           <div className="mt-4 flex flex-col items-center">
             <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">
-              {profile.fullName || 'ZLon Guest'}
+              {profile.fullName || (profile.id ? 'ZLon User' : 'ZLon Guest')}
             </h2>
             <p className="text-sm font-medium text-neutral-500 mb-2">
-              {profile.emailAddress || 'Add email for security'}
+              {profile.emailAddress || (profile.id ? 'Add email for security' : 'Sign in to sync your bookings')}
             </p>
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200">
-              <CheckCircle2 size={12} />
-              ZLon Member
-            </div>
+            {profile.id ? (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200">
+                <CheckCircle2 size={12} />
+                ZLon Member
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 ring-1 ring-gray-200">
+                <User size={12} />
+                Guest Mode
+              </div>
+            )}
           </div>
         </section>
 
@@ -301,7 +308,7 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
               </div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">AI Scans</span>
             </div>
-            <p className="text-lg font-bold text-neutral-900">{aiScansAvailable} Left</p>
+            <p className="text-lg font-bold text-neutral-900">{profile.id ? aiScansAvailable : 0} Left</p>
           </div>
         </section>
 
@@ -414,17 +421,28 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
             </div>
           </section>
 
-          {/* Log Out Button */}
+          {/* Action Button */}
           <div className="pt-4 flex justify-center">
-            <button
-              type="button"
-              onClick={handleLogOut}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-8 py-3 rounded-full text-red-500 font-bold text-sm transition-all hover:bg-red-50 active:scale-95"
-            >
-              <LogOut size={16} />
-              {isSaving ? 'Logging out...' : 'Log Out'}
-            </button>
+            {profile.id ? (
+              <button
+                type="button"
+                onClick={handleLogOut}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-8 py-3 rounded-full text-red-500 font-bold text-sm transition-all hover:bg-red-50 active:scale-95"
+              >
+                <LogOut size={16} />
+                {isSaving ? 'Logging out...' : 'Log Out'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.push('/')}
+                className="flex items-center gap-2 px-8 py-3 rounded-full bg-black text-white font-bold text-sm transition-all hover:bg-neutral-800 active:scale-95 shadow-lg shadow-black/10"
+              >
+                <LogOut size={16} className="rotate-180" />
+                Sign In
+              </button>
+            )}
           </div>
         </div>
       </main>

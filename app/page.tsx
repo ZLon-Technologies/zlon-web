@@ -87,7 +87,7 @@ function LandingPageContent() {
     setErrorMessage('');
     setIsGoogleLoading(true);
 
-    const callbackUrl = new URL('/auth/callback', window.location.origin);
+    const callbackUrl = new URL('/api/auth-callback/callback', window.location.origin);
     callbackUrl.searchParams.set('next', nextPath);
 
     const { error } = await supabase.auth.signInWithOAuth({
