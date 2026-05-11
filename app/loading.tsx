@@ -7,10 +7,10 @@ export default function Loading() {
         <Image
           src="/logo.png"
           alt="ZLon"
-          width={100}
-          height={100}
+          width={120}
+          height={120}
           priority
-          className="object-contain"
+          className="object-contain animate-pulse"
         />
       </div>
     </div>
