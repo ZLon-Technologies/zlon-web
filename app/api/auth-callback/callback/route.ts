@@ -1,7 +1,7 @@
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
 
 function getSafeRedirectPath(pathname: string | null, fallback: string) {
   if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//')) {
@@ -20,13 +20,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  const supabase = await createClient();
+  // Create a response object first so we can attach cookies to it
+  const response = NextResponse.redirect(new URL(nextPath, request.url));
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     const loginUrl = new URL('/', request.url);
     loginUrl.searchParams.set('next', nextPath);
-
     return NextResponse.redirect(loginUrl);
   }
 
@@ -39,11 +58,17 @@ export async function GET(request: NextRequest) {
   );
 
   if (!hasCompletedProfile) {
-    const profileUrl = new URL('/create-account', request.url);
+    const profileUrl = new URL('/complete-profile', request.url);
     profileUrl.searchParams.set('next', nextPath);
-
-    return NextResponse.redirect(profileUrl);
+    
+    // We need to carry over the cookies to the new redirect
+    const profileResponse = NextResponse.redirect(profileUrl);
+    response.cookies.getAll().forEach((cookie) => {
+      profileResponse.cookies.set(cookie.name, cookie.value);
+    });
+    
+    return profileResponse;
   }
 
-  return NextResponse.redirect(new URL(nextPath, request.url));
+  return response;
 }
