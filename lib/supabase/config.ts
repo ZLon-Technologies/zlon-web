@@ -1,23 +1,19 @@
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!;
 
-const SUPABASE_PUBLISHABLE_KEY =
-  process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!;
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export function getSupabaseConfig() {
   if (!SUPABASE_URL) {
     throw new Error(
-      'Missing Supabase URL. Set NEXT_PUBLIC_ZLON_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL.'
+      'Missing Supabase URL. Set NEXT_PUBLIC_ZLON_SUPABASE_URL.'
     );
   }
 
   if (!SUPABASE_PUBLISHABLE_KEY) {
     throw new Error(
-      'Missing Supabase publishable key. Set NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+      'Missing Supabase publishable key. Set NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY.'
     );
   }
 
