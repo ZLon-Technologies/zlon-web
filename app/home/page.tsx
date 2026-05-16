@@ -853,29 +853,6 @@ export default function HomePage() {
               <p className="text-sm text-gray-500">Loading salons...</p>
             ) : error ? (
               <p className="text-sm text-red-500">{error}</p>
-            ) : salons.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-[2.5rem] bg-gray-50 px-8 py-16 text-center border border-gray-100 shadow-inner">
-                <div className="relative mb-8">
-                  <div className="absolute inset-0 scale-150 rounded-full bg-gray-200/40 blur-3xl" />
-                  <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-gray-50 to-white" />
-                    <SearchX className="relative h-10 w-10 text-gray-400" strokeWidth={1.5} />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold tracking-tight text-gray-900">
-                  No salons found
-                </h3>
-                <p className="mt-3 max-w-[260px] text-sm leading-6 text-gray-600 font-medium">
-                  We couldn&apos;t find any salons matching your exact style right now. Let&apos;s try something else!
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setSelected('all')}
-                  className="mt-8 rounded-full bg-gray-900 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-gray-800 active:scale-[0.98] shadow-lg shadow-gray-200"
-                >
-                  View All Services
-                </button>
-              </div>
             ) : nearbySalons.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
                 <div className="relative mb-6 flex h-32 w-32 items-center justify-center">

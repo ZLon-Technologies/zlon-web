@@ -53,7 +53,7 @@ export function BookingsList() {
           <h2 className="text-lg font-semibold tracking-tight text-neutral-950">
             No active bookings right now
           </h2>
-          <p className="mt-2 text-sm leading-6 text-neutral-500">
+          <p className="mt-2 text-sm leading-6 text-neutral-800">
             Your confirmed appointments will show up here as soon as you book them.
           </p>
           <Link

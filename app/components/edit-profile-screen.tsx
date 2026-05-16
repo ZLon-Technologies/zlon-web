@@ -25,6 +25,7 @@ import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/clie
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { useBooking } from '../lib/booking-state';
 import { formatCurrency } from '../lib/booking-flow';
+import packageJson from '@/package.json';
 
 interface ProfileState {
   id: string;
@@ -218,24 +219,21 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
   }
 
   return (
-    <div className="flex flex-col bg-[#F9F9F9] min-h-screen text-neutral-950 pb-28">
-      {/* Premium Header Background */}
-      <div className="absolute top-0 left-0 right-0 h-48 bg-neutral-950 rounded-b-[3rem] shadow-lg" />
+    <div className="flex flex-col bg-[#F9F9F9] min-h-screen text-neutral-950">
+      <div className="bg-neutral-950 rounded-b-[3rem] shadow-lg pb-8">
+        <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-4">
+          <h1 className="text-white text-xl font-bold tracking-tight">Profile</h1>
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+          >
+            <Bell size={20} strokeWidth={2.1} />
+          </button>
+        </header>
 
-      <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-4">
-        <h1 className="text-white text-xl font-bold tracking-tight">Profile</h1>
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
-        >
-          <Bell size={20} strokeWidth={2.1} />
-        </button>
-      </header>
-
-      <main className="relative z-10 flex-1 px-5">
         {/* Identity Section */}
-        <section className="mt-4 text-center">
+        <section className="relative z-10 mt-4 text-center">
           <div className="relative mx-auto h-28 w-28 rounded-full border-4 border-white bg-white shadow-xl overflow-visible">
             <div className="h-full w-full rounded-full overflow-hidden">
               {profile.avatarUrl ? (
@@ -269,25 +267,35 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
           </div>
 
           <div className="mt-4 flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">
+            <h2 className="text-2xl font-bold text-white tracking-tight">
               {profile.fullName || (profile.id ? 'ZLon User' : 'ZLon Guest')}
             </h2>
-            <p className="text-sm font-medium text-neutral-500 mb-2">
+            <p className="text-sm font-medium text-white/70 mb-2">
               {profile.emailAddress || (profile.id ? 'Add email for security' : 'Sign in to sync your bookings')}
             </p>
             {profile.id ? (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200">
-                <CheckCircle2 size={12} />
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-100 to-yellow-200 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-900 ring-1 ring-amber-300 shadow-sm">
+                <CheckCircle2 size={12} fill="currentColor" fillOpacity={0.2} />
                 ZLon Member
               </div>
             ) : (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 ring-1 ring-gray-200">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white/70 ring-1 ring-white/20">
                 <User size={12} />
                 Guest Mode
               </div>
             )}
+            <Link
+              href="/profile/edit"
+              className="mt-3 px-5 py-2 bg-white/15 hover:bg-white/25 text-white text-sm font-semibold rounded-full transition-all flex items-center gap-2 w-fit border border-white/10"
+            >
+              <Pencil size={14} strokeWidth={2.5} />
+              Edit Profile
+            </Link>
           </div>
         </section>
+      </div>
+
+      <main className="relative z-10 px-5">
 
         {/* Quick Stats Row */}
         <section className="mt-8 grid grid-cols-2 gap-3">
@@ -314,76 +322,7 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
 
         {/* Settings Groups */}
         <div className="mt-8 space-y-6">
-          {/* Group 1: Personal Information */}
-          <section>
-            <h3 className="ml-1 mb-3 text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
-              Personal Information
-            </h3>
-            <div className={`${surfaceClass} overflow-hidden divide-y divide-black/5`}>
-              <div 
-                onClick={() => openFieldEditor('fullName')}
-                className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
-                    <User size={18} />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Name</span>
-                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.fullName)}</span>
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-neutral-300" />
-              </div>
-
-              <div className="group flex items-center justify-between p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500">
-                    <Mail size={18} />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Email</span>
-                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.emailAddress)}</span>
-                  </div>
-                </div>
-                <div className="h-4 w-4" /> {/* Spacer */}
-              </div>
-
-              <div 
-                onClick={() => openFieldEditor('phoneNumber')}
-                className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
-                    <Phone size={18} />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Phone</span>
-                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.phoneNumber)}</span>
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-neutral-300" />
-              </div>
-
-              <div 
-                onClick={() => openFieldEditor('gender')}
-                className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50 cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
-                    <Settings size={18} />
-                  </div>
-                  <div>
-                    <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Gender</span>
-                    <span className="text-sm font-semibold text-neutral-900">{getDisplayValue(profile.gender)}</span>
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-neutral-300" />
-              </div>
-            </div>
-          </section>
-
-          {/* Group 2: Account & Security */}
+          {/* Group 1: Account & Security */}
           <section>
             <h3 className="ml-1 mb-3 text-xs font-bold uppercase tracking-[0.15em] text-neutral-400">
               Account & Security
@@ -444,6 +383,13 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
               </button>
             )}
           </div>
+
+          {/* App Footer */}
+          <footer className="pt-4 pb-0">
+            <p className="text-center text-xs font-medium tracking-wide text-gray-400">
+              ZLon v{packageJson.version} (Beta)
+            </p>
+          </footer>
         </div>
       </main>
 

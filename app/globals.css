@@ -26,7 +26,7 @@ body {
 
 /* Safe area insets for mobile devices (notch, home indicator) */
 .safe-area-pt {
-  padding-top: env(safe-area-inset-top);
+  padding-top: max(env(safe-area-inset-top), 2.5rem);
 }
 
 .safe-area-pb {

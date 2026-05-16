@@ -43,7 +43,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
     return (
       <div className="w-full relative">
         <div className="flex flex-col text-neutral-950">
-          <header className="border-b border-black/5 bg-white px-4 py-4">
+          <header className="border-b border-black/5 bg-white px-4 pb-4 safe-area-pt">
             <div className="flex items-center gap-3">
               <Link
                 prefetch={false}
@@ -71,7 +71,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
   return (
     <div className="w-full relative">
       <div className="flex flex-col text-neutral-950">
-        <header className="border-b border-black/5 bg-white px-4 py-4">
+        <header className="border-b border-black/5 bg-white px-4 pb-4 safe-area-pt">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Link
@@ -119,7 +119,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
                 <h3 className="text-lg font-semibold tracking-tight text-neutral-950">
                   No past visits to show
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-neutral-500">
+                <p className="mt-2 text-sm leading-6 text-neutral-800">
                   Once you finish an appointment, it will appear here for quick rebooking.
                 </p>
               </div>

@@ -22,7 +22,7 @@ export default async function BookingsPage() {
   return (
     <div className="w-full relative">
       <div className="flex flex-col text-neutral-950">
-        <header className="bg-white px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2">
+        <header className="bg-white px-4 safe-area-pt pb-2">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
