@@ -41,7 +41,7 @@ function SecureVerificationBadge() {
 
 function VerifyOtpFallback() {
   return (
-    <main className="flex w-full items-center justify-center px-5 py-12">
+    <main className="flex h-[100dvh] w-full flex-col items-center justify-center px-6 overflow-hidden bg-white pt-[max(env(safe-area-inset-top),48px)]">
       <div className="w-full rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10">
         <h1 className="mb-3 text-center text-3xl font-bold text-black">Verify OTP</h1>
         <p className="mb-8 text-center text-sm leading-6 text-gray-500">Loading verification details...</p>
@@ -323,7 +323,7 @@ function VerifyOtpContent() {
   };
 
   return (
-    <main className="flex w-full items-center justify-center px-5 py-12">
+    <main className="flex h-[100dvh] w-full flex-col items-center justify-center px-6 overflow-hidden bg-white pt-[max(env(safe-area-inset-top),48px)]">
       <div className="w-full rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10">
         <h1 className="mb-3 text-center text-3xl font-bold text-black">Verify OTP</h1>
         <p className="mb-8 text-center text-sm leading-6 text-gray-500">

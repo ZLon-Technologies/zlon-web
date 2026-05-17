@@ -122,7 +122,7 @@ export function WalletScreen({ initialBalance, initialTransactions }: WalletScre
 
   return (
     <div className="flex flex-col text-neutral-950">
-      <header className="relative border-b border-black/5 px-4 pb-4 safe-area-pt">
+      <header className="relative border-b border-black/5 px-4 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
         <button
           type="button"
           aria-label="Wallet information"

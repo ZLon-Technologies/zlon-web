@@ -241,7 +241,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
 
   return (
     <div className="w-full relative pb-24">
-      <header className="border-b border-neutral-100 bg-white">
+      <header className="border-b border-neutral-100 bg-white pt-[max(env(safe-area-inset-top),48px)]">
         <div className="flex items-center gap-3 px-5 py-3">
           <button
             type="button"
@@ -255,7 +255,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
         </div>
       </header>
 
-      <main className="px-5 pt-3 pb-32">
+      <main className="px-5 pt-3 pb-24">
         <section className="overflow-hidden rounded-[2rem] border border-neutral-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.06)]">
           <div className="relative h-56 w-full overflow-hidden bg-neutral-100">
             <Image

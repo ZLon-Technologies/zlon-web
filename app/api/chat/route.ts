@@ -19,6 +19,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
+    //Construct the user message content
+    const userMessage = messages[messages.length - 1].content || '';
+    const lowerText = userMessage.toLowerCase();
+
+    // ESCALATION LOGIC (Bypass Gemini)
+    const escalationKeywords = ["human", "agent", "real person", "customer care", "support email", "contact"];
+    const needsEscalation = escalationKeywords.some(keyword => lowerText.includes(keyword));
+
+    if (needsEscalation) {
+      return NextResponse.json({ 
+        text: "I understand you'd like to speak with a human agent. You can reach our ZLon support team directly at support@zlon.in, and a real person will get back to you shortly." 
+      });
+    }
+
     // 2. Initialize Gemini model — strictly gemini-1.5-flash
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({

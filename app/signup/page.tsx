@@ -90,7 +90,7 @@ function SignupPageContent() {
   }
 
   return (
-    <main className="w-full px-5 py-8">
+    <main className="flex h-[100dvh] w-full flex-col overflow-hidden px-5 py-8 bg-white pt-[max(env(safe-area-inset-top),48px)]">
       <div className="w-full">
         <button
           type="button"

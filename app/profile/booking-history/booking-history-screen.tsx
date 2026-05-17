@@ -43,7 +43,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
     return (
       <div className="w-full relative">
         <div className="flex flex-col text-neutral-950">
-          <header className="border-b border-black/5 bg-white px-4 pb-4 safe-area-pt">
+          <header className="border-b border-black/5 bg-white px-4 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
             <div className="flex items-center gap-3">
               <Link
                 prefetch={false}
@@ -58,7 +58,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
               </h1>
             </div>
           </header>
-          <main className="flex-1 px-4 py-5 pb-36">
+          <main className="flex-1 px-4 py-5 pb-24">
             <div className="flex items-center justify-center h-64">
               <p className="text-neutral-500">Loading...</p>
             </div>
@@ -71,7 +71,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
   return (
     <div className="w-full relative">
       <div className="flex flex-col text-neutral-950">
-        <header className="border-b border-black/5 bg-white px-4 pb-4 safe-area-pt">
+        <header className="border-b border-black/5 bg-white px-4 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Link
@@ -89,7 +89,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
           </div>
         </header>
 
-        <main className="flex-1 space-y-6 px-4 py-5 pb-36">
+        <main className="flex-1 space-y-6 px-4 py-5 pb-24">
           <section className="rounded-[1.85rem] border border-black/10 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
             <div className="flex items-center justify-between gap-4">
               <div>

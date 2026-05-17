@@ -118,9 +118,9 @@ export default function CustomerSupportPage() {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full relative">
+    <div className="fixed inset-0 flex flex-col bg-white z-50">
       {/* Header */}
-      <header className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+      <header className="flex-none flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),48px)] pb-4 border-b border-gray-100 bg-white z-10">
         <div className="flex items-center gap-3">
           <button 
             onClick={handleBack}
@@ -136,13 +136,13 @@ export default function CustomerSupportPage() {
             </div>
           </div>
         </div>
-        <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white">
+        <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0">
           <Bot className="w-5 h-5" />
         </div>
       </header>
 
       {/* Chat Messages */}
-      <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50 pb-20">
+      <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
         {messages.map((msg) => (
           <div 
             key={msg.id}
@@ -185,7 +185,10 @@ export default function CustomerSupportPage() {
       </main>
 
       {/* Input Area */}
-      <footer className="mt-auto p-4 bg-white border-t border-gray-100">
+      <footer 
+        className="flex-none bg-gray-50 border-t border-gray-100 p-4"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
+      >
         {isHandoff ? (
           <div className="py-4 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
             <p className="text-sm font-bold text-gray-900">Connecting you to the salon owner...</p>

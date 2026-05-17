@@ -221,7 +221,7 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
   return (
     <div className="flex flex-col bg-[#F9F9F9] min-h-screen text-neutral-950">
       <div className="bg-neutral-950 rounded-b-[3rem] shadow-lg pb-8">
-        <header className="relative z-10 flex items-center justify-between px-6 pt-6 pb-4">
+        <header className="relative z-10 flex items-center justify-between px-6 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
           <h1 className="text-white text-xl font-bold tracking-tight">Profile</h1>
           <button
             type="button"
@@ -354,6 +354,16 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
                     <Shield size={18} />
                   </div>
                   <span className="text-sm font-semibold text-neutral-900">Privacy Settings</span>
+                </div>
+                <ChevronRight size={16} className="text-neutral-300" />
+              </Link>
+
+              <Link prefetch={false} href="/terms-and-conditions" className="group flex items-center justify-between p-4 transition-colors hover:bg-neutral-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 text-neutral-500 group-hover:bg-black group-hover:text-white transition-colors">
+                    <FileText size={18} />
+                  </div>
+                  <span className="text-sm font-semibold text-neutral-900">Terms & Conditions</span>
                 </div>
                 <ChevronRight size={16} className="text-neutral-300" />
               </Link>

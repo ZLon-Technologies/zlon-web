@@ -39,7 +39,7 @@ function ForgotPasswordContent() {
 
   return (
     <main className="flex min-h-screen w-full flex-col px-5 py-8">
-      <header className="flex items-center gap-3">
+      <header className="flex items-center gap-3 pt-[max(env(safe-area-inset-top),48px)]">
         <button
           type="button"
           onClick={() => router.back()}

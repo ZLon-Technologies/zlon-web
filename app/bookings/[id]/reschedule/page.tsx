@@ -22,7 +22,7 @@ export default async function RescheduleBookingPage({ params }: RescheduleBookin
   return (
     <div className="w-full relative">
       <div className="flex flex-col text-neutral-950">
-        <header className="border-b border-black/5 bg-white px-5 py-4">
+        <header className="border-b border-black/5 bg-white px-5 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
           <div className="flex items-center gap-3">
             <Link
               prefetch={false}

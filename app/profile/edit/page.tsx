@@ -106,7 +106,7 @@ export default function EditProfilePage() {
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-white text-neutral-950 font-sans antialiased">
       {/* Top Header */}
-      <header className="flex items-center px-4 safe-area-pt pb-4 border-b border-neutral-100">
+      <header className="flex items-center px-4 pt-[max(env(safe-area-inset-top),48px)] pb-4 border-b border-neutral-100">
         <button
           onClick={handleBack}
           type="button"

@@ -110,7 +110,7 @@ function LandingPageContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-5 py-12 bg-white">
+    <div className="flex min-h-screen flex-col items-center justify-center px-5 py-12 bg-white pt-[max(env(safe-area-inset-top),48px)]">
       {/* Hidden SEO text — readable by search crawlers and screen readers but invisible to sighted users */}
       <h1 className="sr-only">
         ZLon — Premium Salon & Grooming Booking Platform
