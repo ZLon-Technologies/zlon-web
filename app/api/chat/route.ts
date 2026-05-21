@@ -97,9 +97,9 @@ NEVER share personal phone numbers or personal email addresses of any ZLon emplo
     });
 
     // 3. Construct the message parts array safely
-    const userMessage = messages[messages.length - 1].content;
+    const latestMessage = messages[messages.length - 1].content;
 // Add a space fallback so it never sends an empty string
-const parts: Part[] = [{ text: userMessage ? userMessage : ' ' }];
+const parts: Part[] = [{ text: latestMessage ? latestMessage : ' ' }];
 
     // Strictly validate that image exists, is a string, and actually contains data
     if (image && typeof image === 'string' && image.trim().length > 0) {
