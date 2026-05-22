@@ -20,6 +20,7 @@ import {
   User,
   Zap,
   CheckCircle2,
+  FileText,
 } from 'lucide-react';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from './mobile-bottom-nav';
