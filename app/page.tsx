@@ -25,7 +25,6 @@ export default function LandingPage() {
               height={40}
               className="object-contain"
             />
-            <span className="text-2xl font-black tracking-tighter">ZLon.</span>
           </div>
           
           <div className="flex items-center gap-4 sm:gap-6">
@@ -123,7 +122,6 @@ export default function LandingPage() {
                   height={32}
                   className="object-contain"
                 />
-                <span className="text-xl font-black tracking-tighter">ZLon.</span>
               </div>
               <p className="text-gray-500 font-medium max-w-sm mb-8">
                 Elevating the grooming experience for the modern consumer. Discover, book, and experience India&apos;s finest salons.
