@@ -1,251 +1,161 @@
 'use client';
 
-import React, { Suspense, type FormEvent, useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Mail, ChevronDown } from 'lucide-react';
+import { 
+  ChevronRight, 
+  ShieldCheck, 
+  Clock, 
+  Star,
+  Zap
+} from 'lucide-react';
 
-const COUNTRY_CODES = [
-  { code: '+91', name: 'IN' },
-  { code: '+1', name: 'US' },
-  { code: '+44', name: 'UK' },
-  { code: '+61', name: 'AU' },
-];
-
-function getPhoneNumber(phone: string, countryCode: string) {
-  const digitsOnly = phone.replace(/\D/g, '').slice(0, 10);
-
-  if (digitsOnly.length !== 10) {
-    return null;
-  }
-
-  return `${countryCode}${digitsOnly}`;
-}
-
-function getSafeRedirectPath(pathname: string | null, fallback: string) {
-  if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//')) {
-    return fallback;
-  }
-
-  return pathname;
-}
-
-function LandingPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = createSupabaseBrowserClient();
-  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
-  const [phone, setPhone] = useState('');
-  const [countryCode, setCountryCode] = useState('+91');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-
-  async function handlePhoneLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const normalizedPhone = getPhoneNumber(phone, countryCode);
-
-    if (!normalizedPhone) {
-      setErrorMessage('Enter a valid 10-digit phone number.');
-      return;
-    }
-
-    setErrorMessage('');
-    setIsSendingOtp(true);
-
-    try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: normalizedPhone }),
-      });
-
-      const data = await response.json();
-
-      setIsSendingOtp(false);
-
-      if (!response.ok) {
-        setErrorMessage(data.error || 'Failed to send OTP');
-        return;
-      }
-
-      router.push(
-        `/verify-otp?phone=${encodeURIComponent(normalizedPhone)}&sessionId=${encodeURIComponent(data.sessionId)}&next=${encodeURIComponent(nextPath)}`
-      );
-    } catch (err) {
-      setIsSendingOtp(false);
-      setErrorMessage('An unexpected error occurred.');
-    }
-  }
-
-  async function handleGoogleLogin(event: React.MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    setErrorMessage('');
-    setIsGoogleLoading(true);
-
-    const callbackUrl = new URL('https://zlon.in/api/auth-callback/callback');
-    callbackUrl.searchParams.set('next', nextPath);
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: callbackUrl.toString(),
-      },
-    });
-
-    if (error) {
-      setIsGoogleLoading(false);
-      setErrorMessage(error.message);
-      return;
-    }
-
-    // Fallback: if OAuth redirect doesn't happen within 5s, reset the button
-    window.setTimeout(() => {
-      setIsGoogleLoading(false);
-    }, 5000);
-  }
-
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-5 py-12 bg-white pt-[max(env(safe-area-inset-top),48px)]">
-      {/* Hidden SEO text — readable by search crawlers and screen readers but invisible to sighted users */}
-      <h1 className="sr-only">
-        ZLon — Premium Salon & Grooming Booking Platform
-      </h1>
-      <p className="sr-only">
-        Discover and book top-rated salons across India. From haircuts and spa treatments to full grooming sessions, ZLon lets you browse real-time availability, compare prices, and pay seamlessly with the built-in wallet — all in one app.
-      </p>
-
-      <div className="mb-10 bg-transparent">
-        <Image
-          src="/logo.png"
-          alt="ZLon Logo"
-          width={100}
-          height={100}
-          priority
-          className="mx-auto object-contain"
-        />
-      </div>
-
-      <form
-        onSubmit={handlePhoneLogin}
-        className="w-full max-w-sm"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center text-black tracking-tight">Welcome Back</h2>
-
-        <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors relative">
-          <div className="relative flex items-center pl-3 pr-1 gap-1">
-            <span className="font-semibold text-black text-sm">{countryCode}</span>
-            <ChevronDown size={14} className="text-gray-500" />
-            <select
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
-              aria-label="Select Country Code"
-            >
-              {COUNTRY_CODES.map((item) => (
-                <option key={item.code} value={item.code}>
-                  {item.name} ({item.code})
-                </option>
-              ))}
-            </select>
+    <div className="flex min-h-screen flex-col bg-white text-black font-sans antialiased">
+      {/* Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="ZLon Logo"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
+            <span className="text-2xl font-black tracking-tighter">ZLon.</span>
           </div>
-          <div className="w-px h-6 bg-gray-300 mx-2" />
-          <input
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel-national"
-            value={phone}
-            onChange={(event) => {
-              setPhone(event.target.value.replace(/\D/g, '').slice(0, 10));
-              if (errorMessage) {
-                setErrorMessage('');
-              }
-            }}
-            placeholder="Enter Number"
-            className="flex-1 bg-transparent py-4 pr-4 text-black placeholder-gray-400 focus:outline-none font-medium"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSendingOtp || isGoogleLoading}
-          className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-70 shadow-lg shadow-black/10"
-        >
-          {isSendingOtp ? 'Sending OTP...' : 'Send OTP'}
-        </button>
-
-        {errorMessage ? (
-          <p className="mt-4 text-center text-sm text-red-500 font-medium">{errorMessage}</p>
-        ) : null}
-
-        <div className="my-8 flex items-center">
-          <div className="flex-grow border-t border-gray-100" />
-          <span className="mx-4 text-[10px] font-bold tracking-[0.2em] text-gray-400 uppercase">OR CONTINUE WITH</span>
-          <div className="flex-grow border-t border-gray-100" />
-        </div>
-
-        <div className="space-y-3">
-          <button
-            type="button"
-            className="w-full border border-gray-300 rounded-xl py-3.5 flex items-center justify-center gap-3 bg-white transition-all hover:bg-gray-50 active:scale-[0.99] disabled:opacity-50"
-            onClick={handleGoogleLogin}
-            disabled={isSendingOtp || isGoogleLoading}
-          >
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+          
+          <div className="flex items-center gap-4 sm:gap-6">
+            <Link 
+              href="/login" 
+              className="text-sm font-bold text-gray-600 hover:text-black transition-colors hidden sm:block"
             >
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                fill="#4285F4"
-              />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-            <span className="text-sm font-semibold text-gray-700">Continue with Google</span>
-          </button>
-
-          <button
-            type="button"
-            className="w-full border border-gray-300 rounded-xl py-3.5 flex items-center justify-center gap-3 bg-white transition-all hover:bg-gray-50 active:scale-[0.99]"
-            onClick={() => router.push('/login-email')}
-          >
-            <Mail size={20} className="text-gray-700" />
-            <span className="text-sm font-semibold text-gray-700">Continue with Email</span>
-          </button>
+              Log In
+            </Link>
+            <Link 
+              href="/signup" 
+              className="bg-black text-white text-xs sm:text-sm font-bold px-5 sm:px-6 py-3 rounded-2xl shadow-lg shadow-black/10 hover:bg-neutral-800 transition-all active:scale-[0.98]"
+            >
+              Join ZLon
+            </Link>
+          </div>
         </div>
+      </nav>
 
-        <p className="mt-8 text-center text-sm text-gray-500">
-          Don&apos;t have an account?{' '}
-          <Link prefetch={false} href="/signup" className="cursor-pointer font-bold text-black hover:underline">
-            Sign Up
-          </Link>
-        </p>
-      </form>
+      {/* Hero Section */}
+      <section className="pt-40 pb-20 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 px-4 py-2 rounded-full mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <Star size={16} className="text-neutral-950 fill-neutral-950" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950">India&apos;s Premium Grooming Network</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[0.9] mb-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+            India&apos;s Premium <br />
+            <span className="text-gray-400">Salon & Grooming Platform.</span>
+          </h1>
+          
+          <p className="max-w-2xl mx-auto text-lg md:text-xl text-gray-500 font-medium mb-12 animate-in fade-in slide-in-from-bottom-12 duration-700 delay-200">
+            Experience grooming like never before. Book real-time haircuts, spa sessions, and premium treatments at India&apos;s finest salons with a single tap.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-16 duration-700 delay-300">
+            <Link 
+              href="/signup" 
+              className="w-full sm:w-auto bg-neutral-950 text-white px-10 py-5 rounded-[2rem] font-bold text-lg shadow-2xl shadow-black/20 hover:bg-neutral-800 transition-all flex items-center justify-center gap-3 active:scale-[0.97]"
+            >
+              Book Your First Appointment <ChevronRight size={20} strokeWidth={3} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-24 bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
+              <div className="w-16 h-16 bg-neutral-950 rounded-[1.5rem] flex items-center justify-center text-white mb-8 shadow-lg shadow-black/10">
+                <Clock size={28} />
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Real-time Slots</h3>
+              <p className="text-gray-500 font-medium leading-relaxed">
+                No more waiting on calls. Browse real-time availability and book your preferred slot instantly.
+              </p>
+            </div>
+            
+            <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
+              <div className="w-16 h-16 bg-neutral-950 rounded-[1.5rem] flex items-center justify-center text-white mb-8 shadow-lg shadow-black/10">
+                <ShieldCheck size={28} />
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Premium Salons</h3>
+              <p className="text-gray-500 font-medium leading-relaxed">
+                We partner only with the best. Every salon on ZLon is vetted for quality, hygiene, and exceptional service.
+              </p>
+            </div>
+            
+            <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-500">
+              <div className="w-16 h-16 bg-neutral-950 rounded-[1.5rem] flex items-center justify-center text-white mb-8 shadow-lg shadow-black/10">
+                <Zap size={28} />
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Seamless Booking</h3>
+              <p className="text-gray-500 font-medium leading-relaxed">
+                From discovery to payment, the entire process is designed to be frictionless. Pay securely with ZLon Wallet.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="mt-auto py-20 px-6 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center gap-2 mb-6">
+                <Image
+                  src="/logo.png"
+                  alt="ZLon Logo"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                />
+                <span className="text-xl font-black tracking-tighter">ZLon.</span>
+              </div>
+              <p className="text-gray-500 font-medium max-w-sm mb-8">
+                Elevating the grooming experience for the modern consumer. Discover, book, and experience India&apos;s finest salons.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Company</h4>
+              <ul className="space-y-4">
+                <li><Link href="/terms-and-conditions" className="text-sm font-bold text-gray-600 hover:text-black transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy-settings" className="text-sm font-bold text-gray-600 hover:text-black transition-colors">Privacy Policy</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Contact</h4>
+              <ul className="space-y-4">
+                <li><a href="mailto:info@zlon.in" className="text-sm font-bold text-gray-600 hover:text-black transition-colors">info@zlon.in</a></li>
+                <li><a href="mailto:business@zlon.in" className="text-sm font-bold text-gray-600 hover:text-black transition-colors">business@zlon.in</a></li>
+                <li><a href="mailto:support@zlon.in" className="text-sm font-bold text-gray-600 hover:text-black transition-colors">support@zlon.in</a></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-50">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">© 2026 ZLon Technologies Private Limited</p>
+            <div className="flex items-center gap-6 mt-4 md:mt-0">
+              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-tighter">Made with Precision in India</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
-  );
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LandingPageContent />
-    </Suspense>
   );
 }

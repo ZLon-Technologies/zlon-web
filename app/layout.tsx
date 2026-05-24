@@ -45,6 +45,7 @@ export const metadata: Metadata = {
 
 import { BookingProvider } from './lib/booking-state';
 import { LoadingProvider } from './components/loading-provider';
+import { RootWrapper } from './components/root-wrapper';
 
 export default async function RootLayout({
   children,
@@ -60,9 +61,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-gray-900">
         <LoadingProvider>
           <BookingProvider>
-            <div className="mx-auto max-w-[480px] w-full min-h-screen bg-white relative shadow-2xl flex flex-col pb-20 safe-area-pb">
-              {children}
-            </div>
+            <RootWrapper>{children}</RootWrapper>
           </BookingProvider>
         </LoadingProvider>
       </body>
