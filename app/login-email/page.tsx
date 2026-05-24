@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState, type FormEvent, type ReactNode } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -101,72 +102,90 @@ function LoginEmailPageContent() {
   }
 
   return (
-    <main className="flex h-[100dvh] w-full flex-col items-center justify-center px-5 overflow-hidden bg-white pt-[max(env(safe-area-inset-top),48px)]">
-      <div className="w-full max-w-md text-center">
-        <h1 className="mb-10 text-4xl font-extrabold tracking-[-0.06em] text-black">ZLon.</h1>
+    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen w-full bg-white">
+      {/* Left Column - Auth Area */}
+      <div className="flex flex-col items-center justify-center px-5 py-8 bg-white pt-[max(env(safe-area-inset-top),48px)] w-full relative z-10">
+        <div className="w-full max-w-md mx-auto text-center">
+          <h1 className="mb-10 text-4xl font-extrabold tracking-[-0.06em] text-black">ZLon.</h1>
 
-        <form
-          onSubmit={handleEmailLogin}
-          className="rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10"
-        >
-          <h2 className="mb-8 text-center text-3xl font-bold text-black">Welcome Back</h2>
-
-          <div className="space-y-5">
-            <InputField
-              id="login-email"
-              type="email"
-              placeholder="Enter Email"
-              icon={<EnvelopeIcon />}
-              value={email}
-              onChange={(value) => {
-                setEmail(value);
-                if (errorMessage) {
-                  setErrorMessage('');
-                }
-              }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="mt-7 w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
+          <form
+            onSubmit={handleEmailLogin}
+            className="rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10"
           >
-            {isSubmitting ? 'Sending Code...' : 'Continue'}
-          </button>
+            <h2 className="mb-8 text-center text-3xl font-bold text-black">Welcome Back</h2>
 
-          {errorMessage ? (
-            <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p>
-          ) : null}
+            <div className="space-y-5">
+              <InputField
+                id="login-email"
+                type="email"
+                placeholder="Enter Email"
+                icon={<EnvelopeIcon />}
+                value={email}
+                onChange={(value) => {
+                  setEmail(value);
+                  if (errorMessage) {
+                    setErrorMessage('');
+                  }
+                }}
+              />
+            </div>
 
-          <div className="my-8 flex items-center">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="mx-4 text-xs font-medium tracking-[0.28em] text-gray-400">OR SIGN IN WITH</span>
-            <div className="h-px flex-1 bg-gray-200" />
-          </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-7 w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? 'Sending Code...' : 'Continue'}
+            </button>
 
-          <div className="space-y-2 text-center text-lg text-gray-600">
-            <p>
-              Don&apos;t have an account?{' '}
+            {errorMessage ? (
+              <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p>
+            ) : null}
+
+            <div className="my-8 flex items-center">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="mx-4 text-xs font-medium tracking-[0.28em] text-gray-400">OR SIGN IN WITH</span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <div className="space-y-2 text-center text-lg text-gray-600">
+              <p>
+                Don&apos;t have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => router.push('/signup')}
+                  className="font-semibold text-gray-800 transition-opacity hover:opacity-70"
+                >
+                  Sign Up
+                </button>
+              </p>
               <button
                 type="button"
-                onClick={() => router.push('/signup')}
-                className="font-semibold text-gray-800 transition-opacity hover:opacity-70"
+                onClick={() => router.push('/forgot-password')}
+                className="text-base font-medium text-gray-700 transition-opacity hover:opacity-70"
               >
-                Sign Up
+                Forget Password
               </button>
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push('/forgot-password')}
-              className="text-base font-medium text-gray-700 transition-opacity hover:opacity-70"
-            >
-              Forget Password
-            </button>
-          </div>
-        </form>
+            </div>
+          </form>
+        </div>
       </div>
-    </main>
+
+      {/* Right Column - Brand Area (Desktop Only) */}
+      <div className="hidden lg:flex lg:flex-col lg:justify-center lg:items-center bg-zinc-950 relative overflow-hidden">
+        <Image
+          src="https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1974&auto=format&fit=crop"
+          alt="Premium Grooming Experience"
+          fill
+          className="object-cover opacity-60"
+          priority
+        />
+        <div className="relative z-10 text-center px-12">
+          <h2 className="text-4xl font-bold text-white tracking-tight">Elevate your grooming experience.</h2>
+          <p className="mt-4 text-lg text-zinc-300 font-medium max-w-md mx-auto">Book real-time haircuts, spa sessions, and premium treatments at India&apos;s finest salons.</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
