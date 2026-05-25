@@ -243,6 +243,16 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
   function handleReview() {
     if (!selectedSlot || selectedServices.length === 0) return;
 
+    // Validate 1-hour buffer on submission
+    const now = new Date();
+    const todayId = formatDateId(now);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    if (selectedDate === todayId && parseTimeToMinutes(selectedSlot) < currentMinutes + 60) {
+      alert("Appointments must be booked at least 1 hour in advance. Please select a later time slot.");
+      return;
+    }
+
     // Sync appointment to store
     updateAppointment({
       date: selectedDate,
@@ -286,12 +296,12 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
   ALL_SLOTS.forEach(slotDef => {
     const isBooked = checkSlotAvailability(slotDef.time);
 
-    // Check if the slot time is in the past
+    // Check if the slot time is in the past or within the 1-hour buffer
     let isPastSlot = false;
     if (selectedDate < todayId) {
       isPastSlot = true;
     } else if (selectedDate === todayId) {
-      isPastSlot = parseTimeToMinutes(slotDef.time) < currentMinutes;
+      isPastSlot = parseTimeToMinutes(slotDef.time) < currentMinutes + 60;
     }
 
     const groupIndex = slotGroups.findIndex(g => g.label === slotDef.group);
@@ -376,6 +386,10 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
         </section>
 
         <section className="mt-6 space-y-5">
+          <div className="rounded-xl bg-blue-50/50 p-3 flex items-start gap-2 border border-blue-100">
+            <Clock3 size={16} className="text-blue-500 mt-0.5 shrink-0" />
+            <p className="text-xs font-medium text-blue-700 leading-snug">Appointments must be booked at least 1 hour in advance to provide the salon with adequate preparation time.</p>
+          </div>
           {slotGroups.map(({ label, icon: Icon, slots }, groupIndex) => (
             <div key={label}>
               <div className="mb-3 flex items-center gap-2.5">
