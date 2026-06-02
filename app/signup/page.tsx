@@ -66,28 +66,36 @@ function SignupPageContent() {
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!email.trim()) {
-      setErrorMessage('Enter your email address to continue.');
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage('Enter your email and a password to continue.');
       return;
     }
 
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-    });
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        },
+      });
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (error) {
-      setErrorMessage(error.message);
-      return;
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      alert('Account created! Please check your email for verification.');
+      router.push('/login-email');
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrorMessage('An unexpected error occurred.');
     }
-
-    router.push(
-      `/verify-otp?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(nextPath)}`
-    );
   }
 
   return (
@@ -154,7 +162,7 @@ function SignupPageContent() {
               disabled={isSubmitting}
               className="flex w-full items-center justify-center gap-3 rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              <span>{isSubmitting ? 'Sending OTP...' : 'Continue'}</span>
+              <span>{isSubmitting ? 'Creating Account...' : 'Continue'}</span>
               <ArrowRightIcon />
             </button>
 

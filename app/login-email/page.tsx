@@ -4,6 +4,7 @@ import { Suspense, useState, type FormEvent, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { Lock } from 'lucide-react';
 
 function EnvelopeIcon() {
   return (
@@ -71,34 +72,41 @@ function LoginEmailPageContent() {
   const supabase = createSupabaseBrowserClient();
   const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!email.trim()) {
-      setErrorMessage('Enter your email address to receive a verification code.');
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage('Enter your email and password to login.');
       return;
     }
 
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (error) {
-      setErrorMessage(error.message);
-      return;
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      if (data.session) {
+        router.push(nextPath);
+      }
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrorMessage('An unexpected error occurred.');
     }
-
-    router.push(
-      `/verify-otp?email=${encodeURIComponent(email.trim())}&next=${encodeURIComponent(nextPath)}`
-    );
   }
 
   return (
@@ -128,6 +136,19 @@ function LoginEmailPageContent() {
                   }
                 }}
               />
+              <InputField
+                id="login-password"
+                type="password"
+                placeholder="Enter Password"
+                icon={<Lock size={20} className="text-gray-500" />}
+                value={password}
+                onChange={(value) => {
+                  setPassword(value);
+                  if (errorMessage) {
+                    setErrorMessage('');
+                  }
+                }}
+              />
             </div>
 
             <button
@@ -135,7 +156,7 @@ function LoginEmailPageContent() {
               disabled={isSubmitting}
               className="mt-7 w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSubmitting ? 'Sending Code...' : 'Continue'}
+              {isSubmitting ? 'Logging in...' : 'Continue'}
             </button>
 
             {errorMessage ? (
