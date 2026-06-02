@@ -206,7 +206,13 @@ function LandingPageContent() {
             });
         }
 
-        router.push(nextPath);
+        // Set a cookie for the middleware to recognize the Firebase session
+        document.cookie = `firebase-auth-token=${user.uid}; path=/; max-age=3600; SameSite=Lax`;
+
+        // Dynamic redirect handler
+        const searchParams = new URLSearchParams(window.location.search);
+        const nextRoute = searchParams.get('next') || '/dashboard';
+        router.push(nextRoute);
       }
     } catch (error: any) {
       console.error('Error verifying OTP:', error);

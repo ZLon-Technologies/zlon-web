@@ -211,6 +211,9 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
         return;
       }
 
+      // Clear Firebase auth token cookie
+      document.cookie = 'firebase-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+
       clearState();
       router.replace('/');
     } catch {

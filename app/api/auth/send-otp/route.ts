@@ -1,19 +1,32 @@
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: CORS_HEADERS,
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
     const { phone } = await request.json();
 
     if (!phone) {
-      return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Phone number is required' }, { status: 400, headers: CORS_HEADERS });
     }
 
     const apiKey = process.env.FAST2SMS_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'Fast2SMS API key not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Fast2SMS API key not configured' }, { status: 500, headers: CORS_HEADERS });
     }
 
     // 1. Generate a 6-digit OTP
@@ -36,11 +49,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Failed to initialize verification',
         details: dbError.message 
-      }, { status: 500 });
+      }, { status: 500, headers: CORS_HEADERS });
     }
 
     // 3. Send OTP via Fast2SMS (Quick Route)
-    // Extract 10 digits if it starts with +91
     const cleanNumber = phone.startsWith('+91') ? phone.slice(3) : phone.replace(/\D/g, '');
     const message = `Your ZLon verification code is ${otpCode}`;
 
@@ -63,16 +75,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: data.message || 'Failed to send SMS',
         details: data
-      }, { status: 500 });
+      }, { status: 500, headers: CORS_HEADERS });
     }
 
-    // For Fast2SMS, we don't have a sessionId, we use the phone as the identifier
-    return NextResponse.json({ status: 'success', sessionId: phone });
+    return NextResponse.json({ status: 'success', sessionId: phone }, { headers: CORS_HEADERS });
   } catch (error) {
     console.error('OTP Error Details (Catch):', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    }, { status: 500, headers: CORS_HEADERS });
   }
 }

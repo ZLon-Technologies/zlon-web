@@ -229,7 +229,10 @@ function LoginEmailPageContent() {
           }
         }
 
-        router.push(nextPath);
+        // Dynamic redirect handler
+        const searchParams = new URLSearchParams(window.location.search);
+        const nextRoute = searchParams.get('next') || '/dashboard';
+        router.push(nextRoute);
       }
     } catch (err) {
       setIsSubmitting(false);

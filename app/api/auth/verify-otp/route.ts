@@ -1,14 +1,27 @@
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createClient } from '@/lib/supabase/server';
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: CORS_HEADERS,
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
     const { phone, otp } = await request.json();
 
     if (!phone || !otp) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400, headers: CORS_HEADERS });
     }
 
     const adminClient = createAdminClient();
@@ -25,17 +38,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Verification record not found. Please request a new OTP.',
         details: verifyError?.message 
-      }, { status: 401 });
+      }, { status: 401, headers: CORS_HEADERS });
     }
 
     // Check expiry
     if (new Date(verification.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'OTP has expired. Please request a new one.' }, { status: 401 });
+      return NextResponse.json({ error: 'OTP has expired. Please request a new one.' }, { status: 401, headers: CORS_HEADERS });
     }
 
     // Check code match
     if (verification.code !== otp) {
-      return NextResponse.json({ error: 'Invalid verification code.' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid verification code.' }, { status: 401, headers: CORS_HEADERS });
     }
 
     // OTP is valid! Clean it up (optional but recommended)
@@ -69,14 +82,14 @@ export async function POST(request: NextRequest) {
 
       if (createError) {
         console.error('Create User Error (Admin):', createError);
-        return NextResponse.json({ error: createError.message }, { status: 500 });
+        return NextResponse.json({ error: createError.message }, { status: 500, headers: CORS_HEADERS });
       }
 
       targetUser = newUser.user;
     }
 
     if (!targetUser) {
-      return NextResponse.json({ error: 'Failed to retrieve or create user' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to retrieve or create user' }, { status: 500, headers: CORS_HEADERS });
     }
 
     // Ensure profile record exists
@@ -113,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Admin Password Update Error:', updateError);
-      return NextResponse.json({ error: 'Failed to prepare session' }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to prepare session' }, { status: 500, headers: CORS_HEADERS });
     }
 
     // Sign in using the SSR client to set cookies on the response
@@ -124,19 +137,19 @@ export async function POST(request: NextRequest) {
 
     if (signInError) {
       console.error('SSR Sign In Error:', signInError);
-      return NextResponse.json({ error: signInError.message }, { status: 500 });
+      return NextResponse.json({ error: signInError.message }, { status: 500, headers: CORS_HEADERS });
     }
 
     return NextResponse.json({
       status: 'success',
       isNewUser,
       redirectTo,
-    });
+    }, { headers: CORS_HEADERS });
   } catch (error) {
     console.error('Verify OTP Error Details (Catch):', error);
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    }, { status: 500, headers: CORS_HEADERS });
   }
 }
