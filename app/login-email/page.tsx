@@ -4,7 +4,7 @@ import { Suspense, useState, type FormEvent, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Lock } from 'lucide-react';
+import { Lock, Mail, ChevronRight } from 'lucide-react';
 
 function EnvelopeIcon() {
   return (
@@ -34,6 +34,8 @@ function InputField({
   icon,
   value,
   onChange,
+  disabled = false,
+  className = "",
 }: {
   id: string;
   type: string;
@@ -41,9 +43,11 @@ function InputField({
   icon: ReactNode;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
+  className?: string;
 }) {
   return (
-    <div className="relative">
+    <div className={`relative mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors ${className}`}>
       <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2">{icon}</span>
       <input
         id={id}
@@ -52,7 +56,8 @@ function InputField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="w-full rounded-2xl bg-gray-100 py-4 pr-5 pl-12 text-black placeholder:text-gray-500 focus:outline-none"
+        disabled={disabled}
+        className="w-full bg-transparent py-4 pr-5 pl-12 text-black placeholder:text-gray-400 focus:outline-none font-medium"
       />
     </div>
   );
@@ -70,17 +75,23 @@ function LoginEmailPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
-  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
+  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/dashboard');
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  
+  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password');
+  const [otpSent, setOtpSent] = useState(false);
+  
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      setErrorMessage('Enter your email and password to login.');
+    if (!email.trim() || (loginMode === 'password' && !password.trim())) {
+      setErrorMessage('Please fill in all required fields.');
       return;
     }
 
@@ -88,20 +99,64 @@ function LoginEmailPageContent() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
-      });
+      if (loginMode === 'password') {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password,
+        });
 
-      setIsSubmitting(false);
+        if (error) {
+          setErrorMessage(error.message);
+          setIsSubmitting(false);
+          return;
+        }
 
-      if (error) {
-        setErrorMessage(error.message);
-        return;
-      }
+        if (data.session) {
+          router.push(nextPath);
+        }
+      } else {
+        // OTP Mode
+        if (!otpSent) {
+          // Step 1: Send OTP
+          const { error } = await supabase.auth.signInWithOtp({
+            email: email.trim(),
+            options: {
+              shouldCreateUser: false,
+            }
+          });
 
-      if (data.session) {
-        router.push(nextPath);
+          if (error) {
+            setErrorMessage(error.message);
+            setIsSubmitting(false);
+            return;
+          }
+
+          setOtpSent(true);
+          setIsSubmitting(false);
+        } else {
+          // Step 2: Verify OTP
+          if (otpCode.length !== 6) {
+            setErrorMessage('Enter a valid 6-digit verification code.');
+            setIsSubmitting(false);
+            return;
+          }
+
+          const { data, error } = await supabase.auth.verifyOtp({
+            email: email.trim(),
+            token: otpCode,
+            type: 'email',
+          });
+
+          if (error) {
+            setErrorMessage(error.message);
+            setIsSubmitting(false);
+            return;
+          }
+
+          if (data.session) {
+            router.push(nextPath);
+          }
+        }
       }
     } catch (err) {
       setIsSubmitting(false);
@@ -109,86 +164,148 @@ function LoginEmailPageContent() {
     }
   }
 
+  const toggleMode = () => {
+    setLoginMode(loginMode === 'password' ? 'otp' : 'password');
+    setOtpSent(false);
+    setErrorMessage('');
+    setOtpCode('');
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen w-full bg-white">
       {/* Left Column - Auth Area */}
-      <div className="flex flex-col items-center justify-center px-5 py-8 bg-white pt-[max(env(safe-area-inset-top),48px)] w-full relative z-10">
-        <div className="w-full max-w-md mx-auto text-center">
-          <h1 className="mb-10 text-4xl font-extrabold tracking-[-0.06em] text-black">ZLon.</h1>
+      <div className="flex flex-col items-center justify-center px-5 py-12 bg-white pt-[max(env(safe-area-inset-top),48px)] w-full relative z-10">
+        <div className="w-full max-w-md mx-auto">
+          
+          <div className="mb-10 bg-transparent">
+            <Image
+              src="/logo.png"
+              alt="ZLon Logo"
+              width={100}
+              height={100}
+              priority
+              className="mx-auto object-contain"
+            />
+          </div>
 
-          <form
-            onSubmit={handleEmailLogin}
-            className="rounded-[2.5rem] bg-white px-8 py-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:px-10"
-          >
-            <h2 className="mb-8 text-center text-3xl font-bold text-black">Welcome Back</h2>
+          <div className="w-full">
+            <h2 className="text-2xl font-bold mb-6 text-center text-black tracking-tight">Welcome Back</h2>
 
-            <div className="space-y-5">
+            <form onSubmit={handleEmailLogin} className="w-full">
               <InputField
                 id="login-email"
                 type="email"
                 placeholder="Enter Email"
                 icon={<EnvelopeIcon />}
                 value={email}
+                disabled={otpSent}
                 onChange={(value) => {
                   setEmail(value);
-                  if (errorMessage) {
-                    setErrorMessage('');
-                  }
+                  if (errorMessage) setErrorMessage('');
                 }}
               />
-              <InputField
-                id="login-password"
-                type="password"
-                placeholder="Enter Password"
-                icon={<Lock size={20} className="text-gray-500" />}
-                value={password}
-                onChange={(value) => {
-                  setPassword(value);
-                  if (errorMessage) {
-                    setErrorMessage('');
-                  }
-                }}
-              />
-            </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="mt-7 w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {isSubmitting ? 'Logging in...' : 'Continue'}
-            </button>
+              {loginMode === 'password' ? (
+                <InputField
+                  id="login-password"
+                  type="password"
+                  placeholder="Enter Password"
+                  icon={<Lock size={20} className="text-gray-500" />}
+                  value={password}
+                  onChange={(value) => {
+                    setPassword(value);
+                    if (errorMessage) setErrorMessage('');
+                  }}
+                />
+              ) : (
+                otpSent && (
+                  <InputField
+                    id="login-otp"
+                    type="text"
+                    placeholder="Enter 6-digit Code"
+                    icon={<Lock size={20} className="text-gray-500" />}
+                    value={otpCode}
+                    className="animate-in fade-in slide-in-from-top-2 duration-300"
+                    onChange={(value) => {
+                      setOtpCode(value.replace(/\D/g, '').slice(0, 6));
+                      if (errorMessage) setErrorMessage('');
+                    }}
+                  />
+                )
+              )}
 
-            {errorMessage ? (
-              <p className="mt-4 text-center text-sm text-red-500">{errorMessage}</p>
-            ) : null}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70 shadow-lg shadow-black/10"
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {loginMode === 'otp' && !otpSent ? 'Sending...' : 'Verifying...'}
+                  </span>
+                ) : (
+                  loginMode === 'password' 
+                    ? 'Continue' 
+                    : (otpSent ? 'Verify & Log In' : 'Send Login Code')
+                )}
+              </button>
 
-            <div className="my-8 flex items-center">
-              <div className="h-px flex-1 bg-gray-200" />
-              <span className="mx-4 text-xs font-medium tracking-[0.28em] text-gray-400">OR SIGN IN WITH</span>
-              <div className="h-px flex-1 bg-gray-200" />
-            </div>
+              {errorMessage && (
+                <p className="mt-4 text-center text-sm text-red-500 font-medium">{errorMessage}</p>
+              )}
 
-            <div className="space-y-2 text-center text-lg text-gray-600">
-              <p>
-                Don&apos;t have an account?{' '}
+              <div className="mt-6 flex flex-col items-center space-y-4">
                 <button
                   type="button"
-                  onClick={() => router.push('/signup')}
-                  className="font-semibold text-gray-800 transition-opacity hover:opacity-70"
+                  onClick={toggleMode}
+                  className="text-xs font-medium text-gray-400 hover:text-black transition-colors uppercase tracking-widest"
                 >
-                  Sign Up
+                  {loginMode === 'password' ? 'Sign in with OTP' : 'Sign in with Password'}
                 </button>
-              </p>
+                
+                {loginMode === 'password' && (
+                  <button
+                    type="button"
+                    onClick={() => router.push('/forgot-password')}
+                    className="text-xs font-medium text-gray-400 hover:text-black transition-colors uppercase tracking-widest"
+                  >
+                    Forget Password
+                  </button>
+                )}
+              </div>
+            </form>
+
+            <div className="my-8 flex items-center">
+              <div className="flex-grow border-t border-gray-100" />
+              <span className="mx-4 text-[10px] font-bold tracking-[0.2em] text-gray-400 uppercase">OR CONTINUE WITH</span>
+              <div className="flex-grow border-t border-gray-100" />
+            </div>
+
+            <div className="space-y-3">
               <button
                 type="button"
-                onClick={() => router.push('/forgot-password')}
-                className="text-base font-medium text-gray-700 transition-opacity hover:opacity-70"
+                className="w-full border border-gray-300 rounded-xl py-3.5 flex items-center justify-center gap-3 bg-white transition-all hover:bg-gray-50 active:scale-[0.99]"
+                onClick={() => router.push('/login')}
               >
-                Forget Password
+                <span className="text-sm font-semibold text-gray-700">Continue with Phone</span>
               </button>
             </div>
-          </form>
+
+            <p className="mt-8 text-center text-sm text-gray-500">
+              Don&apos;t have an account?{' '}
+              <button
+                type="button"
+                onClick={() => router.push('/signup')}
+                className="font-bold text-black hover:underline"
+              >
+                Sign Up
+              </button>
+            </p>
+          </div>
         </div>
       </div>
 
@@ -210,7 +327,7 @@ function LoginEmailPageContent() {
   );
 }
 
-export default function LoginEmailPage() {
+export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <LoginEmailPageContent />
