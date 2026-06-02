@@ -1,31 +1,10 @@
 'use client';
 
-import { Suspense, useState, type FormEvent, type ReactNode } from 'react';
+import { Suspense, useState, type FormEvent, type ReactNode, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Lock, Mail, ChevronRight } from 'lucide-react';
-
-function EnvelopeIcon() {
-  return (
-    <svg
-      className="h-5 w-5 text-gray-500"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M5.5 8L10.96 12.1a1.8 1.8 0 0 0 2.08 0L18.5 8"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+import { Lock, Mail } from 'lucide-react';
 
 function InputField({
   id,
@@ -63,6 +42,60 @@ function InputField({
   );
 }
 
+function OtpInput({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const val = e.target.value;
+    if (!/^\d*$/.test(val)) return;
+
+    const newOtp = value.split('');
+    newOtp[index] = val.slice(-1);
+    const combined = newOtp.join('');
+    onChange(combined);
+
+    if (val && index < 5) {
+      inputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !value[index] && index > 0) {
+      inputs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    if (!/^\d+$/.test(pastedData)) return;
+    onChange(pastedData);
+    inputs.current[pastedData.length - 1 || 0]?.focus();
+  };
+
+  useEffect(() => {
+    inputs.current[0]?.focus();
+  }, []);
+
+  return (
+    <div className="flex justify-between gap-2 mb-6" onPaste={handlePaste}>
+      {[0, 1, 2, 3, 4, 5].map((index) => (
+        <input
+          key={index}
+          ref={(el) => { inputs.current[index] = el; }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[index] || ''}
+          onChange={(e) => handleInput(e, index)}
+          onKeyDown={(e) => handleKeyDown(e, index)}
+          className="w-12 h-14 text-center text-xl font-bold bg-gray-100 rounded-xl border-2 border-transparent focus:border-black focus:bg-white transition-all outline-none"
+        />
+      ))}
+    </div>
+  );
+}
+
 function getSafeRedirectPath(pathname: string | null, fallback: string) {
   if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//')) {
     return fallback;
@@ -86,6 +119,17 @@ function LoginEmailPageContent() {
   
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Timer State
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
 
   async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,6 +168,7 @@ function LoginEmailPageContent() {
 
           setOtpSent(true);
           setIsSubmitting(false);
+          setTimeLeft(60);
           return;
         } else {
           // Step 2: Verify OTP
@@ -197,6 +242,28 @@ function LoginEmailPageContent() {
     setOtpSent(false);
     setErrorMessage('');
     setOtpCode('');
+    setTimeLeft(0);
+  };
+
+  const handleResendOtp = async () => {
+    setErrorMessage('');
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { shouldCreateUser: false }
+    });
+    setIsSubmitting(false);
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      setTimeLeft(60);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -247,18 +314,31 @@ function LoginEmailPageContent() {
                 />
               ) : (
                 otpSent && (
-                  <InputField
-                    id="login-otp"
-                    type="text"
-                    placeholder="Enter 6-digit Code"
-                    icon={<Lock size={20} className="text-gray-500" />}
-                    value={otpCode}
-                    className="animate-in fade-in slide-in-from-top-2 duration-300"
-                    onChange={(value) => {
-                      setOtpCode(value.replace(/\D/g, '').slice(0, 6));
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <p className="text-center text-sm text-gray-500 mb-6 font-medium">
+                      Enter the code sent to <span className="text-black font-bold">{email}</span>
+                    </p>
+                    <OtpInput value={otpCode} onChange={(val) => {
+                      setOtpCode(val);
                       if (errorMessage) setErrorMessage('');
-                    }}
-                  />
+                    }} />
+
+                    <div className="flex justify-center mb-6">
+                      {timeLeft > 0 ? (
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                          Resend code in {formatTime(timeLeft)}
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          className="text-xs font-bold text-zinc-900 hover:underline transition-all uppercase tracking-widest"
+                        >
+                          Resend OTP
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )
               )}
 

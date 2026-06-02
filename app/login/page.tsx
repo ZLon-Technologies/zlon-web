@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, type FormEvent, useState, useEffect } from 'react';
+import React, { Suspense, type FormEvent, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -24,6 +24,60 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
   return pathname;
 }
 
+function OtpInput({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const val = e.target.value;
+    if (!/^\d*$/.test(val)) return;
+
+    const newOtp = value.split('');
+    newOtp[index] = val.slice(-1);
+    const combined = newOtp.join('');
+    onChange(combined);
+
+    if (val && index < 5) {
+      inputs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && !value[index] && index > 0) {
+      inputs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    if (!/^\d+$/.test(pastedData)) return;
+    onChange(pastedData);
+    inputs.current[pastedData.length - 1 || 0]?.focus();
+  };
+
+  useEffect(() => {
+    inputs.current[0]?.focus();
+  }, []);
+
+  return (
+    <div className="flex justify-between gap-2 mb-6" onPaste={handlePaste}>
+      {[0, 1, 2, 3, 4, 5].map((index) => (
+        <input
+          key={index}
+          ref={(el) => { inputs.current[index] = el; }}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[index] || ''}
+          onChange={(e) => handleInput(e, index)}
+          onKeyDown={(e) => handleKeyDown(e, index)}
+          className="w-12 h-14 text-center text-xl font-bold bg-gray-100 rounded-xl border-2 border-transparent focus:border-black focus:bg-white transition-all outline-none"
+        />
+      ))}
+    </div>
+  );
+}
+
 function LandingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,6 +94,9 @@ function LandingPageContent() {
   // Additional UI states
   const [countryCode, setCountryCode] = useState('+91');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  
+  // Timer State
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && auth && !window.recaptchaVerifier) {
@@ -63,6 +120,14 @@ function LandingPageContent() {
     };
   }, []);
 
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
   async function handleSendOTP() {
     if (phoneNumber.length !== 10) {
       setErrorMessage('Enter a valid 10-digit phone number.');
@@ -85,6 +150,7 @@ function LandingPageContent() {
       const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
       setConfirmationResult(result);
       setIsLoading(false);
+      setTimeLeft(60);
     } catch (error: any) {
       console.error('Error sending OTP:', error);
       setIsLoading(false);
@@ -194,6 +260,12 @@ function LandingPageContent() {
     }, 5000);
   }
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen w-full bg-white">
       {/* reCAPTCHA Container - Absolute and invisible to prevent layout shift */}
@@ -226,58 +298,65 @@ function LandingPageContent() {
           >
             <h2 className="text-2xl font-bold mb-6 text-center text-black tracking-tight">Welcome Back</h2>
 
-            <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors relative">
-              <div className="relative flex items-center pl-3 pr-1 gap-1">
-                <span className="font-semibold text-black text-sm">{countryCode}</span>
-                <ChevronDown size={14} className="text-gray-500" />
-                <select
-                  value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
-                  aria-label="Select Country Code"
-                  disabled={!!confirmationResult}
-                >
-                  {COUNTRY_CODES.map((item) => (
-                    <option key={item.code} value={item.code}>
-                      {item.name} ({item.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="w-px h-6 bg-gray-300 mx-2" />
-              <input
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                value={phoneNumber}
-                onChange={(event) => {
-                  setPhoneNumber(event.target.value.replace(/\D/g, '').slice(0, 10));
-                  if (errorMessage) {
-                    setErrorMessage(null);
-                  }
-                }}
-                placeholder="Enter Number"
-                className="flex-1 bg-transparent py-4 pr-4 text-black placeholder-gray-400 focus:outline-none font-medium"
-                disabled={!!confirmationResult}
-              />
-            </div>
-
-            {confirmationResult && (
-              <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors animate-in fade-in slide-in-from-top-2 duration-300">
+            {!confirmationResult ? (
+              <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors relative">
+                <div className="relative flex items-center pl-3 pr-1 gap-1">
+                  <span className="font-semibold text-black text-sm">{countryCode}</span>
+                  <ChevronDown size={14} className="text-gray-500" />
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
+                    aria-label="Select Country Code"
+                  >
+                    {COUNTRY_CODES.map((item) => (
+                      <option key={item.code} value={item.code}>
+                        {item.name} ({item.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-px h-6 bg-gray-300 mx-2" />
                 <input
-                  type="text"
+                  type="tel"
                   inputMode="numeric"
-                  value={otpCode}
+                  autoComplete="tel-national"
+                  value={phoneNumber}
                   onChange={(event) => {
-                    setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6));
+                    setPhoneNumber(event.target.value.replace(/\D/g, '').slice(0, 10));
                     if (errorMessage) {
                       setErrorMessage(null);
                     }
                   }}
-                  placeholder="Enter 6-digit OTP"
-                  className="flex-1 bg-transparent py-4 px-4 text-black placeholder-gray-400 focus:outline-none font-medium text-center tracking-[0.5em]"
-                  maxLength={6}
+                  placeholder="Enter Number"
+                  className="flex-1 bg-transparent py-4 pr-4 text-black placeholder-gray-400 focus:outline-none font-medium"
                 />
+              </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <p className="text-center text-sm text-gray-500 mb-6 font-medium">
+                  Enter the code sent to <span className="text-black font-bold">{countryCode} {phoneNumber}</span>
+                </p>
+                <OtpInput value={otpCode} onChange={(val) => {
+                  setOtpCode(val);
+                  if (errorMessage) setErrorMessage(null);
+                }} />
+                
+                <div className="flex justify-center mb-6">
+                  {timeLeft > 0 ? (
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                      Resend code in {formatTime(timeLeft)}
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendOTP}
+                      className="text-xs font-bold text-zinc-900 hover:underline transition-all uppercase tracking-widest"
+                    >
+                      Resend OTP
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
