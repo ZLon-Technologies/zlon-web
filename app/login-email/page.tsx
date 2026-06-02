@@ -150,6 +150,12 @@ function LoginEmailPageContent() {
       if (authResult?.data.session) {
         // Database Sync: Ensure profile exists and email is set
         const user = authResult.data.user;
+        
+        if (!user) {
+          setIsSubmitting(false);
+          throw new Error("User session could not be established.");
+        }
+
         const { data: profile } = await supabase
           .from('profiles')
           .select('id')
