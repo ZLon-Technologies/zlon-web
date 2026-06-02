@@ -1,11 +1,13 @@
 'use client';
 
-import React, { Suspense, type FormEvent, useState } from 'react';
+import React, { Suspense, type FormEvent, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Mail, ChevronDown } from 'lucide-react';
+import { auth } from '@/lib/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 
 const COUNTRY_CODES = [
   { code: '+91', name: 'IN' },
@@ -13,16 +15,6 @@ const COUNTRY_CODES = [
   { code: '+44', name: 'UK' },
   { code: '+61', name: 'AU' },
 ];
-
-function getPhoneNumber(phone: string, countryCode: string) {
-  const digitsOnly = phone.replace(/\D/g, '').slice(0, 10);
-
-  if (digitsOnly.length !== 10) {
-    return null;
-  }
-
-  return `${countryCode}${digitsOnly}`;
-}
 
 function getSafeRedirectPath(pathname: string | null, fallback: string) {
   if (!pathname || !pathname.startsWith('/') || pathname.startsWith('//')) {
@@ -36,55 +28,149 @@ function LandingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createSupabaseBrowserClient();
-  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
-  const [phone, setPhone] = useState('');
+  const nextPath = getSafeRedirectPath(searchParams.get('next'), '/dashboard');
+  
+  // Required States for Firebase Phone Auth
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Additional UI states
   const [countryCode, setCountryCode] = useState('+91');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && auth && !window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: () => {
+            console.log('reCAPTCHA verified');
+          },
+        });
+      } catch (err) {
+        console.error('Failed to initialize RecaptchaVerifier:', err);
+      }
+    }
 
-  async function handlePhoneLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = undefined;
+      }
+    };
+  }, []);
 
-    const normalizedPhone = getPhoneNumber(phone, countryCode);
-
-    if (!normalizedPhone) {
+  async function handleSendOTP() {
+    if (phoneNumber.length !== 10) {
       setErrorMessage('Enter a valid 10-digit phone number.');
       return;
     }
 
-    setErrorMessage('');
-    setIsSendingOtp(true);
+    if (!auth) {
+      setErrorMessage('Authentication service is currently unavailable.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsLoading(true);
 
     try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: normalizedPhone }),
-      });
-
-      const data = await response.json();
-
-      setIsSendingOtp(false);
-
-      if (!response.ok) {
-        setErrorMessage(data.error || 'Failed to send OTP');
-        return;
+      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      const appVerifier = window.recaptchaVerifier;
+      if (!appVerifier) throw new Error('reCAPTCHA verifier not ready');
+      
+      const result = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
+      setConfirmationResult(result);
+      setIsLoading(false);
+    } catch (error: any) {
+      console.error('Error sending OTP:', error);
+      setIsLoading(false);
+      
+      switch (error.code) {
+        case 'auth/invalid-phone-number':
+          setErrorMessage('The phone number is invalid.');
+          break;
+        case 'auth/too-many-requests':
+          setErrorMessage('Too many attempts. Please try again later.');
+          break;
+        case 'auth/captcha-check-failed':
+          setErrorMessage('Security verification failed. Please try again.');
+          break;
+        default:
+          setErrorMessage('Failed to send OTP. Please try again.');
       }
+    }
+  }
 
-      router.push(
-        `/verify-otp?phone=${encodeURIComponent(normalizedPhone)}&sessionId=${encodeURIComponent(data.sessionId)}&next=${encodeURIComponent(nextPath)}`
-      );
-    } catch (err) {
-      setIsSendingOtp(false);
-      setErrorMessage('An unexpected error occurred.');
+  async function handleVerifyOTP() {
+    if (otpCode.length !== 6) {
+      setErrorMessage('Enter a valid 6-digit OTP.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsLoading(true);
+
+    try {
+      if (confirmationResult) {
+        const result = await confirmationResult.confirm(otpCode);
+        const user = result.user;
+
+        // Database Sync: Maintain continuity for Phone Auth users in Supabase
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('phone_number', phoneNumber)
+          .maybeSingle();
+
+        if (existingProfile) {
+           await supabase
+            .from('profiles')
+            .update({ id: user.uid })
+            .eq('phone_number', phoneNumber);
+        } else {
+           await supabase
+            .from('profiles')
+            .insert({
+              id: user.uid,
+              phone_number: phoneNumber
+            });
+        }
+
+        router.push(nextPath);
+      }
+    } catch (error: any) {
+      console.error('Error verifying OTP:', error);
+      setIsLoading(false);
+      
+      switch (error.code) {
+        case 'auth/invalid-verification-code':
+          setErrorMessage('Invalid OTP code. Please check and try again.');
+          break;
+        case 'auth/code-expired':
+          setErrorMessage('OTP code has expired. Please request a new one.');
+          break;
+        default:
+          setErrorMessage('Verification failed. Please try again.');
+      }
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!confirmationResult) {
+      await handleSendOTP();
+    } else {
+      await handleVerifyOTP();
     }
   }
 
   async function handleGoogleLogin(event: React.MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
-    setErrorMessage('');
+    setErrorMessage(null);
     setIsGoogleLoading(true);
 
     const callbackUrl = new URL(`${window.location.origin}/api/auth/callback`);
@@ -103,7 +189,6 @@ function LandingPageContent() {
       return;
     }
 
-    // Fallback: if OAuth redirect doesn't happen within 5s, reset the button
     window.setTimeout(() => {
       setIsGoogleLoading(false);
     }, 5000);
@@ -111,10 +196,12 @@ function LandingPageContent() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen w-full bg-white">
+      {/* reCAPTCHA Container - Absolute and invisible to prevent layout shift */}
+      <div id="recaptcha-container" className="absolute pointer-events-none invisible"></div>
+
       {/* Left Column - Auth Area */}
       <div className="flex flex-col items-center justify-center px-5 py-12 bg-white pt-[max(env(safe-area-inset-top),48px)] w-full relative z-10">
         <div className="w-full max-w-md mx-auto">
-          {/* Hidden SEO text — readable by search crawlers and screen readers but invisible to sighted users */}
           <h1 className="sr-only">
             ZLon — Premium Salon & Grooming Booking Platform
           </h1>
@@ -134,7 +221,7 @@ function LandingPageContent() {
           </div>
 
           <form
-            onSubmit={handlePhoneLogin}
+            onSubmit={handleSubmit}
             className="w-full"
           >
             <h2 className="text-2xl font-bold mb-6 text-center text-black tracking-tight">Welcome Back</h2>
@@ -148,6 +235,7 @@ function LandingPageContent() {
                   onChange={(e) => setCountryCode(e.target.value)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer appearance-none"
                   aria-label="Select Country Code"
+                  disabled={!!confirmationResult}
                 >
                   {COUNTRY_CODES.map((item) => (
                     <option key={item.code} value={item.code}>
@@ -161,28 +249,60 @@ function LandingPageContent() {
                 type="tel"
                 inputMode="numeric"
                 autoComplete="tel-national"
-                value={phone}
+                value={phoneNumber}
                 onChange={(event) => {
-                  setPhone(event.target.value.replace(/\D/g, '').slice(0, 10));
+                  setPhoneNumber(event.target.value.replace(/\D/g, '').slice(0, 10));
                   if (errorMessage) {
-                    setErrorMessage('');
+                    setErrorMessage(null);
                   }
                 }}
                 placeholder="Enter Number"
                 className="flex-1 bg-transparent py-4 pr-4 text-black placeholder-gray-400 focus:outline-none font-medium"
+                disabled={!!confirmationResult}
               />
             </div>
 
+            {confirmationResult && (
+              <div className="mb-6 bg-gray-100 rounded-xl flex items-center p-1 border border-transparent focus-within:border-black/5 transition-colors animate-in fade-in slide-in-from-top-2 duration-300">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={otpCode}
+                  onChange={(event) => {
+                    setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6));
+                    if (errorMessage) {
+                      setErrorMessage(null);
+                    }
+                  }}
+                  placeholder="Enter 6-digit OTP"
+                  className="flex-1 bg-transparent py-4 px-4 text-black placeholder-gray-400 focus:outline-none font-medium text-center tracking-[0.5em]"
+                  maxLength={6}
+                />
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isSendingOtp || isGoogleLoading}
-              className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-gray-900 disabled:cursor-not-allowed disabled:opacity-70 shadow-lg shadow-black/10"
+              disabled={isLoading || isGoogleLoading}
+              className="w-full rounded-2xl bg-black py-4 font-semibold text-white transition-colors hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-70 shadow-lg shadow-black/10"
             >
-              {isSendingOtp ? 'Sending OTP...' : 'Send OTP'}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {confirmationResult ? 'Verifying...' : 'Sending...'}
+                </span>
+              ) : (
+                confirmationResult ? 'Verify & Log In' : 'Send OTP'
+              )}
             </button>
 
             {errorMessage ? (
-              <p className="mt-4 text-center text-sm text-red-500 font-medium">{errorMessage}</p>
+              <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-xl animate-in fade-in zoom-in duration-200">
+                <p className="text-center text-sm text-red-500 font-medium">{errorMessage}</p>
+              </div>
             ) : null}
 
             <div className="my-8 flex items-center">
@@ -196,7 +316,7 @@ function LandingPageContent() {
                 type="button"
                 className="w-full border border-gray-300 rounded-xl py-3.5 flex items-center justify-center gap-3 bg-white transition-all hover:bg-gray-50 active:scale-[0.99] disabled:opacity-50"
                 onClick={handleGoogleLogin}
-                disabled={isSendingOtp || isGoogleLoading}
+                disabled={isLoading || isGoogleLoading}
               >
                 <svg
                   className="h-5 w-5"
@@ -260,6 +380,14 @@ function LandingPageContent() {
       </div>
     </div>
   );
+}
+
+// Global declaration for reCAPTCHA
+declare global {
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier | undefined;
+    grecaptcha: any;
+  }
 }
 
 export default function Page() {

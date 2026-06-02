@@ -99,21 +99,12 @@ function LoginEmailPageContent() {
     setIsSubmitting(true);
 
     try {
+      let authResult;
       if (loginMode === 'password') {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        authResult = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: password,
         });
-
-        if (error) {
-          setErrorMessage(error.message);
-          setIsSubmitting(false);
-          return;
-        }
-
-        if (data.session) {
-          router.push(nextPath);
-        }
       } else {
         // OTP Mode
         if (!otpSent) {
@@ -133,6 +124,7 @@ function LoginEmailPageContent() {
 
           setOtpSent(true);
           setIsSubmitting(false);
+          return;
         } else {
           // Step 2: Verify OTP
           if (otpCode.length !== 6) {
@@ -141,22 +133,52 @@ function LoginEmailPageContent() {
             return;
           }
 
-          const { data, error } = await supabase.auth.verifyOtp({
+          authResult = await supabase.auth.verifyOtp({
             email: email.trim(),
             token: otpCode,
             type: 'email',
           });
+        }
+      }
 
-          if (error) {
-            setErrorMessage(error.message);
-            setIsSubmitting(false);
-            return;
-          }
+      if (authResult?.error) {
+        setErrorMessage(authResult.error.message);
+        setIsSubmitting(false);
+        return;
+      }
 
-          if (data.session) {
-            router.push(nextPath);
+      if (authResult?.data.session) {
+        // Database Sync: Ensure profile exists and email is set
+        const user = authResult.data.user;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!profile) {
+          // Check if a profile exists with this email but different ID (Firebase case)
+          const { data: emailProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email.trim())
+            .maybeSingle();
+
+          if (emailProfile) {
+            // Update the existing profile to use the Supabase ID
+            await supabase
+              .from('profiles')
+              .update({ id: user.id })
+              .eq('email', email.trim());
+          } else {
+            // Create a new profile
+            await supabase
+              .from('profiles')
+              .insert({ id: user.id, email: email.trim() });
           }
         }
+
+        router.push(nextPath);
       }
     } catch (err) {
       setIsSubmitting(false);
@@ -196,7 +218,7 @@ function LoginEmailPageContent() {
                 id="login-email"
                 type="email"
                 placeholder="Enter Email"
-                icon={<EnvelopeIcon />}
+                icon={<Mail size={20} className="text-gray-500" />}
                 value={email}
                 disabled={otpSent}
                 onChange={(value) => {
@@ -262,7 +284,7 @@ function LoginEmailPageContent() {
                 <button
                   type="button"
                   onClick={toggleMode}
-                  className="text-xs font-medium text-gray-400 hover:text-black transition-colors uppercase tracking-widest"
+                  className="text-xs font-bold text-zinc-900 hover:underline transition-all uppercase tracking-widest"
                 >
                   {loginMode === 'password' ? 'Sign in with OTP' : 'Sign in with Password'}
                 </button>
@@ -271,7 +293,7 @@ function LoginEmailPageContent() {
                   <button
                     type="button"
                     onClick={() => router.push('/forgot-password')}
-                    className="text-xs font-medium text-gray-400 hover:text-black transition-colors uppercase tracking-widest"
+                    className="text-xs font-bold text-zinc-900 hover:underline transition-all uppercase tracking-widest"
                   >
                     Forget Password
                   </button>
