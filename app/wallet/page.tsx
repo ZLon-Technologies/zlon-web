@@ -5,6 +5,8 @@ import { WalletScreen } from '../components/wallet-screen';
 import type { TransactionType, TransactionKind, Transaction } from '../components/wallet-screen';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { auth as firebaseAuth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface WalletBooking {
   id: string | number;
@@ -31,18 +33,35 @@ export default function WalletPage() {
   const router = useRouter();
 
   useEffect(() => {
-    async function loadWalletData() {
+    let firebaseUnsubscribe: (() => void) | undefined;
+
+    async function checkAuthAndLoad() {
       try {
         const supabase = createSupabaseClient();
-        const { data: authData } = await supabase.auth.getUser();
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
 
-        if (!authData.user) {
+        if (!supabaseUser && firebaseAuth) {
+          firebaseUnsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
+            if (fbUser) {
+              await loadWalletData(fbUser.uid);
+            } else {
+              router.push('/');
+            }
+          });
+        } else if (supabaseUser) {
+          await loadWalletData(supabaseUser.id);
+        } else {
           router.push('/');
-          return;
         }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        router.push('/');
+      }
+    }
 
-        const userId = authData.user.id;
-
+    async function loadWalletData(userId: string) {
+      try {
+        const supabase = createSupabaseClient();
         const [{ data: walletData }, { data: bookingsData }] = await Promise.all([
           supabase.from('wallets').select('balance').eq('user_id', userId).maybeSingle(),
           supabase.from('bookings').select('id, total_amount, created_at, status, salons:salon_id(name)').eq('user_id', userId).eq('payment_method', 'wallet').order('created_at', { ascending: false }),
@@ -67,7 +86,11 @@ export default function WalletPage() {
       }
     }
 
-    loadWalletData();
+    checkAuthAndLoad();
+
+    return () => {
+      if (firebaseUnsubscribe) firebaseUnsubscribe();
+    };
   }, [router]);
 
   if (isLoading) {

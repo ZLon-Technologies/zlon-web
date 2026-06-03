@@ -89,7 +89,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (val: string) 
           value={value[index] || ''}
           onChange={(e) => handleInput(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
-          className="w-12 h-14 text-center text-xl font-bold bg-gray-100 rounded-xl border-2 border-transparent focus:border-black focus:bg-white transition-all outline-none"
+          className="w-12 h-14 text-center text-xl font-bold text-black bg-gray-100 rounded-xl border-2 border-transparent focus:border-black focus:bg-white transition-all outline-none"
         />
       ))}
     </div>

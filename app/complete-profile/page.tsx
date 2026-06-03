@@ -229,7 +229,8 @@ function CreateAccountForm() {
     setErrorMessage('');
     setIsSaving(true);
 
-    const { error } = await supabase.auth.updateUser({
+    // 1. Update Supabase Auth Metadata
+    const { error: authError } = await supabase.auth.updateUser({
       data: {
         full_name: fullName.trim(),
         date_of_birth: dobDate.toISOString(),
@@ -237,13 +238,27 @@ function CreateAccountForm() {
       },
     });
 
-    setIsSaving(false);
-
-    if (error) {
-      setErrorMessage(error.message);
+    if (authError) {
+      setErrorMessage(authError.message);
+      setIsSaving(false);
       return;
     }
 
+    // 2. Update Profiles Table and mark as complete
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName.trim(),
+          date_of_birth: dobDate.toISOString(),
+          gender,
+          is_profile_complete: true
+        })
+        .eq('id', user.id);
+    }
+
+    setIsSaving(false);
     router.replace(nextPath);
   };
 

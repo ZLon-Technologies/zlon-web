@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { EditProfileScreen } from '../components/edit-profile-screen';
+import { auth as firebaseAuth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface ProfileRecord {
   id: string;
@@ -43,40 +45,61 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function loadProfile() {
+    let firebaseUnsubscribe: (() => void) | undefined;
+
+    async function checkAuthAndLoad() {
       try {
         const supabase = createSupabaseClient();
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData.user;
+        
+        // 1. Check Supabase session
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
 
-        if (!user) {
+        // 2. Check Firebase session if Supabase is null
+        if (!supabaseUser && firebaseAuth) {
+          firebaseUnsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
+            if (fbUser) {
+              await loadProfileData(fbUser.uid, fbUser.email, fbUser.phoneNumber);
+            } else {
+              setIsLoading(false);
+            }
+          });
+        } else if (supabaseUser) {
+          await loadProfileData(supabaseUser.id, supabaseUser.email, supabaseUser.phone);
+        } else {
           setIsLoading(false);
-          return;
         }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        setIsLoading(false);
+      }
+    }
 
+    async function loadProfileData(userId: string, email?: string | null, phone?: string | null) {
+      try {
+        const supabase = createSupabaseClient();
         const [{ data: profileData }, { data: walletData }] = await Promise.all([
           supabase
             .from('profiles')
             .select('id,full_name,email,phone_number,gender,avatar_url,monthly_bookings')
-            .eq('id', user.id)
+            .eq('id', userId)
             .maybeSingle(),
           supabase
             .from('wallets')
             .select('balance')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .maybeSingle()
         ]);
 
         const walletBalance = getNumericValue(walletData?.balance);
 
         if (profileData) {
-          setProfile(mapProfileRow(profileData as Record<string, unknown>, user.email ?? null, walletBalance));
+          setProfile(mapProfileRow(profileData as Record<string, unknown>, email ?? null, walletBalance));
         } else {
           setProfile({
-            id: user.id,
-            full_name: getStringValue(user.user_metadata?.full_name) ?? null,
-            email: user.email ?? null,
-            phone_number: getStringValue(user.phone) ?? null,
+            id: userId,
+            full_name: null,
+            email: email ?? null,
+            phone_number: phone ?? null,
             gender: null,
             avatar_url: null,
             wallet_balance: walletBalance,
@@ -90,7 +113,11 @@ export default function ProfilePage() {
       }
     }
 
-    loadProfile();
+    checkAuthAndLoad();
+
+    return () => {
+      if (firebaseUnsubscribe) firebaseUnsubscribe();
+    };
   }, []);
 
   if (isLoading) {

@@ -28,6 +28,9 @@ import { useBooking } from '../lib/booking-state';
 import { formatCurrency } from '../lib/booking-flow';
 import packageJson from '@/package.json';
 
+import { auth as firebaseAuth } from '@/lib/firebase';
+import { signOut as firebaseSignOut } from 'firebase/auth';
+
 interface ProfileState {
   id: string;
   fullName: string;
@@ -202,21 +205,22 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
     setMessage(null);
 
     try {
+      // 1. Sign out from Supabase
       const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.auth.signOut();
+      await supabase.auth.signOut();
 
-      if (error) {
-        setMessage(error.message);
-        setIsSaving(false);
-        return;
+      // 2. Sign out from Firebase if available
+      if (firebaseAuth) {
+        await firebaseSignOut(firebaseAuth);
       }
 
-      // Clear Firebase auth token cookie
+      // 3. Clear Firebase auth token cookie
       document.cookie = 'firebase-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
 
       clearState();
       router.replace('/');
-    } catch {
+    } catch (error: any) {
+      console.error('Logout error:', error);
       setMessage('An unexpected error occurred during logout.');
       setIsSaving(false);
     }

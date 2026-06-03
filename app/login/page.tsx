@@ -71,7 +71,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (val: string) 
           value={value[index] || ''}
           onChange={(e) => handleInput(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
-          className="w-12 h-14 text-center text-xl font-bold bg-gray-100 rounded-xl border-2 border-transparent focus:border-black focus:bg-white transition-all outline-none"
+          className="w-12 h-14 text-center text-xl font-bold text-black bg-gray-100 rounded-xl border-2 border-transparent focus:border-black focus:bg-white transition-all outline-none"
         />
       ))}
     </div>
@@ -185,29 +185,20 @@ function LandingPageContent() {
         const result = await confirmationResult.confirm(otpCode);
         const user = result.user;
 
-        // Database Sync: Maintain continuity for Phone Auth users in Supabase
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('phone_number', phoneNumber)
-          .maybeSingle();
+        // Bridge: Sync Firebase Identity with Supabase Database
+        const syncResponse = await fetch('/api/auth/sync-phone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            phone: `${countryCode}${phoneNumber}`, 
+            firebaseUid: user.uid 
+          }),
+        });
 
-        if (existingProfile) {
-           await supabase
-            .from('profiles')
-            .update({ id: user.uid })
-            .eq('phone_number', phoneNumber);
-        } else {
-           await supabase
-            .from('profiles')
-            .insert({
-              id: user.uid,
-              phone_number: phoneNumber
-            });
+        if (!syncResponse.ok) {
+          const errorData = await syncResponse.json();
+          throw new Error(errorData.error || 'Failed to synchronize user session.');
         }
-
-        // Set a cookie for the middleware to recognize the Firebase session
-        document.cookie = `firebase-auth-token=${user.uid}; path=/; max-age=3600; SameSite=Lax`;
 
         // Dynamic redirect handler
         const searchParams = new URLSearchParams(window.location.search);
