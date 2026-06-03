@@ -183,21 +183,34 @@ function LandingPageContent() {
     try {
       if (confirmationResult) {
         const result = await confirmationResult.confirm(otpCode);
-        const user = result.user;
+        const fbUser = result.user;
 
-        // Bridge: Sync Firebase Identity with Supabase Database
-        const syncResponse = await fetch('/api/auth/sync-phone', {
+        if (!fbUser.phoneNumber) {
+          throw new Error('Firebase phone number verification failed');
+        }
+
+        // Bridge: Sync Firebase Phone Auth with Supabase Auth
+        const bridgeResponse = await fetch('/api/auth/firebase-bridge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            phone: `${countryCode}${phoneNumber}`, 
-            firebaseUid: user.uid 
+            phoneNumber: fbUser.phoneNumber 
           }),
         });
 
-        if (!syncResponse.ok) {
-          const errorData = await syncResponse.json();
-          throw new Error(errorData.error || 'Failed to synchronize user session.');
+        if (!bridgeResponse.ok) {
+          const errorData = await bridgeResponse.json();
+          throw new Error(errorData.error || 'Failed to synchronize hybrid session.');
+        }
+
+        const { session } = await bridgeResponse.json();
+
+        // Apply Supabase session to the client
+        if (session) {
+          await supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
         }
 
         // Dynamic redirect handler
