@@ -16,19 +16,21 @@ export async function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { phoneNumber } = await request.json();
+    const body = await request.json();
+    const phoneNumber = body.phoneNumber;
 
     if (!phoneNumber) {
       return NextResponse.json({ error: 'Phone number is required' }, { status: 400, headers: CORS_HEADERS });
     }
 
+    // Explicitly declare the internal email reference for the bridge
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const internalEmail = `phone_${cleanPhone}@zlon.internal`;
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    const internalEmail = `phone_${cleanPhone}@zlon.internal`;
 
     // 4. Check for account in public.profiles table directly
     const { data: profile } = await supabaseAdmin
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
     let userId = profile?.id;
 
     if (!profile) {
-      // 5. Create user if missing in profiles (assuming missing in auth.users too)
+      // 5. Create user if missing in profiles
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: internalEmail,
         email_confirm: true,
@@ -51,7 +53,6 @@ export async function POST(request: NextRequest) {
       });
 
       if (createError) {
-        // If user already exists in auth.users but not in profiles, we handle that
         if (createError.message.includes('already registered')) {
           const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
           const existingUser = users.find(u => u.email === internalEmail);
@@ -63,7 +64,6 @@ export async function POST(request: NextRequest) {
         userId = newUser.user.id;
       }
 
-      // Ensure profile record exists for the new/found user
       if (userId) {
         await supabaseAdmin.from('profiles').upsert({
           id: userId,
@@ -85,13 +85,11 @@ export async function POST(request: NextRequest) {
 
     if (linkError) throw linkError;
 
-    // Use the token_hash to get a session on the server
     const actionUrl = new URL(linkData.properties.action_link);
     const tokenHash = actionUrl.searchParams.get('token');
 
     if (!tokenHash) throw new Error('Token hash generation failed');
 
-    // Verify the OTP on the server to get a session object
     const { data: verifyData, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
       email: internalEmail,
       token: tokenHash,
@@ -100,10 +98,9 @@ export async function POST(request: NextRequest) {
 
     if (verifyError) throw verifyError;
 
-    // Return the session tokens to the client as requested
     return NextResponse.json({
       status: 'success',
-      session: verifyData.session, // Contains access_token, refresh_token, etc.
+      session: verifyData.session,
     }, { headers: CORS_HEADERS });
 
   } catch (error: any) {
