@@ -184,17 +184,21 @@ function LandingPageContent() {
       if (confirmationResult) {
         const result = await confirmationResult.confirm(otpCode);
         const fbUser = result.user;
+        const verifiedPhoneNumber = fbUser.phoneNumber;
 
-        if (!fbUser.phoneNumber) {
+        if (!verifiedPhoneNumber) {
           throw new Error('Firebase phone number verification failed');
         }
+
+        // Immediately sign out from Firebase to prevent LocalStorage conflicts
+        await auth.signOut();
 
         // Bridge: Sync Firebase Phone Auth with Supabase Auth
         const bridgeResponse = await fetch('/api/auth/firebase-bridge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            phoneNumber: fbUser.phoneNumber 
+            phoneNumber: verifiedPhoneNumber 
           }),
         });
 
@@ -222,16 +226,12 @@ function LandingPageContent() {
       console.error('Error verifying OTP:', error);
       setIsLoading(false);
       
-      switch (error.code) {
-        case 'auth/invalid-verification-code':
-          setErrorMessage('Invalid OTP code. Please check and try again.');
-          break;
-        case 'auth/code-expired':
-          setErrorMessage('OTP code has expired. Please request a new one.');
-          break;
-        default:
-          setErrorMessage('Verification failed. Please try again.');
-      }
+      const firebaseErrorMap: Record<string, string> = {
+        'auth/invalid-verification-code': 'Invalid OTP code. Please check and try again.',
+        'auth/code-expired': 'OTP code has expired. Please request a new one.',
+      };
+
+      setErrorMessage(firebaseErrorMap[error.code] || error.message || 'Verification failed. Please try again.');
     }
   }
 
