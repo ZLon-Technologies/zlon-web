@@ -191,7 +191,7 @@ function LandingPageContent() {
         }
 
         // Immediately sign out from Firebase to prevent LocalStorage conflicts
-        await auth.signOut();
+        await auth?.signOut();
 
         // Bridge: Sync Firebase Phone Auth with Supabase Auth
         const bridgeResponse = await fetch('/api/auth/firebase-bridge', {
