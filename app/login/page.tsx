@@ -182,18 +182,20 @@ function LandingPageContent() {
 
     try {
       if (confirmationResult) {
+        // 1. Confirm OTP
         const result = await confirmationResult.confirm(otpCode);
-        const fbUser = result.user;
-        const verifiedPhoneNumber = fbUser.phoneNumber;
+        
+        // 2. Extract phoneNumber
+        const verifiedPhoneNumber = result.user.phoneNumber;
 
         if (!verifiedPhoneNumber) {
           throw new Error('Firebase phone number verification failed');
         }
 
-        // Immediately sign out from Firebase to prevent LocalStorage conflicts
+        // 3. OPTIONAL CHAINING FIX: Immediately sign out from Firebase
         await auth?.signOut();
 
-        // Bridge: Sync Firebase Phone Auth with Supabase Auth
+        // 4. Post to firebase-bridge
         const bridgeResponse = await fetch('/api/auth/firebase-bridge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -207,17 +209,17 @@ function LandingPageContent() {
           throw new Error(errorData.error || 'Failed to synchronize hybrid session.');
         }
 
-        const { session } = await bridgeResponse.json();
+        const data = await bridgeResponse.json();
 
-        // Apply Supabase session to the client
-        if (session) {
+        // 5. Pass bridge session token to Supabase
+        if (data.session) {
           await supabase.auth.setSession({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
           });
         }
 
-        // Dynamic redirect handler
+        // 6. Execute redirect
         const searchParams = new URLSearchParams(window.location.search);
         const nextRoute = searchParams.get('next') || '/dashboard';
         router.push(nextRoute);
