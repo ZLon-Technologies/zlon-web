@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    let isNewUser = false;
+
     // 4. Check for account in public.profiles table directly
     const { data: profile } = await supabaseAdmin
       .from('profiles')
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
     let userId = profile?.id;
 
     if (!profile) {
+      isNewUser = true;
       // 5. Create user if missing in profiles
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: internalEmail,
@@ -103,13 +106,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       status: 'success',
       session: verifyData.session,
+      isNewUser
     }, { headers: CORS_HEADERS });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Hybrid Bridge Error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ 
       error: 'Internal server error',
-      details: error.message || String(error)
+      details: errorMessage
     }, { status: 500, headers: CORS_HEADERS });
   }
 }

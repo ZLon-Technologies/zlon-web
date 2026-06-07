@@ -151,11 +151,12 @@ function LandingPageContent() {
       setConfirmationResult(result);
       setIsLoading(false);
       setTimeLeft(60);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error sending OTP:', error);
       setIsLoading(false);
       
-      switch (error.code) {
+      const errorCode = (error as { code?: string }).code;
+      switch (errorCode) {
         case 'auth/invalid-phone-number':
           setErrorMessage('The phone number is invalid.');
           break;
@@ -219,12 +220,16 @@ function LandingPageContent() {
           });
         }
 
-        // 6. Execute redirect
-        const searchParams = new URLSearchParams(window.location.search);
-        const nextRoute = searchParams.get('next') || '/dashboard';
-        router.push(nextRoute);
+        // 6. Execute conditional redirect
+        if (data.isNewUser) {
+          router.push('/onboarding');
+        } else {
+          const searchParams = new URLSearchParams(window.location.search);
+          const nextRoute = searchParams.get('next') || '/dashboard';
+          router.push(nextRoute);
+        }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error verifying OTP:', error);
       setIsLoading(false);
       
@@ -233,7 +238,8 @@ function LandingPageContent() {
         'auth/code-expired': 'OTP code has expired. Please request a new one.',
       };
 
-      setErrorMessage(firebaseErrorMap[error.code] || error.message || 'Verification failed. Please try again.');
+      const err = error as { code?: string; message?: string };
+      setErrorMessage(firebaseErrorMap[err.code || ''] || err.message || 'Verification failed. Please try again.');
     }
   }
 
@@ -477,7 +483,7 @@ function LandingPageContent() {
 declare global {
   interface Window {
     recaptchaVerifier: RecaptchaVerifier | undefined;
-    grecaptcha: any;
+    grecaptcha: unknown;
   }
 }
 
