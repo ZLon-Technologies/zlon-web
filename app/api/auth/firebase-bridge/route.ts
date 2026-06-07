@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: internalEmail,
         email_confirm: true,
+        phone: phoneNumber,
+        phone_confirm: true,
         user_metadata: { 
           phone_number: phoneNumber,
           auth_provider: 'firebase_phone'
