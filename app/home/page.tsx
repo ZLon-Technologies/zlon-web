@@ -91,47 +91,6 @@ function getNumericValue(value: unknown) {
   return null;
 }
 
-function isSearchResultType(value: unknown): value is SearchMatch['result_type'] {
-  return value === 'salon' || value === 'service';
-}
-
-function getSafeSearchResult(rawResult: Record<string, unknown>): SearchMatch | null {
-  const resultType = rawResult.result_type;
-
-  if (!isSearchResultType(resultType)) {
-    return null;
-  }
-
-  const fallbackId = resultType === 'salon' ? rawResult.salon_id : rawResult.service_id;
-  const id = rawResult.id ?? rawResult.result_id ?? fallbackId;
-
-  if (typeof id !== 'string' && typeof id !== 'number') {
-    return null;
-  }
-
-  const name =
-    getStringValue(rawResult.name) ??
-    getStringValue(rawResult.result_name) ??
-    (resultType === 'salon'
-      ? getStringValue(rawResult.salon_name)
-      : getStringValue(rawResult.service_name));
-
-  if (!name) {
-    return null;
-  }
-
-  const salonId = rawResult.salon_id;
-
-  return {
-    id: String(id),
-    name,
-    result_type: resultType,
-    salon_id: typeof salonId === 'string' || typeof salonId === 'number' ? salonId : null,
-    salon_name: getStringValue(rawResult.salon_name),
-    price: getNumericValue(rawResult.price) ?? getNumericValue(rawResult.base_price),
-  };
-}
-
 function useDebouncedValue<T>(value: T, delayMs: number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -438,29 +397,71 @@ export default function HomePage() {
     }
 
     async function searchZLon() {
-      const supabase = createSupabaseBrowserClient();
-
       try {
-        const { data, error } = await supabase.rpc('search_zlon', {
-          search_term: query,
-        });
+        // Search salons by name (prefix search)
+        // Note: Firestore prefix search is case-sensitive.
+        const salonQuery = query(
+          collection(db, 'salons'),
+          where('name', '>=', query),
+          where('name', '<=', query + '\uf8ff'),
+          limit(10)
+        );
+        
+        // Search services by name (prefix search)
+        const serviceQuery = query(
+          collection(db, 'services'),
+          where('name', '>=', query),
+          where('name', '<=', query + '\uf8ff'),
+          limit(10)
+        );
+
+        const [salonSnap, serviceSnap] = await Promise.all([
+          getDocs(salonQuery),
+          getDocs(serviceQuery)
+        ]);
 
         if (!isCurrentSearch) {
           return;
         }
 
-        if (error) {
-          console.error('Search error:', error);
-          setSearchResults([]);
-          setIsSearching(false);
-          return;
-        }
+        const salonResults: SearchMatch[] = salonSnap.docs.map(docSnap => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: data.name || 'Unnamed Salon',
+            result_type: 'salon' as const,
+            salon_id: docSnap.id,
+            salon_name: data.name || 'Unnamed Salon',
+          };
+        });
 
-        const nextResults = ((data ?? []) as Array<Record<string, unknown>>)
-          .map(getSafeSearchResult)
-          .filter((result): result is SearchMatch => Boolean(result));
+        // For services, we need to fetch their salon names to match the SearchMatch interface
+        const serviceResults: SearchMatch[] = await Promise.all(serviceSnap.docs.map(async docSnapshot => {
+          const data = docSnapshot.data();
+          let salonName = 'ZLon Salon';
+          
+          if (data.salon_id) {
+            try {
+              const salonDoc = await getDoc(doc(db, 'salons', String(data.salon_id)));
+              if (salonDoc.exists()) {
+                salonName = salonDoc.data().name || 'ZLon Salon';
+              }
+            } catch (err) {
+              console.error('Error fetching salon for service:', err);
+            }
+          }
 
-        setSearchResults(nextResults);
+          return {
+            id: docSnapshot.id,
+            name: data.name || 'Unnamed Service',
+            result_type: 'service' as const,
+            salon_id: data.salon_id,
+            salon_name: salonName,
+            price: data.price ?? data.base_price ?? null,
+          };
+        }));
+
+        setSearchResults([...salonResults, ...serviceResults]);
       } catch (err) {
         if (!isCurrentSearch) {
           return;
