@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
+import { getApps } from 'firebase-admin/app';
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
