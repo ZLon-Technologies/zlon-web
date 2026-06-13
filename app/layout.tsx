@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 import { BookingProvider } from './lib/booking-state';
 import { LoadingProvider } from './components/loading-provider';
 import { RootWrapper } from './components/root-wrapper';
-import { AuthProvider } from './lib/auth-context';
+import { AuthProvider } from '@/lib/auth-context';
 
 export default async function RootLayout({
   children,
