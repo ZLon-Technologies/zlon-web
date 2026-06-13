@@ -4,7 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ReviewBookingScreen } from '../../components/review-booking-screen';
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import type { SalonData } from '@/lib/types/booking';
 
 export default function ReviewBookingPage() {
@@ -37,68 +38,48 @@ export default function ReviewBookingPage() {
       let currentStaffName = staffId === 'any' ? 'Any Staff' : 'Professional Staff';
 
       try {
-        const supabase = createSupabaseBrowserClient();
-        
         // Fetch staff name if not "any"
         if (staffId !== 'any') {
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('name')
-            .eq('id', staffId)
-            .single();
-          
-          if (staffData) {
-            currentStaffName = staffData.name;
+          const staffDoc = await getDoc(doc(db, 'staff', staffId));
+          if (staffDoc.exists()) {
+            const staffData = staffDoc.data();
+            currentStaffName = staffData.name || currentStaffName;
           }
         }
 
-        // Strict JOIN logic: Fetch services and their parent salon in a single inner join query.
-        const { data: joinedData, error } = await supabase
-          .from('services')
-          .select(`
-            id,
-            name,
-            price,
-            duration_minutes,
-            category,
-            badge,
-            description,
-            featured,
-            salon:salons!inner (
-              id,
-              name,
-              address,
-              imageUrl,
-              image_url,
-              image,
-              distance,
-              lat,
-              lng
-            )
-          `)
-          .eq('salon_id', salonId)
-          .in('id', selectedServiceIds);
-
-        if (!error && joinedData && joinedData.length > 0) {
-          const firstRecord = joinedData[0];
-          // @ts-ignore - handling complex join result
-          const salonData = Array.isArray(firstRecord.salon) ? firstRecord.salon[0] : firstRecord.salon;
-          
+        // Fetch Salon Data
+        const salonDoc = await getDoc(doc(db, 'salons', salonId));
+        
+        if (salonDoc.exists()) {
+          const salonData = salonDoc.data() as SalonData;
           currentSalonName = salonData.name || currentSalonName;
           currentSalonImage = salonData.imageUrl || salonData.image_url || salonData.image || currentSalonImage;
           currentSalonLocation = salonData.address || currentSalonLocation;
           currentSalonDistance = salonData.distance || currentSalonDistance;
 
-          dbServices = joinedData.map(s => ({
-            id: String(s.id),
-            name: s.name || 'Service',
-            price: Number(s.price) || 0,
-            durationMinutes: Number(s.duration_minutes) || 0,
-            category: s.category || 'Service',
-            badge: s.badge || s.category || 'Service',
-            description: s.description || '',
-            featured: Boolean(s.featured)
-          }));
+          // Fetch specific services
+          if (selectedServiceIds.length > 0) {
+            const servicesQuery = query(
+              collection(db, 'services'),
+              where('salon_id', '==', salonId),
+              where(documentId(), 'in', selectedServiceIds)
+            );
+            const servicesSnap = await getDocs(servicesQuery);
+            
+            dbServices = servicesSnap.docs.map(doc => {
+              const s = doc.data();
+              return {
+                id: doc.id,
+                name: s.name || 'Service',
+                price: Number(s.price) || 0,
+                durationMinutes: Number(s.duration_minutes) || 0,
+                category: s.category || 'Service',
+                badge: s.badge || s.category || 'Service',
+                description: s.description || '',
+                featured: Boolean(s.featured)
+              };
+            });
+          }
         } else {
           const fallbackSalon = getSalonById(salonId);
           if (fallbackSalon) {

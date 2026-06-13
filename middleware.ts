@@ -1,45 +1,12 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_ZLON_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_ZLON_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  // IMPORTANT: Do not use getSession(). Use getUser().
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
 
   // Check for Firebase Auth session indicator (e.g., a custom cookie)
   // Since Firebase Web SDK stores state in IndexedDB, we must rely on a client-set cookie for middleware recognition.
   const firebaseAuthCookie = request.cookies.get('firebase-auth-token')
-  const hasFirebaseSession = !!firebaseAuthCookie
-
-  const isLoggedIn = !!user || hasFirebaseSession
+  const isLoggedIn = !!firebaseAuthCookie
 
   // Protected routes logic
   const protectedRoutes = ['/home', '/profile', '/dashboard', '/booking', '/wallet', '/complete-profile', '/ai-stylist', '/ai-face-scanner']
@@ -57,7 +24,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(nextPath, request.url))
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {

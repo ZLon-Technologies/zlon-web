@@ -4,7 +4,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Clock3, MapPin, Plus, Scissors, Sparkles, Star } from 'lucide-react';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import type { SalonService } from '../lib/booking-flow';
 import { formatCurrency, serializeSelectedServices } from '../lib/booking-flow';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
@@ -114,7 +115,6 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
     let isMounted = true;
 
     async function fetchSalonDetails() {
@@ -123,25 +123,22 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
       setError(null);
 
       try {
-        const [{ data: salonData, error: salonError }, { data: servicesData, error: servicesError }] =
-          await Promise.all([
-            supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT).eq('id', salonId).single(),
-            supabase.from('services').select('*').eq('salon_id', salonId),
-          ]);
+        const salonRef = doc(db, 'salons', salonId);
+        const servicesQuery = query(collection(db, 'services'), where('salon_id', '==', salonId));
 
-        if (salonError) {
-          console.error('[Services] Salon fetch error:', salonError);
-          throw salonError;
-        }
-        if (servicesError) {
-          console.error('[Services] Services fetch error:', servicesError);
-          throw servicesError;
+        const [salonSnap, servicesSnap] = await Promise.all([
+          getDoc(salonRef),
+          getDocs(servicesQuery),
+        ]);
+
+        if (!salonSnap.exists()) {
+          throw new Error('Salon not found');
         }
 
         if (!isMounted) return;
 
-        const nextServices = (servicesData ?? []) as ServiceRecord[];
-        const currentSalon = (salonData ?? null) as SalonRecord | null;
+        const nextServices = servicesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ServiceRecord[];
+        const currentSalon = { id: salonSnap.id, ...salonSnap.data() } as SalonRecord;
 
         console.log('[Services] Fetched services count:', nextServices.length);
         console.log('[Services] Fetched salon name:', currentSalon?.name);

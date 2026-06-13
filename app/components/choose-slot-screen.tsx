@@ -20,7 +20,8 @@ import {
   formatLongDate,
   serializeSelectedServices,
 } from '../lib/booking-flow';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import { useBooking } from '../lib/booking-state';
 
 interface ChooseSlotScreenProps {
@@ -147,43 +148,45 @@ export function ChooseSlotScreen({ salon, selectedServices: propServices }: Choo
   const [staffList, setStaffList] = useState<Array<{ id: string, name: string, initials?: string, color_class?: string, colorClass?: string }>>([]);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
     let isMounted = true;
 
     async function fetchData() {
       console.log('Fetching data for salon_id:', salon.id, 'and date:', selectedDate);
       try {
-        const [bookingsRes, staffRes, servicesRes] = await Promise.all([
-          supabase
-            .from('bookings')
-            .select('staff_id, time_slot, appointment_timestamp, service_id')
-            .eq('salon_id', salon.id)
-            .eq('date', selectedDate)
-            .not('status', 'eq', 'cancelled'),
-          supabase
-            .from('staff')
-            .select('*')
-            .eq('salon_id', salon.id),
-          supabase
-            .from('services')
-            .select('id, duration_minutes')
-            .eq('salon_id', salon.id)
+        const bookingsQuery = query(
+          collection(db, 'bookings'),
+          where('salon_id', '==', salon.id),
+          where('date', '==', selectedDate),
+          where('status', '!=', 'cancelled')
+        );
+        const staffQuery = query(
+          collection(db, 'staff'),
+          where('salon_id', '==', salon.id)
+        );
+        const servicesQuery = query(
+          collection(db, 'services'),
+          where('salon_id', '==', salon.id)
+        );
+
+        const [bookingsSnap, staffSnap, servicesSnap] = await Promise.all([
+          getDocs(bookingsQuery),
+          getDocs(staffQuery),
+          getDocs(servicesQuery)
         ]);
 
-        if (bookingsRes.error) console.error('Bookings fetch error:', bookingsRes.error);
-        if (staffRes.error) console.error('Staff fetch error:', staffRes.error);
+        const servicesData = servicesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const servicesMap = new Map(servicesData.map((s: any) => [String(s.id), Number(s.duration_minutes) || 0]));
 
-        const servicesMap = new Map((servicesRes.data || []).map(s => [String(s.id), Number(s.duration_minutes) || 0]));
-
-        const processedBookings = (bookingsRes.data || []).map(b => {
+        const processedBookings = bookingsSnap.docs.map(doc => {
+          const b = doc.data();
           const serviceIds = (b.service_id || '').split(',').map((id: string) => id.trim());
           const duration = serviceIds.reduce((sum: number, id: string) => sum + (servicesMap.get(id) || 0), 0);
-          return { staff_id: b.staff_id, time_slot: b.time_slot, duration: duration || 30 }; // default to 30 if 0
+          return { staff_id: b.staff_id, time_slot: b.time_slot, duration: duration || 30 };
         });
 
         if (isMounted) {
           setDailyBookings(processedBookings);
-          setStaffList(staffRes.data || []);
+          setStaffList(staffSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
         }
       } catch (err) {
         console.error('Unexpected fetch error:', err);

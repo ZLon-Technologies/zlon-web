@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 import { FilesetResolver, FaceLandmarker } from '@mediapipe/tasks-vision';
 import { ArrowLeft, Camera, Crown, LockKeyhole, ScanFace, Sparkles } from 'lucide-react';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth-context';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface ScanResult {
   faceShape: string;
@@ -32,23 +34,19 @@ export function AIFaceScannerScreen() {
   const [monthlyBookings, setMonthlyBookings] = useState(0);
   const [hasPaid, setHasPaid] = useState(true); // Default to true (hiding paywall) if fetch fails
 
+  const { user, loading: authLoading } = useAuth();
+
   const isPaywallBlocked = monthlyBookings < 3 && hasPaid === false;
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-
     async function fetchProfile() {
+      if (authLoading || !user) return;
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        const profileDoc = await getDoc(doc(db, 'profiles', user.uid));
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('monthly_bookings, has_paid, ai_scanner_access')
-          .eq('id', user.id)
-          .single();
-
-        if (profile) {
+        if (profileDoc.exists()) {
+          const profile = profileDoc.data();
           setMonthlyBookings(profile.monthly_bookings ?? 0);
           setHasPaid(profile.has_paid ?? profile.ai_scanner_access ?? false);
         } else {
@@ -61,7 +59,7 @@ export function AIFaceScannerScreen() {
     }
 
     fetchProfile();
-  }, []);
+  }, [user, authLoading]);
 
   useEffect(() => {
 

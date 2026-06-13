@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth-context';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { X, Mail, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,48 +13,44 @@ export function RegistrationGuard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [userId, setUserId] = useState<string | null>(null);
-
-  const supabase = createSupabaseBrowserClient();
+  
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     async function checkProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (authLoading || !user) return;
 
-      setUserId(user.id);
+      try {
+        const docRef = doc(db, 'profiles', user.uid);
+        const docSnap = await getDoc(docRef);
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_profile_complete, email')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (profile && profile.is_profile_complete === false) {
-        setIsOpen(true);
+        if (docSnap.exists()) {
+          const profile = docSnap.data();
+          if (profile.is_profile_complete === false) {
+            setIsOpen(true);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking profile:', err);
       }
     }
 
     checkProfile();
-  }, [supabase]);
+  }, [user, authLoading]);
 
   async function handleCompleteProfile(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !userId) return;
+    if (!email.trim() || !user) return;
 
     setIsLoading(true);
     setErrorMessage('');
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          email: email.trim(), 
-          is_profile_complete: true 
-        })
-        .eq('id', userId);
-
-      if (error) throw error;
+      const docRef = doc(db, 'profiles', user.uid);
+      await updateDoc(docRef, {
+        email: email.trim(),
+        is_profile_complete: true
+      });
 
       setIsSuccess(true);
       setTimeout(() => setIsOpen(false), 2000);

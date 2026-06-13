@@ -22,14 +22,15 @@ import {
   CheckCircle2,
   FileText,
 } from 'lucide-react';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { MobileBottomNav } from './mobile-bottom-nav';
 import { useBooking } from '../lib/booking-state';
 import { formatCurrency } from '../lib/booking-flow';
 import packageJson from '@/package.json';
 
-import { auth as firebaseAuth } from '@/lib/firebase';
+import { auth as firebaseAuth, db, storage } from '@/lib/firebase';
 import { signOut as firebaseSignOut } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface ProfileState {
   id: string;
@@ -133,24 +134,20 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
     setIsSaving(true);
     setMessage(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase
-      .from('profiles')
-      .update({ [editableProfileColumns[activeField]]: draftValue })
-      .eq('id', profile.id);
+    try {
+      const profileRef = doc(db, 'profiles', profile.id);
+      await updateDoc(profileRef, { [editableProfileColumns[activeField]]: draftValue });
 
-    if (error) {
-      setMessage(error.message);
+      setProfile((previousProfile) => ({
+        ...previousProfile,
+        [activeField]: draftValue,
+      }));
+      closeFieldEditor();
+      router.refresh();
+    } catch (error: any) {
+      setMessage(error.message || 'An error occurred while saving.');
       setIsSaving(false);
-      return;
     }
-
-    setProfile((previousProfile) => ({
-      ...previousProfile,
-      [activeField]: draftValue,
-    }));
-    closeFieldEditor();
-    router.refresh();
   }
 
   async function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -163,41 +160,28 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
     setIsSaving(true);
     setMessage(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const filePath = getAvatarFilePath(profile.id, file);
-    const uploadResult = await supabase.storage.from('avatars').upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: true,
-    });
+    try {
+      const filePath = getAvatarFilePath(profile.id, file);
+      const storageRef = ref(storage, `avatars/${filePath}`);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const avatarUrl = await getDownloadURL(snapshot.ref);
 
-    if (uploadResult.error) {
-      setMessage(uploadResult.error.message);
+      const profileRef = doc(db, 'profiles', profile.id);
+      await updateDoc(profileRef, { avatar_url: avatarUrl });
+
+      setProfile((previousProfile) => ({
+        ...previousProfile,
+        avatarUrl,
+      }));
       setIsSaving(false);
       event.target.value = '';
-      return;
-    }
-
-    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-    const avatarUrl = data.publicUrl;
-    const updateResult = await supabase
-      .from('profiles')
-      .update({ avatar_url: avatarUrl })
-      .eq('id', profile.id);
-
-    if (updateResult.error) {
-      setMessage(updateResult.error.message);
+      router.refresh();
+    } catch (error: any) {
+      setMessage(error.message || 'An error occurred during image upload.');
       setIsSaving(false);
       event.target.value = '';
-      return;
     }
-
-    setProfile((previousProfile) => ({
-      ...previousProfile,
-      avatarUrl,
-    }));
-    setIsSaving(false);
-    event.target.value = '';
-    router.refresh();
   }
 
   async function handleLogOut() {
@@ -205,16 +189,12 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
     setMessage(null);
 
     try {
-      // 1. Sign out from Supabase
-      const supabase = createSupabaseBrowserClient();
-      await supabase.auth.signOut();
-
-      // 2. Sign out from Firebase if available
+      // 1. Sign out from Firebase if available
       if (firebaseAuth) {
         await firebaseSignOut(firebaseAuth);
       }
 
-      // 3. Clear Firebase auth token cookie
+      // 2. Clear Firebase auth token cookie
       document.cookie = 'firebase-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
 
       clearState();

@@ -4,7 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ChooseSlotScreen } from '../../components/choose-slot-screen';
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { FALLBACK_SALON_IMAGE } from '../../lib/media';
 import type { SalonData } from '@/lib/types/booking';
 
@@ -33,54 +34,39 @@ export default function ChooseSlotPage() {
       let dbServices: SalonService[] = [];
 
       try {
-        const supabase = createSupabaseBrowserClient();
+        // Fetch Salon Data
+        const salonDoc = await getDoc(doc(db, 'salons', salonId));
         
-        // Enforce strict JOIN logic to verify salon-service link and pull correct duration_minutes
-        const { data: joinedData, error } = await supabase
-          .from('services')
-          .select(`
-            id,
-            name,
-            price,
-            duration_minutes,
-            category,
-            badge,
-            description,
-            featured,
-            salon:salons!inner (
-              id,
-              name,
-              address,
-              location,
-              imageUrl,
-              image_url,
-              image,
-              distance
-            )
-          `)
-          .eq('salon_id', salonId)
-          .in('id', selectedServiceIds);
-
-        if (!error && joinedData && joinedData.length > 0) {
-          const firstRecord = joinedData[0];
-          // @ts-ignore - handling complex join result
-          const salonData = Array.isArray(firstRecord.salon) ? firstRecord.salon[0] : firstRecord.salon;
-
+        if (salonDoc.exists()) {
+          const salonData = salonDoc.data() as SalonData;
           salonName = salonData.name || salonName;
           salonImage = salonData.imageUrl || salonData.image_url || salonData.image || salonImage;
           salonLocation = salonData.location || salonData.address || salonLocation;
           salonDistance = salonData.distance || salonDistance;
 
-          dbServices = joinedData.map(s => ({
-            id: String(s.id),
-            name: s.name || 'Service',
-            price: Number(s.price) || 0,
-            durationMinutes: Number(s.duration_minutes) || 0,
-            category: s.category || 'Service',
-            badge: s.badge || s.category || 'Service',
-            description: s.description || '',
-            featured: Boolean(s.featured)
-          }));
+          // Fetch specific services if we have IDs
+          if (selectedServiceIds.length > 0) {
+            const servicesQuery = query(
+              collection(db, 'services'),
+              where('salon_id', '==', salonId),
+              where(documentId(), 'in', selectedServiceIds)
+            );
+            const servicesSnap = await getDocs(servicesQuery);
+            
+            dbServices = servicesSnap.docs.map(doc => {
+              const s = doc.data();
+              return {
+                id: doc.id,
+                name: s.name || 'Service',
+                price: Number(s.price) || 0,
+                durationMinutes: Number(s.duration_minutes) || 0,
+                category: s.category || 'Service',
+                badge: s.badge || s.category || 'Service',
+                description: s.description || '',
+                featured: Boolean(s.featured)
+              };
+            });
+          }
         } else {
           const fallbackSalon = getSalonById(salonId);
           salonName = fallbackSalon?.name ?? salonName;

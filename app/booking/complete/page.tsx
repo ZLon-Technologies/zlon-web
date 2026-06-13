@@ -4,8 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BookingCompleteScreen } from '../../components/booking-complete-screen';
 import { getSalonById, getServicesForSalon, parseSelectedServices, SalonProfile, SalonService } from '../../lib/booking-flow';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { FALLBACK_SALON_IMAGE } from '../../lib/media';
 import type { SalonData } from '@/lib/types/booking';
 
@@ -36,28 +36,19 @@ export default function BookingCompletePage() {
       let currentStaffName = staffId === 'any' ? 'Any Staff' : 'Professional Staff';
 
       try {
-        const supabase = createSupabaseBrowserClient();
-
         // Fetch staff name if not "any"
         if (staffId !== 'any') {
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('name')
-            .eq('id', staffId)
-            .single();
-          
-          if (staffData) {
-            currentStaffName = staffData.name;
+          const staffDoc = await getDoc(doc(db, 'staff', staffId));
+          if (staffDoc.exists()) {
+            const staffData = staffDoc.data();
+            currentStaffName = staffData.name || currentStaffName;
           }
         }
 
-        const { data } = await supabase
-          .from('salons')
-          .select(CUSTOMER_SAFE_SALON_SELECT)
-          .eq('id', salonId)
-          .maybeSingle();
+        const salonDoc = await getDoc(doc(db, 'salons', salonId));
 
-        if (data) {
+        if (salonDoc.exists()) {
+          const data = salonDoc.data();
           const salonData = data as SalonData;
           currentSalonName = data.name || currentSalonName;
           currentSalonImage = salonData.image || salonData.image_url || data.imageUrl || currentSalonImage;

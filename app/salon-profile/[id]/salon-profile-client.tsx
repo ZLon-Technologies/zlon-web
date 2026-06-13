@@ -4,8 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin } from 'lucide-react';
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
-import { CUSTOMER_SAFE_SALON_SELECT } from '../../lib/public-salon-fields';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { getSalonById } from '../../lib/booking-flow';
 import { FALLBACK_SALON_IMAGE, DEFAULT_GALLERY } from '../../lib/media';
 
@@ -87,15 +87,11 @@ export function SalonProfileClient({ salonId }: SalonProfileClientProps) {
   useEffect(() => {
     async function loadSalon() {
       try {
-        const supabase = createSupabaseClient();
-        const { data } = await supabase
-          .from('salons')
-          .select(CUSTOMER_SAFE_SALON_SELECT)
-          .eq('id', salonId)
-          .maybeSingle();
+        const docRef = doc(db, 'salons', salonId);
+        const docSnap = await getDoc(docRef);
 
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          setRemoteSalon(getSafeSalonRow(data as Record<string, unknown>));
+        if (docSnap.exists()) {
+          setRemoteSalon(getSafeSalonRow({ id: docSnap.id, ...docSnap.data() }));
         }
       } catch (error) {
         console.error('Unable to load salon profile details:', error);

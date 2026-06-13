@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { EditProfileScreen } from '../components/edit-profile-screen';
-import { auth as firebaseAuth } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useAuth } from '@/lib/auth-context';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface ProfileRecord {
   id: string;
@@ -41,65 +41,37 @@ function mapProfileRow(row: Record<string, unknown>, fallbackEmail: string | nul
 }
 
 export default function ProfilePage() {
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let firebaseUnsubscribe: (() => void) | undefined;
-
-    async function checkAuthAndLoad() {
-      try {
-        const supabase = createSupabaseClient();
-        
-        // 1. Check Supabase session
-        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-
-        // 2. Check Firebase session if Supabase is null
-        if (!supabaseUser && firebaseAuth) {
-          firebaseUnsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
-            if (fbUser) {
-              await loadProfileData(fbUser.uid, fbUser.email, fbUser.phoneNumber);
-            } else {
-              setIsLoading(false);
-            }
-          });
-        } else if (supabaseUser) {
-          await loadProfileData(supabaseUser.id, supabaseUser.email, supabaseUser.phone);
-        } else {
-          setIsLoading(false);
-        }
-      } catch (err) {
-        console.error('Auth check error:', err);
+    async function loadProfileData() {
+      if (!user) {
         setIsLoading(false);
+        return;
       }
-    }
-
-    async function loadProfileData(userId: string, email?: string | null, phone?: string | null) {
       try {
-        const supabase = createSupabaseClient();
-        const [{ data: profileData }, { data: walletData }] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('id,full_name,email,phone_number,gender,avatar_url,monthly_bookings')
-            .eq('id', userId)
-            .maybeSingle(),
-          supabase
-            .from('wallets')
-            .select('balance')
-            .eq('user_id', userId)
-            .maybeSingle()
+        const userId = user.uid;
+        
+        const [profileSnap, walletSnap] = await Promise.all([
+          getDoc(doc(db, 'profiles', userId)),
+          getDoc(doc(db, 'wallets', userId))
         ]);
+
+        const profileData = profileSnap.exists() ? profileSnap.data() : null;
+        const walletData = walletSnap.exists() ? walletSnap.data() : null;
 
         const walletBalance = getNumericValue(walletData?.balance);
 
         if (profileData) {
-          setProfile(mapProfileRow(profileData as Record<string, unknown>, email ?? null, walletBalance));
+          setProfile(mapProfileRow({ id: userId, ...profileData } as Record<string, unknown>, user.email ?? null, walletBalance));
         } else {
           setProfile({
             id: userId,
             full_name: null,
-            email: email ?? null,
-            phone_number: phone ?? null,
+            email: user.email ?? null,
+            phone_number: user.phoneNumber ?? null,
             gender: null,
             avatar_url: null,
             wallet_balance: walletBalance,
@@ -113,14 +85,12 @@ export default function ProfilePage() {
       }
     }
 
-    checkAuthAndLoad();
+    if (!authLoading) {
+      loadProfileData();
+    }
+  }, [user, authLoading]);
 
-    return () => {
-      if (firebaseUnsubscribe) firebaseUnsubscribe();
-    };
-  }, []);
-
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 

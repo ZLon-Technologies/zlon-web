@@ -4,7 +4,8 @@ import { Suspense, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 
 function BackIcon() {
   return (
@@ -57,7 +58,6 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
 function SignupPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createSupabaseBrowserClient();
   const nextPath = getSafeRedirectPath(searchParams.get('next'), '/dashboard');
   
   const [email, setEmail] = useState('');
@@ -78,25 +78,15 @@ function SignupPageContent() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(nextPath)}`,
-        },
-      });
+      if (!auth) throw new Error('Auth not initialized');
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await sendEmailVerification(userCredential.user);
 
       setIsSubmitting(false);
-
-      if (error) {
-        setErrorMessage(error.message);
-        return;
-      }
-
       setStep('verify');
-    } catch (err) {
+    } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMessage('An unexpected error occurred.');
+      setErrorMessage(err.message || 'An unexpected error occurred.');
     }
   }
 

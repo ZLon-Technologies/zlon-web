@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Bot, Loader2 } from 'lucide-react';
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 interface LegalSection {
   title: string;
@@ -19,17 +20,18 @@ export default function TermsAndConditionsPage() {
   useEffect(() => {
     async function fetchTerms() {
       try {
-        const supabase = createSupabaseClient();
-        const { data, error } = await supabase
-          .from('legal_documents')
-          .select('content')
-          .eq('type', 'terms_and_conditions')
-          .maybeSingle();
+        const q = query(
+          collection(db, 'legal_documents'),
+          where('type', '==', 'terms_and_conditions'),
+          limit(1)
+        );
+        const querySnapshot = await getDocs(q);
 
-        if (error) throw error;
-        
-        if (data?.content && Array.isArray(data.content)) {
-          setSections(data.content as LegalSection[]);
+        if (!querySnapshot.empty) {
+          const data = querySnapshot.docs[0].data();
+          if (data?.content && Array.isArray(data.content)) {
+            setSections(data.content as LegalSection[]);
+          }
         }
       } catch (err: any) {
         console.error('Error fetching terms:', err);

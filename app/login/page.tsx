@@ -4,10 +4,10 @@ import React, { Suspense, type FormEvent, useState, useEffect, useRef } from 're
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { auth, db } from '@/lib/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Mail, ChevronDown } from 'lucide-react';
-import { auth } from '@/lib/firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 
 const COUNTRY_CODES = [
   { code: '+91', name: 'IN' },
@@ -81,7 +81,6 @@ function OtpInput({ value, onChange }: { value: string; onChange: (val: string) 
 function LandingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createSupabaseBrowserClient();
   const nextPath = getSafeRedirectPath(searchParams.get('next'), '/dashboard');
   
   // Required States for Firebase Phone Auth
@@ -185,43 +184,20 @@ function LandingPageContent() {
       if (confirmationResult) {
         // 1. Confirm OTP
         const result = await confirmationResult.confirm(otpCode);
-        
-        // 2. Extract phoneNumber
-        const verifiedPhoneNumber = result.user.phoneNumber;
+        const user = result.user;
 
-        if (!verifiedPhoneNumber) {
-          throw new Error('Firebase phone number verification failed');
-        }
+        // 2. Check if user is new via Firestore
+        const profileRef = doc(db, 'profiles', user.uid);
+        const profileSnap = await getDoc(profileRef);
+        const isNewUser = !profileSnap.exists();
 
-        // 3. OPTIONAL CHAINING FIX: Immediately sign out from Firebase
-        await auth?.signOut();
-
-        // 4. Post to firebase-bridge
-        const bridgeResponse = await fetch('/api/auth/firebase-bridge', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            phoneNumber: verifiedPhoneNumber 
-          }),
-        });
-
-        if (!bridgeResponse.ok) {
-          const errorData = await bridgeResponse.json();
-          throw new Error(errorData.error || 'Failed to synchronize hybrid session.');
-        }
-
-        const data = await bridgeResponse.json();
-
-        // 5. Pass bridge session token to Supabase
-        if (data.session) {
-          await supabase.auth.setSession({
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
+        if (isNewUser) {
+          // Initialize profile for new user
+          await setDoc(profileRef, {
+            id: user.uid,
+            phone_number: user.phoneNumber,
+            created_at: new Date().toISOString(),
           });
-        }
-
-        // 6. Execute conditional redirect
-        if (data.isNewUser) {
           router.push('/onboarding');
         } else {
           const searchParams = new URLSearchParams(window.location.search);
@@ -257,25 +233,32 @@ function LandingPageContent() {
     setErrorMessage(null);
     setIsGoogleLoading(true);
 
-    const callbackUrl = new URL(`${window.location.origin}/api/auth/callback`);
-    callbackUrl.searchParams.set('next', nextPath);
+    try {
+      if (!auth) throw new Error('Auth not initialized');
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: callbackUrl.toString(),
-      },
-    });
-
-    if (error) {
+      // Check if user is new via Firestore
+      const profileRef = doc(db, 'profiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+      
+      if (!profileSnap.exists()) {
+        await setDoc(profileRef, {
+          id: user.uid,
+          email: user.email,
+          full_name: user.displayName,
+          avatar_url: user.photoURL,
+          created_at: new Date().toISOString(),
+        });
+        router.push('/onboarding');
+      } else {
+        router.push(nextPath);
+      }
+    } catch (error: any) {
       setIsGoogleLoading(false);
       setErrorMessage(error.message);
-      return;
     }
-
-    window.setTimeout(() => {
-      setIsGoogleLoading(false);
-    }, 5000);
   }
 
   const formatTime = (seconds: number) => {

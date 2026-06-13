@@ -1,41 +1,8 @@
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { FALLBACK_SALON_IMAGE } from './media';
+import { db, auth } from '@/lib/firebase';
+import { collection, query, where, getDocs, orderBy, limit, documentId, getDoc, doc } from 'firebase/firestore';
 
 type RawRecord = Record<string, unknown>;
-
-const BOOKING_SELECT_VARIANTS: string[] = [
-  `
-    id,
-    salon_id,
-    service_id,
-    staff_id,
-    status,
-    appointment_timestamp,
-    start_time,
-    date,
-    time_slot,
-    total_amount,
-    created_at,
-    salons:salon_id (
-      id,
-      name,
-      address,
-      imageUrl
-    )
-  `,
-  `
-    id,
-    salon_id,
-    service_id,
-    staff_id,
-    status,
-    appointment_timestamp,
-    date,
-    time_slot,
-    total_amount,
-    created_at
-  `,
-];
 
 export interface BookingSnapshot {
   id: string;
@@ -283,7 +250,7 @@ function mapBookingRow(row: RawRecord) {
     serviceId: getIdValue(row.service_id),
     staffId: getIdValue(row.staff_id),
     salonName: (salon ? getFirstString(salon, ['name']) : null) ?? 'ZLon Salon',
-    salonImage: (salon ? getFirstString(salon, ['imageUrl']) : null) ?? FALLBACK_SALON_IMAGE,
+    salonImage: (salon ? getFirstString(salon, ['imageUrl', 'image', 'image_url']) : null) ?? FALLBACK_SALON_IMAGE,
     salonLocation: (salon ? getFirstString(salon, ['address']) : null) ?? 'Location unavailable',
     serviceName,
     staffName: (staff ? getFirstString(staff, ['name']) : null) ?? 'Assigned Professional',
@@ -301,31 +268,15 @@ function mapBookingRow(row: RawRecord) {
   } satisfies BookingSnapshot;
 }
 
-function isRecoverableJoinError(error: { code?: string; message?: string } | null) {
-  const message = error?.message?.toLowerCase() ?? '';
-
-  return (
-    error?.code === '42703' ||
-    message.includes('column') ||
-    message.includes('relationship') ||
-    message.includes('schema cache')
-  );
-}
-
-async function getAuthenticatedUserId(supabase: ReturnType<typeof createSupabaseClient>) {
-  const { data, error } = await supabase.auth.getUser();
-
-  if (error || !data.user) {
-    return null;
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
   }
-
-  return data.user.id;
+  return chunks;
 }
 
-async function attachStaffDetails(
-  supabase: ReturnType<typeof createSupabaseClient>,
-  rows: RawRecord[]
-) {
+async function attachStaffDetails(rows: RawRecord[]) {
   const staffIds = Array.from(
     new Set(
       rows
@@ -339,30 +290,20 @@ async function attachStaffDetails(
     return rows;
   }
 
-  const { data, error } = await supabase
-    .from('staff')
-    .select('id,name')
-    .in('id', staffIds);
-
-  if (error || !data) {
-    if (error) {
-      console.error('Unable to load staff details for bookings:', error);
+  const staffLookup = new Map<string, RawRecord>();
+  const idChunks = chunkArray(staffIds, 10);
+  
+  for (const chunk of idChunks) {
+    try {
+      const q = query(collection(db, 'staff'), where(documentId(), 'in', chunk));
+      const snap = await getDocs(q);
+      snap.forEach(doc => {
+        staffLookup.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+    } catch (e) {
+      console.error('Error fetching staff details', e);
     }
-
-    return rows;
   }
-
-  const staffLookup = new Map(
-    (data as RawRecord[]).flatMap((staffRow) => {
-      const staffId = getIdValue(staffRow.id);
-
-      if (!staffId) {
-        return [];
-      }
-
-      return [[staffId, staffRow] as const];
-    })
-  );
 
   return rows.map((row) => {
     const staffId = getIdValue(row.staff_id);
@@ -378,10 +319,7 @@ async function attachStaffDetails(
   });
 }
 
-async function attachServiceDetails(
-  supabase: ReturnType<typeof createSupabaseClient>,
-  rows: RawRecord[]
-) {
+async function attachServiceDetails(rows: RawRecord[]) {
   const allServiceIds = new Set<string>();
 
   rows.forEach((row) => {
@@ -393,18 +331,20 @@ async function attachServiceDetails(
     return rows;
   }
 
-  const { data, error } = await supabase
-    .from('services')
-    .select('id,name,price,duration_minutes')
-    .in('id', Array.from(allServiceIds));
-
-  if (error || !data) {
-    return rows;
+  const serviceLookup = new Map<string, RawRecord>();
+  const idChunks = chunkArray(Array.from(allServiceIds), 10);
+  
+  for (const chunk of idChunks) {
+    try {
+      const q = query(collection(db, 'services'), where(documentId(), 'in', chunk));
+      const snap = await getDocs(q);
+      snap.forEach(doc => {
+        serviceLookup.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+    } catch (e) {
+      console.error('Error fetching service details', e);
+    }
   }
-
-  const serviceLookup = new Map(
-    (data as RawRecord[]).map((s) => [getIdValue(s.id), s])
-  );
 
   return rows.map((row) => {
     const ids = getIdValue(row.service_id).split(',').map(s => s.trim()).filter(Boolean);
@@ -417,61 +357,79 @@ async function attachServiceDetails(
   });
 }
 
+async function attachSalonDetails(rows: RawRecord[]) {
+  const salonIds = Array.from(
+    new Set(
+      rows
+        .map((row) => row.salon_id)
+        .map(getIdValue)
+        .filter(Boolean)
+    )
+  );
+
+  if (salonIds.length === 0) return rows;
+
+  const salonLookup = new Map<string, RawRecord>();
+  const idChunks = chunkArray(salonIds, 10);
+
+  for (const chunk of idChunks) {
+    try {
+      const q = query(collection(db, 'salons'), where(documentId(), 'in', chunk));
+      const snap = await getDocs(q);
+      snap.forEach(doc => {
+        salonLookup.set(doc.id, { id: doc.id, ...doc.data() });
+      });
+    } catch(e) {
+      console.error('Error fetching salon details', e);
+    }
+  }
+
+  return rows.map((row) => {
+    const salonId = getIdValue(row.salon_id);
+    if (!salonId) return row;
+    return {
+      ...row,
+      salons: salonLookup.get(salonId) ?? null,
+    };
+  });
+}
+
 async function runJoinedBookingQuery(options: { bookingId?: string }) {
-  const supabase = createSupabaseClient();
-  const userId = await getAuthenticatedUserId(supabase);
+  const userId = auth?.currentUser?.uid;
 
   if (!userId) {
     return [];
   }
 
-  let lastError: { message?: string } | null = null;
+  let rows: RawRecord[] = [];
 
-  for (const select of BOOKING_SELECT_VARIANTS) {
-    const buildQuery = () => {
-      let query = supabase
-        .from('bookings')
-        .select(select)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (options.bookingId) {
-        query = query.eq('id', options.bookingId).limit(1);
+  try {
+    if (options.bookingId) {
+      const bDoc = await getDoc(doc(db, 'bookings', options.bookingId));
+      if (bDoc.exists() && bDoc.data().user_id === userId) {
+        rows = [{ id: bDoc.id, ...bDoc.data() }];
       }
-
-      return query;
-    };
-
-    const result = options.bookingId
-      ? await buildQuery().maybeSingle()
-      : await buildQuery();
-
-    if (!result.error) {
-      let rows = options.bookingId
-        ? result.data
-          ? [result.data as unknown as RawRecord]
-          : []
-        : ((result.data ?? []) as unknown as RawRecord[]);
-
-      rows = await attachStaffDetails(supabase, rows);
-      rows = await attachServiceDetails(supabase, rows);
-      return rows;
+    } else {
+      const q = query(
+        collection(db, 'bookings'),
+        where('user_id', '==', userId),
+        orderBy('created_at', 'desc')
+      );
+      const snap = await getDocs(q);
+      rows = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 
-    lastError = result.error;
-
-    if (!isRecoverableJoinError(result.error)) {
-      break;
+    if (rows.length > 0) {
+      rows = await attachSalonDetails(rows);
+      rows = await attachStaffDetails(rows);
+      rows = await attachServiceDetails(rows);
     }
+  } catch (err) {
+    console.error('Unable to load joined booking records:', err);
   }
 
-  if (lastError) {
-    console.error('Unable to load joined booking records:', lastError);
-  }
-
-  return [];
+  return rows;
 }
-
 
 function byUpcomingOrder(firstBooking: BookingSnapshot, secondBooking: BookingSnapshot) {
   return firstBooking.sortTime - secondBooking.sortTime;

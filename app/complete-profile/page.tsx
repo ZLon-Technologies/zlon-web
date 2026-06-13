@@ -2,7 +2,9 @@
 
 import { Suspense, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/auth-context';
+import { doc, setDoc } from 'firebase/firestore';
 
 type GenderOption = 'male' | 'female' | 'other';
 
@@ -179,7 +181,7 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
 function CreateAccountForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createSupabaseBrowserClient();
+  const { user } = useAuth();
   const nextPath = getSafeRedirectPath(searchParams.get('next'), '/home');
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -198,6 +200,11 @@ function CreateAccountForm() {
   ];
 
   const handleCompleteProfile = async () => {
+    if (!user) {
+      setErrorMessage('You must be logged in to complete your profile.');
+      return;
+    }
+
     if (!fullName.trim() || !dateOfBirth.trim()) {
       setErrorMessage('Complete your name and date of birth to finish setting up your profile.');
       return;
@@ -229,37 +236,23 @@ function CreateAccountForm() {
     setErrorMessage('');
     setIsSaving(true);
 
-    // 1. Update Supabase Auth Metadata
-    const { error: authError } = await supabase.auth.updateUser({
-      data: {
+    try {
+      // Update Profiles Collection and mark as complete
+      const userRef = doc(db, 'profiles', user.uid);
+      await setDoc(userRef, {
         full_name: fullName.trim(),
         date_of_birth: dobDate.toISOString(),
         gender,
-      },
-    });
+        is_profile_complete: true,
+        updated_at: new Date().toISOString(),
+      }, { merge: true });
 
-    if (authError) {
-      setErrorMessage(authError.message);
       setIsSaving(false);
-      return;
+      router.replace(nextPath);
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Failed to update profile');
+      setIsSaving(false);
     }
-
-    // 2. Update Profiles Table and mark as complete
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName.trim(),
-          date_of_birth: dobDate.toISOString(),
-          gender,
-          is_profile_complete: true
-        })
-        .eq('id', user.id);
-    }
-
-    setIsSaving(false);
-    router.replace(nextPath);
   };
 
   return (

@@ -2,12 +2,15 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { db, auth } from '@/lib/firebase';
+import { useAuth } from '@/lib/auth-context';
+import { doc, setDoc } from 'firebase/firestore';
+import { updateEmail } from 'firebase/auth';
 import Image from 'next/image';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
+  const { user } = useAuth();
   
   const [fullName, setFullName] = useState('');
   const [dob, setDob] = useState('');
@@ -21,33 +24,35 @@ export default function OnboardingPage() {
     setMessage(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         throw new Error('User not found. Please log in again.');
       }
 
-      // 1. Update profiles table with Name and DOB
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: fullName,
-          date_of_birth: dob,
-          is_profile_complete: true
-        })
-        .eq('id', user.id);
+      // 1. Update profiles collection with Name and DOB
+      const userRef = doc(db, 'profiles', user.uid);
+      await setDoc(userRef, {
+        full_name: fullName,
+        date_of_birth: dob,
+        is_profile_complete: true,
+        updated_at: new Date().toISOString(),
+      }, { merge: true });
 
-      if (profileError) throw profileError;
-
-      // 2. If email is provided, update auth user
-      if (email) {
-        const { error: authError } = await supabase.auth.updateUser({ email });
-        if (authError) throw authError;
-        
-        setMessage({ 
-          type: 'success', 
-          text: 'Profile saved! Please check your email to verify your address.' 
-        });
+      // 2. If email is provided and different from current, update auth user
+      if (email && email !== user.email) {
+        try {
+          await updateEmail(user, email);
+          setMessage({ 
+            type: 'success', 
+            text: 'Profile saved! Please check your email to verify your address.' 
+          });
+        } catch (authError: any) {
+          console.error('Auth update error:', authError);
+          // If it fails (e.g. requires recent login), we still saved the profile
+          setMessage({ 
+            type: 'success', 
+            text: 'Profile details saved, but email update requires re-authentication. You can update it later in settings.' 
+          });
+        }
         
         // Brief delay to show success message before redirect
         setTimeout(() => {

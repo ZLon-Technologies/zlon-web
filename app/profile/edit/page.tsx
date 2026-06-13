@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Loader2 } from 'lucide-react';
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/auth-context';
+import { doc, getDoc } from 'firebase/firestore';
 import { updateProfile } from '../actions';
 
 export default function EditProfilePage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,28 +24,23 @@ export default function EditProfilePage() {
   });
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      router.push('/');
+      return;
+    }
+
     async function fetchProfile() {
       try {
-        const supabase = createSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const docRef = doc(db, 'profiles', user!.uid);
+        const docSnap = await getDoc(docRef);
 
-        if (!user) {
-          router.push('/');
-          return;
-        }
-
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('full_name, email, phone_number, dob, gender')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (profile) {
+        if (docSnap.exists()) {
+          const profile = docSnap.data();
           setFormData({
             full_name: profile.full_name || '',
-            email: profile.email || user.email || '',
+            email: profile.email || user?.email || '',
             phone_number: profile.phone_number || '',
             dob: profile.dob || '',
             gender: profile.gender || '',
@@ -50,8 +48,8 @@ export default function EditProfilePage() {
         } else {
           setFormData(prev => ({
             ...prev,
-            full_name: user.user_metadata?.full_name || '',
-            email: user.email || '',
+            full_name: user?.displayName || '',
+            email: user?.email || '',
           }));
         }
       } catch (err: any) {
@@ -63,7 +61,7 @@ export default function EditProfilePage() {
     }
 
     fetchProfile();
-  }, [router]);
+  }, [router, user, authLoading]);
 
   const handleBack = () => {
     router.back();

@@ -46,6 +46,7 @@ export const metadata: Metadata = {
 import { BookingProvider } from './lib/booking-state';
 import { LoadingProvider } from './components/loading-provider';
 import { RootWrapper } from './components/root-wrapper';
+import { AuthProvider } from './lib/auth-context';
 
 export default async function RootLayout({
   children,
@@ -59,11 +60,13 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${inter.className} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-screen bg-gray-900">
-        <LoadingProvider>
-          <BookingProvider>
-            <RootWrapper>{children}</RootWrapper>
-          </BookingProvider>
-        </LoadingProvider>
+        <AuthProvider>
+          <LoadingProvider>
+            <BookingProvider>
+              <RootWrapper>{children}</RootWrapper>
+            </BookingProvider>
+          </LoadingProvider>
+        </AuthProvider>
       </body>
     </html>
   );

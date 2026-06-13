@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { cookies } from 'next/headers';
 
 interface ProfileMutationResult {
   ok: boolean;
@@ -15,23 +16,29 @@ export async function updateProfile(formData: {
   gender: string;
 }): Promise<ProfileMutationResult> {
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const cookieStore = await cookies();
+    const token = cookieStore.get('firebase-auth-token')?.value;
 
-    if (!user) return { ok: false, message: 'User not authenticated.' };
+    if (!token) {
+      return { ok: false, message: 'User not authenticated.' };
+    }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
+    const decodedToken = await adminAuth.verifyIdToken(token);
+    const userId = decodedToken.uid;
+
+    if (!userId) return { ok: false, message: 'User not authenticated.' };
+
+    await adminDb
+      .collection('profiles')
+      .doc(userId)
+      .set({
         full_name: formData.full_name,
         email: formData.email,
         phone_number: formData.phone_number,
         dob: formData.dob,
         gender: formData.gender,
-      })
-      .eq('id', user.id);
-
-    if (error) throw error;
+        updated_at: new Date().toISOString(),
+      }, { merge: true });
 
     return { ok: true, message: 'Profile updated successfully.' };
   } catch (error: any) {

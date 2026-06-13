@@ -3,7 +3,9 @@
 import { Suspense, useState, type FormEvent, type ReactNode, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { auth, db } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc, query, collection, where, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Lock, Mail } from 'lucide-react';
 
 function InputField({
@@ -107,7 +109,6 @@ function getSafeRedirectPath(pathname: string | null, fallback: string) {
 function LoginEmailPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createSupabaseBrowserClient();
   const nextPath = getSafeRedirectPath(searchParams.get('next'), '/dashboard');
   
   const [email, setEmail] = useState('');
@@ -143,100 +144,47 @@ function LoginEmailPageContent() {
     setIsSubmitting(true);
 
     try {
-      let authResult;
+      if (!auth) throw new Error('Auth not initialized');
+
       if (loginMode === 'password') {
-        authResult = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password,
-        });
-      } else {
-        // OTP Mode
-        if (!otpSent) {
-          // Step 1: Send OTP
-          const { error } = await supabase.auth.signInWithOtp({
-            email: email.trim(),
-            options: {
-              shouldCreateUser: false,
-            }
-          });
+        const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+        const user = userCredential.user;
 
-          if (error) {
-            setErrorMessage(error.message);
-            setIsSubmitting(false);
-            return;
-          }
-
-          setOtpSent(true);
-          setIsSubmitting(false);
-          setTimeLeft(60);
-          return;
-        } else {
-          // Step 2: Verify OTP
-          if (otpCode.length !== 6) {
-            setErrorMessage('Enter a valid 6-digit verification code.');
-            setIsSubmitting(false);
-            return;
-          }
-
-          authResult = await supabase.auth.verifyOtp({
-            email: email.trim(),
-            token: otpCode,
-            type: 'email',
-          });
-        }
-      }
-
-      if (authResult?.error) {
-        setErrorMessage(authResult.error.message);
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (authResult?.data.session) {
         // Database Sync: Ensure profile exists and email is set
-        const user = authResult.data.user;
-        
-        if (!user) {
-          setIsSubmitting(false);
-          throw new Error("User session could not be established.");
-        }
+        const profileRef = doc(db, 'profiles', user.uid);
+        const profileSnap = await getDoc(profileRef);
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (!profile) {
+        if (!profileSnap.exists()) {
           // Check if a profile exists with this email but different ID (Firebase case)
-          const { data: emailProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email.trim())
-            .maybeSingle();
+          const q = query(collection(db, 'profiles'), where('email', '==', email.trim()));
+          const querySnapshot = await getDocs(q);
 
-          if (emailProfile) {
-            // Update the existing profile to use the Supabase ID
-            await supabase
-              .from('profiles')
-              .update({ id: user.id })
-              .eq('email', email.trim());
+          if (!querySnapshot.empty) {
+            const existingDoc = querySnapshot.docs[0];
+            const data = existingDoc.data();
+            // Update the existing profile or create a new one with the correct UID
+            await setDoc(doc(db, 'profiles', user.uid), { ...data, id: user.uid, email: email.trim() });
+            // Optionally delete the old one if the ID was different
+            if (existingDoc.id !== user.uid) {
+              await deleteDoc(existingDoc.ref);
+            }
           } else {
             // Create a new profile
-            await supabase
-              .from('profiles')
-              .insert({ id: user.id, email: email.trim() });
+            await setDoc(doc(db, 'profiles', user.uid), { id: user.uid, email: email.trim() });
           }
         }
 
         // Dynamic redirect handler
-        const searchParams = new URLSearchParams(window.location.search);
         const nextRoute = searchParams.get('next') || '/dashboard';
         router.push(nextRoute);
+      } else {
+        // OTP Mode
+        setErrorMessage('Email OTP is currently not supported. Please use password login.');
+        setIsSubmitting(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMessage('An unexpected error occurred.');
+      setErrorMessage(err.message || 'An unexpected error occurred.');
     }
   }
 
@@ -249,18 +197,7 @@ function LoginEmailPageContent() {
   };
 
   const handleResendOtp = async () => {
-    setErrorMessage('');
-    setIsSubmitting(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: false }
-    });
-    setIsSubmitting(false);
-    if (error) {
-      setErrorMessage(error.message);
-    } else {
-      setTimeLeft(60);
-    }
+    setErrorMessage('Email OTP is currently not supported.');
   };
 
   const formatTime = (seconds: number) => {

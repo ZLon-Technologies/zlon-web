@@ -1,5 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, setPersistence, inMemoryPersistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,9 +17,11 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Only initialize auth if we are in a browser environment
 const auth = typeof window !== 'undefined' ? getAuth(app) : null;
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 if (auth) {
   setPersistence(auth, inMemoryPersistence).catch(console.error);
 }
 
-export { auth, app };
+export { auth, app, db, storage };

@@ -7,7 +7,8 @@ import { Crosshair, MapPin, MessageSquare, Rocket, ScanFace, Search, SearchX, Sp
 import type { BookingRecord } from '../lib/booking-records';
 import { mapBookingRows } from '../lib/booking-records';
 import { CUSTOMER_SAFE_SALON_SELECT } from '../lib/public-salon-fields';
-import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { db, auth } from '@/lib/firebase';
+import { collection, query, where, getDocs, doc, getDoc, limit, orderBy } from 'firebase/firestore';
 import { MobileBottomNav } from '../components/mobile-bottom-nav';
 import { FALLBACK_SALON_IMAGE } from '../lib/media';
 
@@ -287,31 +288,27 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
     let isMounted = true;
 
     async function fetchUserData() {
       try {
-        const { data: authData } = await supabase.auth.getUser();
-        const userId = authData.user?.id ?? null;
+        const user = auth?.currentUser;
+        const userId = user?.uid ?? null;
 
         if (!userId || !isMounted) return;
 
-        const [{ data: bookingData, error: bookingsError }, { data: profileData }] =
-          await Promise.all([
-            supabase.from('bookings').select('*').eq('user_id', userId),
-            supabase.from('profiles').select('full_name, email, ai_scanner_access').eq('id', userId).maybeSingle(),
-          ]);
+        const [bookingSnap, profileSnap] = await Promise.all([
+          getDocs(query(collection(db, 'bookings'), where('user_id', '==', userId))),
+          getDoc(doc(db, 'profiles', userId)),
+        ]);
 
         if (isMounted) {
           setBookingRows(
-            bookingsError ? [] : ((bookingData ?? []) as Array<Record<string, unknown>>)
+            bookingSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Array<Record<string, unknown>>
           );
+          
+          const profileData = profileSnap.exists() ? profileSnap.data() : null;
           setAiScannerAccess(!!profileData?.ai_scanner_access);
-        }
-
-        if (bookingsError) {
-          console.error('Unable to load recent bookings for quick rebook:', bookingsError);
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
@@ -326,7 +323,6 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
     let isMounted = true;
 
     async function fetchSalons() {
@@ -334,40 +330,40 @@ export default function HomePage() {
       setError(null);
 
       try {
-        let query = supabase.from('salons').select(CUSTOMER_SAFE_SALON_SELECT);
+        let salonDocs: any[] = [];
 
-        // DIRECTIVE 3: Move category filtering to the Supabase query level
-        // We filter salons that have services matching the selected category ID
         if (selected && selected !== 'all') {
-          // Join with services to filter salons by category
-          // Note: This assumes a 1:N relationship between salons and services
-          // We use a subquery or join-filter if supported, or a standard filter
-          const { data: salonIdsWithCategory } = await supabase
-            .from('services')
-            .select('salon_id')
-            .eq('category', selected);
-          
-          const validIds = Array.from(new Set((salonIdsWithCategory ?? []).map(s => s.salon_id)));
+          // Join with services to filter salons by category in Firestore
+          const servicesSnap = await getDocs(query(collection(db, 'services'), where('category', '==', selected)));
+          const validIds = Array.from(new Set(servicesSnap.docs.map(doc => doc.data().salon_id)));
           
           if (validIds.length > 0) {
-            query = query.in('id', validIds);
+            // Divide validIds into chunks of 10 for Firestore 'in' query
+            const chunks = [];
+            for (let i = 0; i < validIds.length; i += 10) {
+              chunks.push(validIds.slice(i, i + 10));
+            }
+            
+            const salonSnaps = await Promise.all(
+              chunks.map(chunk => getDocs(query(collection(db, 'salons'), where('id', 'in', chunk))))
+            );
+            
+            salonDocs = salonSnaps.flatMap(snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
           } else {
-            // No salons match this category
-            setSalons([]);
-            setSalonRows([]);
-            setIsLoading(false);
+            if (isMounted) {
+              setSalons([]);
+              setSalonRows([]);
+              setIsLoading(false);
+            }
             return;
           }
-        }
-
-        const { data: salonData, error: salonsError } = await query;
-
-        if (salonsError) {
-          throw salonsError;
+        } else {
+          const querySnapshot = await getDocs(collection(db, 'salons'));
+          salonDocs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         }
 
         if (isMounted) {
-          const rawSalonRows = (salonData ?? []) as Array<Record<string, unknown>>;
+          const rawSalonRows = salonDocs as Array<Record<string, unknown>>;
           const nextSalons = rawSalonRows
             .map(getSafeSalonRecord)
             .filter((salon): salon is SalonRecord => Boolean(salon));
@@ -377,6 +373,7 @@ export default function HomePage() {
         }
       } catch (fetchError) {
         if (isMounted) {
+          console.error('Fetch salons error:', fetchError);
           setError(
             fetchError instanceof Error ? fetchError.message : 'Unable to load salons right now.'
           );

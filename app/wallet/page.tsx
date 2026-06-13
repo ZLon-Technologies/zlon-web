@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { WalletScreen } from '../components/wallet-screen';
 import type { TransactionType, TransactionKind, Transaction } from '../components/wallet-screen';
-import { createClient as createSupabaseClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { auth as firebaseAuth } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { useAuth } from '@/lib/auth-context';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 interface WalletBooking {
   id: string | number;
@@ -27,50 +27,41 @@ function formatDateLabel(date: Date) {
 }
 
 export default function WalletPage() {
+  const { user, loading: authLoading } = useAuth();
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    let firebaseUnsubscribe: (() => void) | undefined;
-
-    async function checkAuthAndLoad() {
-      try {
-        const supabase = createSupabaseClient();
-        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-
-        if (!supabaseUser && firebaseAuth) {
-          firebaseUnsubscribe = onAuthStateChanged(firebaseAuth, async (fbUser) => {
-            if (fbUser) {
-              await loadWalletData(fbUser.uid);
-            } else {
-              router.push('/');
-            }
-          });
-        } else if (supabaseUser) {
-          await loadWalletData(supabaseUser.id);
-        } else {
-          router.push('/');
-        }
-      } catch (err) {
-        console.error('Auth check error:', err);
-        router.push('/');
+    async function loadWalletData() {
+      if (!user) {
+        setIsLoading(false);
+        return;
       }
-    }
-
-    async function loadWalletData(userId: string) {
       try {
-        const supabase = createSupabaseClient();
-        const [{ data: walletData }, { data: bookingsData }] = await Promise.all([
-          supabase.from('wallets').select('balance').eq('user_id', userId).maybeSingle(),
-          supabase.from('bookings').select('id, total_amount, created_at, status, salons:salon_id(name)').eq('user_id', userId).eq('payment_method', 'wallet').order('created_at', { ascending: false }),
+        const userId = user.uid;
+        
+        const walletRef = doc(db, 'wallets', userId);
+        const bookingsQuery = query(
+          collection(db, 'bookings'),
+          where('user_id', '==', userId),
+          where('payment_method', '==', 'wallet'),
+          orderBy('created_at', 'desc')
+        );
+
+        const [walletSnap, bookingsSnap] = await Promise.all([
+          getDoc(walletRef),
+          getDocs(bookingsQuery)
         ]);
 
+        const walletData = walletSnap.exists() ? walletSnap.data() : null;
         const initialBalance = walletData?.balance || 0;
         setBalance(initialBalance);
 
-        const initialTransactions: Transaction[] = (bookingsData || []).map((booking: WalletBooking) => ({
+        const bookingsData = bookingsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as unknown as WalletBooking[];
+
+        const initialTransactions: Transaction[] = bookingsData.map((booking: WalletBooking) => ({
           id: String(booking.id),
           title: booking.status === 'cancelled' ? `Refund for ${booking.salons?.[0]?.name || 'Booking'}` : `Paid for ${booking.salons?.[0]?.name || 'Booking'}`,
           meta: `${formatDateLabel(new Date(booking.created_at))} • ${booking.status === 'cancelled' ? 'Refunded' : 'Completed'}`,
@@ -86,14 +77,16 @@ export default function WalletPage() {
       }
     }
 
-    checkAuthAndLoad();
+    if (!authLoading) {
+      if (!user) {
+        router.push('/');
+      } else {
+        loadWalletData();
+      }
+    }
+  }, [user, authLoading, router]);
 
-    return () => {
-      if (firebaseUnsubscribe) firebaseUnsubscribe();
-    };
-  }, [router]);
-
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
