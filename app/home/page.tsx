@@ -387,10 +387,10 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    const query = debouncedSearchQuery.trim();
+    const searchTerm = debouncedSearchQuery.trim();
     let isCurrentSearch = true;
 
-    if (query.length < 2) {
+    if (searchTerm.length < 2) {
       return () => {
         isCurrentSearch = false;
       };
@@ -402,16 +402,16 @@ export default function HomePage() {
         // Note: Firestore prefix search is case-sensitive.
         const salonQuery = query(
           collection(db, 'salons'),
-          where('name', '>=', query),
-          where('name', '<=', query + '\uf8ff'),
+          where('name', '>=', searchTerm),
+          where('name', '<=', searchTerm + '\uf8ff'),
           limit(10)
         );
         
         // Search services by name (prefix search)
         const serviceQuery = query(
           collection(db, 'services'),
-          where('name', '>=', query),
-          where('name', '<=', query + '\uf8ff'),
+          where('name', '>=', searchTerm),
+          where('name', '<=', searchTerm + '\uf8ff'),
           limit(10)
         );
 
@@ -483,11 +483,11 @@ export default function HomePage() {
     };
   }, [debouncedSearchQuery]);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setShowResults(query.trim().length >= 2);
+  const handleSearch = (searchTerm: string) => {
+    setSearchQuery(searchTerm);
+    setShowResults(searchTerm.trim().length >= 2);
 
-    if (query.trim().length < 2) {
+    if (searchTerm.trim().length < 2) {
       setSearchResults([]);
       setIsSearching(false);
       return;
