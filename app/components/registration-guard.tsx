@@ -21,12 +21,12 @@ export function RegistrationGuard() {
       if (authLoading || !user) return;
 
       try {
-        const docRef = doc(db, 'profiles', user.uid);
+        const docRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
           const profile = docSnap.data();
-          if (profile.is_profile_complete === false) {
+          if (profile.isProfileComplete === false) {
             setIsOpen(true);
           }
         }
@@ -46,10 +46,10 @@ export function RegistrationGuard() {
     setErrorMessage('');
 
     try {
-      const docRef = doc(db, 'profiles', user.uid);
+      const docRef = doc(db, 'users', user.uid);
       await updateDoc(docRef, {
         email: email.trim(),
-        is_profile_complete: true
+        isProfileComplete: true
       });
 
       setIsSuccess(true);

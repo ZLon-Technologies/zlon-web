@@ -7,14 +7,14 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
 interface ProfileRecord {
-  id: string;
-  full_name: string | null;
+  uid: string;
+  fullName: string | null;
   email: string | null;
-  phone_number: string | null;
+  phone: string | null;
   gender: string | null;
-  avatar_url: string | null;
-  wallet_balance: number;
-  monthly_bookings: number;
+  avatarUrl: string | null;
+  walletBalance: number;
+  monthlyBookings: number;
 }
 
 function getStringValue(value: unknown) {
@@ -29,14 +29,14 @@ function getNumericValue(value: unknown) {
 
 function mapProfileRow(row: Record<string, unknown>, fallbackEmail: string | null, walletBalance: number): ProfileRecord {
   return {
-    id: getStringValue(row.id) ?? '',
-    full_name: getStringValue(row.full_name),
+    uid: getStringValue(row.uid) ?? '',
+    fullName: getStringValue(row.fullName),
     email: getStringValue(row.email) ?? fallbackEmail,
-    phone_number: getStringValue(row.phone_number),
+    phone: getStringValue(row.phone),
     gender: getStringValue(row.gender),
-    avatar_url: getStringValue(row.avatar_url),
-    wallet_balance: walletBalance,
-    monthly_bookings: getNumericValue(row.monthly_bookings),
+    avatarUrl: getStringValue(row.avatarUrl),
+    walletBalance: walletBalance,
+    monthlyBookings: getNumericValue(row.monthlyBookings),
   };
 }
 
@@ -55,7 +55,7 @@ export default function ProfilePage() {
         const userId = user.uid;
         
         const [profileSnap, walletSnap] = await Promise.all([
-          getDoc(doc(db, 'profiles', userId)),
+          getDoc(doc(db, 'users', userId)),
           getDoc(doc(db, 'wallets', userId))
         ]);
 
@@ -65,17 +65,17 @@ export default function ProfilePage() {
         const walletBalance = getNumericValue(walletData?.balance);
 
         if (profileData) {
-          setProfile(mapProfileRow({ id: userId, ...profileData } as Record<string, unknown>, user.email ?? null, walletBalance));
+          setProfile(mapProfileRow({ uid: userId, ...profileData } as Record<string, unknown>, user.email ?? null, walletBalance));
         } else {
           setProfile({
-            id: userId,
-            full_name: null,
+            uid: userId,
+            fullName: null,
             email: user.email ?? null,
-            phone_number: user.phoneNumber ?? null,
+            phone: user.phoneNumber ?? null,
             gender: null,
-            avatar_url: null,
-            wallet_balance: walletBalance,
-            monthly_bookings: 0,
+            avatarUrl: null,
+            walletBalance: walletBalance,
+            monthlyBookings: 0,
           });
         }
       } catch (error) {

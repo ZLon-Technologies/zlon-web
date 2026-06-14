@@ -29,7 +29,7 @@ export async function updateProfile(formData: {
     if (!userId) return { ok: false, message: 'User not authenticated.' };
 
     await adminDb
-      .collection('profiles')
+      .collection('users')
       .doc(userId)
       .set({
         full_name: formData.full_name,

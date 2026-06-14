@@ -258,7 +258,7 @@ export default function HomePage() {
 
         const [bookingSnap, profileSnap] = await Promise.all([
           getDocs(query(collection(db, 'bookings'), where('user_id', '==', userId))),
-          getDoc(doc(db, 'profiles', userId)),
+          getDoc(doc(db, 'users', userId)),
         ]);
 
         if (isMounted) {

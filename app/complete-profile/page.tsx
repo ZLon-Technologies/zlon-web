@@ -237,14 +237,15 @@ function CreateAccountForm() {
     setIsSaving(true);
 
     try {
-      // Update Profiles Collection and mark as complete
-      const userRef = doc(db, 'profiles', user.uid);
+      // Update Users Collection and mark as complete
+      const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
-        full_name: fullName.trim(),
-        date_of_birth: dobDate.toISOString(),
+        uid: user.uid,
+        fullName: fullName.trim(),
+        dateOfBirth: dobDate.toISOString(),
         gender,
-        is_profile_complete: true,
-        updated_at: new Date().toISOString(),
+        isProfileComplete: true,
+        updatedAt: new Date().toISOString(),
       }, { merge: true });
 
       setIsSaving(false);

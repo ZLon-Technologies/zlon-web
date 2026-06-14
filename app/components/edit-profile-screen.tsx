@@ -44,45 +44,45 @@ interface ProfileState {
 }
 
 interface ProfileRecord {
-  id: string;
-  full_name: string | null;
+  uid: string;
+  fullName: string | null;
   email: string | null;
-  phone_number: string | null;
+  phone: string | null;
   gender: string | null;
-  avatar_url: string | null;
-  wallet_balance: number;
-  monthly_bookings: number;
+  avatarUrl: string | null;
+  walletBalance: number;
+  monthlyBookings: number;
 }
 
 interface EditProfileScreenProps {
   initialProfile: ProfileRecord | null;
 }
 
-type EditableField = 'fullName' | 'phoneNumber' | 'gender';
+type EditableField = 'fullName' | 'phone' | 'gender';
 
 const surfaceClass =
   'rounded-[2rem] border border-black/5 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)]';
 
 const editableFieldLabels: Record<EditableField, string> = {
   fullName: 'Full Name',
-  phoneNumber: 'Phone Number',
+  phone: 'Phone Number',
   gender: 'Gender',
 };
 
-const editableProfileColumns: Record<EditableField, 'full_name' | 'phone_number' | 'gender'> = {
-  fullName: 'full_name',
-  phoneNumber: 'phone_number',
+const editableProfileColumns: Record<EditableField, 'fullName' | 'phone' | 'gender'> = {
+  fullName: 'fullName',
+  phone: 'phone',
   gender: 'gender',
 };
 
 function normalizeProfile(profile: ProfileRecord | null): ProfileState {
   return {
-    id: profile?.id ?? '',
-    fullName: profile?.full_name ?? '',
+    id: profile?.uid ?? '',
+    fullName: profile?.fullName ?? '',
     emailAddress: profile?.email ?? '',
-    phoneNumber: profile?.phone_number ?? '',
+    phoneNumber: profile?.phone ?? '',
     gender: profile?.gender ?? '',
-    avatarUrl: profile?.avatar_url ?? '',
+    avatarUrl: profile?.avatarUrl ?? '',
     walletBalance: profile?.wallet_balance ?? 0,
     monthlyBookings: profile?.monthly_bookings ?? 0,
   };
@@ -135,7 +135,7 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
     setMessage(null);
 
     try {
-      const profileRef = doc(db, 'profiles', profile.id);
+      const profileRef = doc(db, 'users', profile.id);
       await updateDoc(profileRef, { [editableProfileColumns[activeField]]: draftValue });
 
       setProfile((previousProfile) => ({
@@ -167,8 +167,8 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
       const snapshot = await uploadBytes(storageRef, file);
       const avatarUrl = await getDownloadURL(snapshot.ref);
 
-      const profileRef = doc(db, 'profiles', profile.id);
-      await updateDoc(profileRef, { avatar_url: avatarUrl });
+      const profileRef = doc(db, 'users', profile.id);
+      await updateDoc(profileRef, { avatarUrl: avatarUrl });
 
       setProfile((previousProfile) => ({
         ...previousProfile,

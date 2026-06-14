@@ -151,26 +151,26 @@ function LoginEmailPageContent() {
         const user = userCredential.user;
 
         // Database Sync: Ensure profile exists and email is set
-        const profileRef = doc(db, 'profiles', user.uid);
+        const profileRef = doc(db, 'users', user.uid);
         const profileSnap = await getDoc(profileRef);
 
         if (!profileSnap.exists()) {
           // Check if a profile exists with this email but different ID (Firebase case)
-          const q = query(collection(db, 'profiles'), where('email', '==', email.trim()));
+          const q = query(collection(db, 'users'), where('email', '==', email.trim()));
           const querySnapshot = await getDocs(q);
 
           if (!querySnapshot.empty) {
             const existingDoc = querySnapshot.docs[0];
             const data = existingDoc.data();
             // Update the existing profile or create a new one with the correct UID
-            await setDoc(doc(db, 'profiles', user.uid), { ...data, id: user.uid, email: email.trim() });
+            await setDoc(doc(db, 'users', user.uid), { ...data, id: user.uid, email: email.trim() });
             // Optionally delete the old one if the ID was different
             if (existingDoc.id !== user.uid) {
               await deleteDoc(existingDoc.ref);
             }
           } else {
             // Create a new profile
-            await setDoc(doc(db, 'profiles', user.uid), { id: user.uid, email: email.trim() });
+            await setDoc(doc(db, 'users', user.uid), { id: user.uid, email: email.trim() });
           }
         }
 

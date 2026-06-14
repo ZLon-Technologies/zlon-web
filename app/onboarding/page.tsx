@@ -28,13 +28,14 @@ export default function OnboardingPage() {
         throw new Error('User not found. Please log in again.');
       }
 
-      // 1. Update profiles collection with Name and DOB
-      const userRef = doc(db, 'profiles', user.uid);
+      // 1. Update users collection with Name and DOB
+      const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
-        full_name: fullName,
-        date_of_birth: dob,
-        is_profile_complete: true,
-        updated_at: new Date().toISOString(),
+        uid: user.uid,
+        fullName: fullName,
+        dateOfBirth: dob,
+        isProfileComplete: true,
+        updatedAt: new Date().toISOString(),
       }, { merge: true });
 
       // 2. If email is provided and different from current, update auth user

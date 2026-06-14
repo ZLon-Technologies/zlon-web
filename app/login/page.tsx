@@ -187,16 +187,16 @@ function LandingPageContent() {
         const user = result.user;
 
         // 2. Check if user is new via Firestore
-        const profileRef = doc(db, 'profiles', user.uid);
+        const profileRef = doc(db, 'users', user.uid);
         const profileSnap = await getDoc(profileRef);
         const isNewUser = !profileSnap.exists();
 
         if (isNewUser) {
-          // Initialize profile for new user
+          // Initialize user for new user
           await setDoc(profileRef, {
-            id: user.uid,
-            phone_number: user.phoneNumber,
-            created_at: new Date().toISOString(),
+            uid: user.uid,
+            phone: user.phoneNumber,
+            createdAt: new Date().toISOString(),
           });
           router.push('/onboarding');
         } else {
@@ -240,16 +240,17 @@ function LandingPageContent() {
       const user = result.user;
 
       // Check if user is new via Firestore
-      const profileRef = doc(db, 'profiles', user.uid);
+      const profileRef = doc(db, 'users', user.uid);
       const profileSnap = await getDoc(profileRef);
       
       if (!profileSnap.exists()) {
         await setDoc(profileRef, {
-          id: user.uid,
+          uid: user.uid,
           email: user.email,
-          full_name: user.displayName,
-          avatar_url: user.photoURL,
-          created_at: new Date().toISOString(),
+          fullName: user.displayName,
+          avatarUrl: user.photoURL,
+          phone: user.phoneNumber || '',
+          createdAt: new Date().toISOString(),
         });
         router.push('/onboarding');
       } else {

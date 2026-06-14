@@ -33,7 +33,7 @@ export default function EditProfilePage() {
 
     async function fetchProfile() {
       try {
-        const docRef = doc(db, 'profiles', user!.uid);
+        const docRef = doc(db, 'users', user!.uid);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {

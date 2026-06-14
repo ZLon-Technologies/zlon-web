@@ -43,7 +43,7 @@ export function AIFaceScannerScreen() {
       if (authLoading || !user) return;
 
       try {
-        const profileDoc = await getDoc(doc(db, 'profiles', user.uid));
+        const profileDoc = await getDoc(doc(db, 'users', user.uid));
 
         if (profileDoc.exists()) {
           const profile = profileDoc.data();
