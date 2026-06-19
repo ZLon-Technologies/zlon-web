@@ -8,7 +8,7 @@ import type { BookingSnapshot } from '../../lib/bookings-data';
 import { getUserBookings } from '../../lib/bookings-data';
 import { getPastBookings } from '../../lib/bookings-data';
 
-interface BookingHistoryScreenProps {}
+type BookingHistoryScreenProps = Record<string, never>;
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('en-IN', {

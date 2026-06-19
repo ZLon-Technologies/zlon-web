@@ -83,8 +83,8 @@ function normalizeProfile(profile: ProfileRecord | null): ProfileState {
     phoneNumber: profile?.phone ?? '',
     gender: profile?.gender ?? '',
     avatarUrl: profile?.avatarUrl ?? '',
-    walletBalance: profile?.wallet_balance ?? 0,
-    monthlyBookings: profile?.monthly_bookings ?? 0,
+    walletBalance: profile?.walletBalance ?? 0,
+    monthlyBookings: profile?.monthlyBookings ?? 0,
   };
 }
 
@@ -420,8 +420,8 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
               </label>
               <input
                 id="profile-field-editor"
-                type={activeField === 'phoneNumber' ? 'tel' : 'text'}
-                inputMode={activeField === 'phoneNumber' ? 'tel' : 'text'}
+                type={activeField === 'phone' ? 'tel' : 'text'}
+                inputMode={activeField === 'phone' ? 'tel' : 'text'}
                 value={draftValue}
                 onChange={(event) => setDraftValue(event.target.value)}
                 className="mt-2 w-full rounded-[1.25rem] bg-[#f4f3f0] px-4 py-3 text-base text-neutral-950 outline-none ring-1 ring-black/5 placeholder:text-neutral-400"

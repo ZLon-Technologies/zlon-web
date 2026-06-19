@@ -48,6 +48,12 @@ const initialState: BookingState = {
   },
 };
 
+const resetAppointment = {
+  date: null,
+  slot: null,
+  selectedStaffId: 'any',
+};
+
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export function BookingProvider({ children }: { children: ReactNode }) {
@@ -61,6 +67,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setState(parsed);
         } catch (e) {
           console.error('Failed to parse booking state', e);
@@ -86,12 +93,6 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // DIRECTIVE 4: Reset staff selection when services change to prevent mismatch
-  const resetAppointment = {
-    date: null,
-    slot: null,
-    selectedStaffId: 'any',
-  };
-
   const addToCart = useCallback((service: SalonService) => {
     setState((prev) => {
       if (prev.cart.some(s => s.id === service.id)) return prev;
