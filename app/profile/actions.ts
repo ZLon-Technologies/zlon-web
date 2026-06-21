@@ -9,9 +9,9 @@ interface ProfileMutationResult {
 }
 
 export async function updateProfile(formData: {
-  full_name: string;
+  fullName: string;
   email: string;
-  phone_number: string;
+  phone: string;
   dob: string;
   gender: string;
 }): Promise<ProfileMutationResult> {
@@ -32,12 +32,12 @@ export async function updateProfile(formData: {
       .collection('users')
       .doc(userId)
       .set({
-        full_name: formData.full_name,
+        fullName: formData.fullName,
         email: formData.email,
-        phone_number: formData.phone_number,
+        phone: formData.phone,
         dob: formData.dob,
         gender: formData.gender,
-        updated_at: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       }, { merge: true });
 
     return { ok: true, message: 'Profile updated successfully.' };
