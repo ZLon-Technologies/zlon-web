@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, setPersistence, inMemoryPersistence } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -21,7 +21,10 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 if (auth) {
-  setPersistence(auth, inMemoryPersistence).catch(console.error);
+  // Use browserLocalPersistence so the session survives page refreshes and browser restarts.
+  // The auth state is stored in IndexedDB and recovered automatically by onAuthStateChanged.
+  setPersistence(auth, browserLocalPersistence).catch(console.error);
 }
 
 export { auth, app, db, storage };
+
