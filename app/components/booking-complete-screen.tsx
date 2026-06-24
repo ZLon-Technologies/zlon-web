@@ -91,7 +91,7 @@ export function BookingCompleteScreen({
   }, [clearState]);
 
   return (
-    <div className="w-full relative flex flex-col items-center justify-center px-5 py-12 pt-[max(env(safe-area-inset-top),48px)]">
+    <div className="w-full relative flex flex-col items-center justify-center px-5 py-12 pt-[var(--safe-top)]">
       <div className="w-full text-center">
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-black shadow-[0_28px_60px_rgba(15,23,42,0.22)] animate-scaleIn animate-ringPulse">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">

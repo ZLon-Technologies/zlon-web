@@ -274,7 +274,7 @@ function LandingPageContent() {
       <div id="recaptcha-container" className="absolute pointer-events-none invisible"></div>
 
       {/* Left Column - Auth Area */}
-      <div className="flex flex-col items-center justify-center px-5 py-12 bg-white pt-[max(env(safe-area-inset-top),48px)] w-full relative z-10">
+      <div className="flex flex-col items-center justify-center px-5 py-12 bg-white pt-[var(--safe-top)] w-full relative z-10">
         <div className="w-full max-w-md mx-auto">
           <h1 className="sr-only">
             ZLon — Premium Salon & Grooming Booking Platform

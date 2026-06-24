@@ -120,7 +120,7 @@ export default function CustomerSupportPage() {
   return (
     <div className="fixed inset-0 flex flex-col bg-white z-50">
       {/* Header */}
-      <header className="flex-none flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),48px)] pb-4 border-b border-gray-100 bg-white z-10">
+      <header className="flex-none flex items-center justify-between px-5 pt-[var(--safe-top)] pb-4 border-b border-gray-100 bg-white z-10">
         <div className="flex items-center gap-3">
           <button 
             onClick={handleBack}

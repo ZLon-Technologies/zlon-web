@@ -209,7 +209,7 @@ function LoginEmailPageContent() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen w-full bg-white">
       {/* Left Column - Auth Area */}
-      <div className="flex flex-col items-center justify-center px-5 py-12 bg-white pt-[max(env(safe-area-inset-top),48px)] w-full relative z-10">
+      <div className="flex flex-col items-center justify-center px-5 py-12 bg-white pt-[var(--safe-top)] w-full relative z-10">
         <div className="w-full max-w-md mx-auto">
           
           <div className="mb-10 bg-transparent">

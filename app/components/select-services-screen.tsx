@@ -238,7 +238,7 @@ export function SelectServicesScreen({ salonId }: SelectServicesScreenProps) {
 
   return (
     <div className="w-full relative pb-24">
-      <header className="border-b border-neutral-100 bg-white pt-[max(env(safe-area-inset-top),48px)]">
+      <header className="border-b border-neutral-100 bg-white pt-[var(--safe-top)]">
         <div className="flex items-center gap-3 px-5 py-3">
           <button
             type="button"

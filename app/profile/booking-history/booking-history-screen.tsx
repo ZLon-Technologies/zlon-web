@@ -43,7 +43,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
     return (
       <div className="w-full relative">
         <div className="flex flex-col text-neutral-950">
-          <header className="border-b border-black/5 bg-white px-4 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
+          <header className="border-b border-black/5 bg-white px-4 pb-4 pt-[var(--safe-top)]">
             <div className="flex items-center gap-3">
               <Link
                 prefetch={false}
@@ -71,7 +71,7 @@ export function BookingHistoryScreen({}: BookingHistoryScreenProps) {
   return (
     <div className="w-full relative">
       <div className="flex flex-col text-neutral-950">
-        <header className="border-b border-black/5 bg-white px-4 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
+        <header className="border-b border-black/5 bg-white px-4 pb-4 pt-[var(--safe-top)]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Link

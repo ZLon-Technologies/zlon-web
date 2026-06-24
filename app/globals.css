@@ -24,9 +24,20 @@ body {
   font-family: inherit;
 }
 
+/* Safe area top: 48px on mobile (notch clearance), 16px on desktop */
+:root {
+  --safe-top: max(env(safe-area-inset-top), 48px);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --safe-top: max(env(safe-area-inset-top), 16px);
+  }
+}
+
 /* Safe area insets for mobile devices (notch, home indicator) */
 .safe-area-pt {
-  padding-top: max(env(safe-area-inset-top), 2.5rem);
+  padding-top: var(--safe-top);
 }
 
 .safe-area-pb {

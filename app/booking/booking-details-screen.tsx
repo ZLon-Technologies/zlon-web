@@ -74,7 +74,7 @@ export function BookingDetailsScreen({ booking }: BookingDetailsScreenProps) {
       )}
 
       <div className="flex flex-col text-neutral-950">
-        <header className="border-b border-black/5 px-4 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
+        <header className="border-b border-black/5 px-4 pb-4 pt-[var(--safe-top)]">
           <button
             type="button"
             aria-label="Booking information"

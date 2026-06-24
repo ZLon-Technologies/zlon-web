@@ -630,7 +630,7 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 pt-[max(env(safe-area-inset-top),48px)] pb-4">
+        <div className="bg-white border-b border-gray-200 px-4 pt-[var(--safe-top)] pb-4">
           <div className="flex items-center justify-between gap-4">
             <Image
               src="/logo.png"

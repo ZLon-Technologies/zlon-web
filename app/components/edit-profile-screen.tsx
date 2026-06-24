@@ -209,7 +209,7 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
   return (
     <div className="flex flex-col bg-[#F9F9F9] min-h-screen text-neutral-950">
       <div className="bg-neutral-950 rounded-b-[3rem] shadow-lg pb-8">
-        <header className="relative z-10 flex items-center justify-between px-6 pb-4 pt-[max(env(safe-area-inset-top),48px)]">
+        <header className="relative z-10 flex items-center justify-between px-6 pb-4 pt-[var(--safe-top)]">
           <h1 className="text-white text-xl font-bold tracking-tight">Profile</h1>
           <button
             type="button"

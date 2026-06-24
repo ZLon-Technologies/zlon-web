@@ -47,7 +47,7 @@ export default function TermsAndConditionsPage() {
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-white font-sans antialiased">
       {/* Fixed Header */}
-      <header className="flex-none border-b bg-white pt-[max(env(safe-area-inset-top),48px)] px-4 pb-4 flex items-center justify-between relative">
+      <header className="flex-none border-b bg-white pt-[var(--safe-top)] px-4 pb-4 flex items-center justify-between relative">
         <button
           onClick={() => router.back()}
           className="p-2 -ml-2 hover:bg-neutral-100 rounded-full transition-colors z-10"
