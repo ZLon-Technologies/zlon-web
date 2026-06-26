@@ -209,15 +209,17 @@ export function EditProfileScreen({ initialProfile }: EditProfileScreenProps) {
   return (
     <div className="flex flex-col bg-[#F9F9F9] min-h-screen text-neutral-950">
       <div className="bg-neutral-950 rounded-b-[3rem] shadow-lg pb-8">
-        <header className="relative z-10 flex items-center justify-between px-6 pb-4 pt-[var(--safe-top)]">
-          <h1 className="text-white text-xl font-bold tracking-tight">Profile</h1>
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
-          >
-            <Bell size={20} strokeWidth={2.1} />
-          </button>
+        <header className="relative z-10 px-6 pt-[var(--safe-top)]">
+          <div className="flex items-center justify-between gap-3 py-3">
+            <h1 className="text-white text-xl font-bold tracking-tight">Profile</h1>
+            <button
+              type="button"
+              aria-label="Notifications"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+            >
+              <Bell size={20} strokeWidth={2.1} />
+            </button>
+          </div>
         </header>
 
         {/* Identity Section */}

@@ -122,14 +122,17 @@ export function WalletScreen({ initialBalance, initialTransactions }: WalletScre
 
   return (
     <div className="flex flex-col text-neutral-950">
-      <header className="relative border-b border-black/5 px-4 pb-4 pt-[var(--safe-top)]">
-        <button
-          type="button"
-          aria-label="Wallet information"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-black"
-        >
-          <Info size={20} strokeWidth={2.2} />
-        </button>
+      <header className="relative border-b border-black/5 px-4 pt-[var(--safe-top)]">
+        <div className="flex items-center justify-between gap-3 py-3">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Wallet</h1>
+          <button
+            type="button"
+            aria-label="Wallet information"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-black/10 bg-white text-black"
+          >
+            <Info size={20} strokeWidth={2.2} />
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 space-y-4 px-4 py-4 pb-20">

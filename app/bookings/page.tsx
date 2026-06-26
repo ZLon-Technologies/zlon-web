@@ -22,17 +22,15 @@ export default async function BookingsPage() {
   return (
     <div className="w-full relative">
       <div className="flex flex-col text-neutral-950">
-        <header className="bg-white px-4 pt-[var(--safe-top)] pb-2">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-                Bookings
-              </h1>
-            </div>
+        <header className="bg-white px-4 pt-[var(--safe-top)] border-b border-gray-100">
+          <div className="flex items-center justify-between gap-3 py-3">
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+              Bookings
+            </h1>
             <Link
               prefetch={false}
               href="/profile/booking-history"
-              className="text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-colors"
+              className="flex items-center min-h-[44px] text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-colors"
             >
               VIEW HISTORY
             </Link>
