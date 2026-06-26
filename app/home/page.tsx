@@ -630,8 +630,8 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto hide-scrollbar">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 pt-[var(--safe-top)] pb-4">
-          <div className="flex items-center justify-between gap-4">
+        <div className="bg-white border-b border-gray-200 px-4 pt-[var(--safe-top)]">
+          <div className="flex items-center justify-between gap-4 py-3">
             <Image
               src="/logo.png"
               alt="ZLon"
@@ -640,12 +640,12 @@ export default function HomePage() {
               priority
               className="h-8 w-auto shrink-0 origin-left scale-[1.3] object-contain"
             />
-            <div className="flex min-w-0 items-center justify-end gap-4">
+            <div className="flex min-w-0 items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsLocationModalOpen(true)}
                 aria-label="Choose location"
-                className="flex min-w-0 items-center gap-2 rounded-full px-3 py-2 text-left transition-colors hover:bg-gray-100"
+                className="flex min-w-0 min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-left transition-colors hover:bg-gray-100"
               >
                 <MapPin className="h-5 w-5 shrink-0 text-gray-400" />
                 <span className="max-w-[8.5rem] truncate text-xs font-medium text-gray-700">
@@ -655,7 +655,7 @@ export default function HomePage() {
               <Link prefetch={false}
                 href="/customer-support"
                 aria-label="Open customer support chat"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 hover:text-black"
+                className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 hover:text-black"
               >
                 <MessageSquare className="h-5 w-5" />
               </Link>
