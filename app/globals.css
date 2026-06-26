@@ -24,15 +24,9 @@ body {
   font-family: inherit;
 }
 
-/* Safe area top: 48px on mobile (notch clearance), 16px on desktop */
+/* Safe area top: only adds space on devices that actually have a notch/status bar */
 :root {
-  --safe-top: max(env(safe-area-inset-top), 48px);
-}
-
-@media (min-width: 768px) {
-  :root {
-    --safe-top: max(env(safe-area-inset-top), 16px);
-  }
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 
 /* Safe area insets for mobile devices (notch, home indicator) */
