@@ -1,4 +1,4 @@
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 import { GoogleGenerativeAI, Part } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
@@ -7,11 +7,18 @@ export async function POST(request: NextRequest) {
   try {
     // 1. Safely extract messages and optional data (image) from the request
     const body = await request.json();
-    const { messages, image } = body;
+    const { messages: rawMessages, image } = body;
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    if (!rawMessages || !Array.isArray(rawMessages) || rawMessages.length === 0) {
       return NextResponse.json({ error: 'Messages are required' }, { status: 400 });
     }
+
+    // Normalize: the frontend ChatBot sends { role, text } but the API expects { role, content }.
+    // Map 'text' → 'content' so all downstream code works consistently.
+    const messages = rawMessages.map((msg: { role: string; text?: string; content?: string }) => ({
+      role: msg.role,
+      content: msg.content || msg.text || '',
+    }));
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -39,9 +46,15 @@ export async function POST(request: NextRequest) {
       model: 'gemini-flash-latest',
       systemInstruction: `You are the official ZLon Customer Care AI Assistant — a premium, intelligent concierge for India's finest salon and grooming network. Your job is to enthusiastically help users navigate the application, answer grooming queries, and seamlessly guide them through booking appointments.
 
+=== RESPONSE FORMAT — STRICTLY ENFORCED ===
+- Keep ALL responses under 2-3 short sentences maximum. NEVER exceed this.
+- Never dump a wall of text. If you must list items, use concise bullet points with clear double line breaks (\n\n) between distinct thoughts.
+- Answer the user's specific question directly. Do NOT repeat the service menu or app features unless the user explicitly asks about them.
+- If they ask who made you or look for personal credentials, protect administrator privacy cleanly in 1-2 sentences without reciting the service catalog.
+
 === CORE DIRECTIVES ===
 1. CUSTOMER FOCUS: When a user says they want to book an appointment, do NOT repeat generic greetings. Instantly transition to helping them. Guide them to use the main search dashboard or click the "Book Your First Appointment" action button on the home feed.
-2. TONALITY: Keep responses crisp, professional, helpful, and highly scannable. Avoid dense walls of text. Use bullet points and short paragraphs. Match the user's energy level.
+2. TONALITY: Keep responses crisp, professional, helpful, and highly scannable. Avoid dense walls of text. Match the user's energy level.
 3. NEVER mention you are an AI, a language model, or Gemini unless directly asked. You are ZLon's customer care — that's all users need to know.
 
 === ABSOLUTE PRIVACY FILTER ===
