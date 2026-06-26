@@ -120,24 +120,26 @@ export default function CustomerSupportPage() {
   return (
     <div className="fixed inset-0 flex flex-col bg-white z-50">
       {/* Header */}
-      <header className="flex-none flex items-center justify-between px-5 pt-[var(--safe-top)] pb-4 border-b border-gray-100 bg-white z-10">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={handleBack}
-            className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-900" />
-          </button>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Customer Care</h1>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-              <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Online</span>
+      <header className="flex-none px-5 pt-[var(--safe-top)] border-b border-gray-100 bg-white z-10">
+        <div className="flex items-center justify-between gap-3 py-3">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleBack}
+              className="flex items-center justify-center min-h-[44px] min-w-[44px] -ml-2 hover:bg-gray-50 rounded-full transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-900" />
+            </button>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Customer Care</h1>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Online</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0">
-          <Bot className="w-5 h-5" />
+          <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0">
+            <Bot className="w-5 h-5" />
+          </div>
         </div>
       </header>
 
