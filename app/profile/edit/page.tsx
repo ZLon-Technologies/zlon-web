@@ -124,22 +124,33 @@ export default function EditProfilePage() {
     }
   }
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       const result = await updateProfile(formData);
       if (result.ok) {
-        router.push('/profile');
-        router.refresh();
+        if (result.emailVerificationSent) {
+          // Email verification was triggered — show message, don't navigate yet
+          setSuccessMessage(result.message);
+          // Navigate after a brief delay so user sees the message
+          setTimeout(() => {
+            router.push('/profile');
+            router.refresh();
+          }, 3000);
+        } else {
+          router.push('/profile');
+          router.refresh();
+        }
       } else {
         setError(result.message);
-        alert('Failed to save profile');
       }
     } catch (err: any) {
-      setError(err.message);
-      alert('Failed to save profile');
+      setError(err.message || 'An unexpected error occurred.');
     } finally {
       setIsSaving(false);
     }
@@ -182,6 +193,11 @@ export default function EditProfilePage() {
           {error && (
             <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
               {error}
+            </div>
+          )}
+          {successMessage && (
+            <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm font-medium border border-green-100">
+              {successMessage}
             </div>
           )}
 
