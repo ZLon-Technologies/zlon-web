@@ -129,19 +129,44 @@ export async function createBooking(formData: FormData): Promise<BookingMutation
     const bookingId = bookingRef.id;
     const bookingDate = date ? Timestamp.fromDate(new Date(date)) : Timestamp.now();
 
-    await bookingRef.set({
-      bookingId,
-      userId,
-      salonId,
-      serviceIds: serviceIds.split(','),
-      bookingDate,
-      slot,
-      staffId,
-      totalAmount,
-      paymentMethod,
-      status: 'confirmed',
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+    // Run atomically using a Firestore Transaction
+    await adminDb.runTransaction(async (transaction) => {
+      if (paymentMethod === 'wallet') {
+        // Read the user document first (Reads must come before Writes)
+        const userRef = adminDb.collection('users').doc(userId);
+        const userDoc = await transaction.get(userRef);
+
+        if (!userDoc.exists) {
+          throw new Error('User document not found.');
+        }
+
+        const walletBalance = userDoc.data()?.walletBalance || 0;
+
+        if (walletBalance < totalAmount) {
+          throw new Error('Insufficient wallet balance.');
+        }
+
+        // Deduct the booking amount
+        transaction.update(userRef, {
+          walletBalance: walletBalance - totalAmount
+        });
+      }
+
+      // Create the booking document
+      transaction.set(bookingRef, {
+        bookingId,
+        userId,
+        salonId,
+        serviceIds: serviceIds.split(','),
+        bookingDate,
+        slot,
+        staffId,
+        totalAmount,
+        paymentMethod,
+        status: 'confirmed',
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
     });
 
     return { ok: true, message: 'Booking created successfully.', bookingId };
